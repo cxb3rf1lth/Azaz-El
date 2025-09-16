@@ -33,15 +33,20 @@
             "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O findomain && chmod +x findomain && sudo mv findomain /usr/local/bin/"
         },
         "chaos": {
-            "enabled": false,
+            "enabled": true,
             "flags": [
-                "-d"
+                "-d",
+                "-silent"
             ],
             "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
         },
         "shuffledns": {
-            "enabled": false,
-            "flags": [],
+            "enabled": true,
+            "flags": [
+                "-silent",
+                "-r",
+                "8.8.8.8,1.1.1.1"
+            ],
             "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"
         },
         "httpx": {
@@ -54,7 +59,25 @@
                 "-status-code",
                 "-follow-redirects",
                 "-random-agent",
-                "-probe"
+                "-probe",
+                "-timeout",
+                "15",
+                "-retries",
+                "2",
+                "-threads",
+                "50",
+                "-rate-limit",
+                "300",
+                "-content-length",
+                "-method",
+                "-websocket",
+                "-pipeline",
+                "-http2",
+                "-response-time",
+                "-jarm",
+                "-asn",
+                "-cdn",
+                "-location"
             ],
             "install_cmd": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"
         },
@@ -67,13 +90,40 @@
                 "-c",
                 "100",
                 "-rl",
-                "300"
+                "300",
+                "-timeout",
+                "15",
+                "-retries",
+                "2",
+                "-bulk-size",
+                "25",
+                "-max-host-error",
+                "30",
+                "-no-color",
+                "-json",
+                "-include-rr",
+                "-duc",
+                "-fhr"
             ],
             "community_templates": true,
             "custom_templates": true,
             "template_sources": [
                 "~/nuclei-templates",
-                "~/nuclei-community-templates"
+                "~/nuclei-community-templates",
+                "~/custom-nuclei-templates"
+            ],
+            "exclude_tags": [
+                "dos",
+                "intrusive"
+            ],
+            "include_tags": [
+                "cve",
+                "osint",
+                "tech",
+                "default-logins",
+                "exposures",
+                "misconfiguration",
+                "takeover"
             ],
             "install_cmd": "go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest"
         },
@@ -165,7 +215,26 @@
                 "-sV",
                 "-sC",
                 "-Pn",
-                "-T4"
+                "-T4",
+                "--version-intensity",
+                "5",
+                "--script-timeout",
+                "10m",
+                "--host-timeout",
+                "30m",
+                "--min-rate",
+                "100",
+                "--max-rate",
+                "1000",
+                "--min-parallelism",
+                "10",
+                "--max-parallelism",
+                "100",
+                "--disable-arp-ping",
+                "--source-port",
+                "53",
+                "--data-length",
+                "32"
             ],
             "install_cmd": "sudo apt install nmap -y || brew install nmap || echo 'Install nmap manually'"
         },
@@ -191,31 +260,117 @@
         "subdomains": "subdomains-top1million-5000.txt",
         "fuzzing": "raft-medium-directories.txt",
         "parameters": "param-miner.txt",
-        "xss": "xss-payload-list.txt",
-        "sqli": "sqli-payload-list.txt"
+        "extensions": "common-extensions.txt",
+        "api_endpoints": "api-endpoints.txt",
+        "sensitive_files": "sensitive-files.txt",
+        "cloud_endpoints": "cloud-endpoints.txt",
+        "infrastructure": "infrastructure-discovery.txt"
     },
-    "payloads": {},
+    "payloads": {
+        "xss": "xss-payload-list.txt",
+        "xss_advanced": "advanced-xss-payloads.txt",
+        "sqli": "sqli-payload-list.txt",
+        "sqli_advanced": "advanced-sqli-payloads.txt",
+        "api_security": "api-security-payloads.txt",
+        "command_injection": "command-injection-payloads.txt"
+    },
     "output": {
         "auto_open_html": true,
         "report_format": "html",
         "consolidated_findings_file": "moloch_findings.json"
     },
     "performance": {
-        "max_workers": 10,
-        "tool_timeout": 600,
-        "rate_limit": 1000
+        "max_workers": 20,
+        "tool_timeout": 900,
+        "rate_limit": 2000,
+        "request_delay": 0.1,
+        "max_retries": 3,
+        "retry_delay": 5,
+        "concurrent_scans": 5,
+        "memory_limit": "2GB",
+        "cpu_limit": 80,
+        "disk_space_min": "1GB",
+        "network_timeout": 30,
+        "dns_timeout": 10,
+        "http_timeout": 30,
+        "scan_depth": 10,
+        "max_redirects": 10,
+        "user_agents": [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+        ]
     },
     "auth": {
         "nuclei_interactsh": "",
         "chaos_api_key": "",
         "github_token": "",
-        "dalfox_blind_xss": ""
+        "dalfox_blind_xss": "",
+        "shodan_api_key": "",
+        "censys_api_id": "",
+        "censys_api_secret": "",
+        "virustotal_api_key": "",
+        "securitytrails_api_key": "",
+        "hunter_api_key": "",
+        "spyse_api_key": "",
+        "binaryedge_api_key": "",
+        "zoomeye_api_key": "",
+        "fofa_api_key": "",
+        "threatcrowd_api_key": "",
+        "alienvault_api_key": "",
+        "projectdiscovery_api_key": ""
     },
     "modules": {
         "recon": true,
         "scanning": true,
         "web": true,
         "fuzzing": true,
-        "reporting": true
+        "reporting": true,
+        "cloud": true,
+        "api": true,
+        "infrastructure": true,
+        "wireless": true,
+        "social": true,
+        "osint": true,
+        "forensics": true
+    },
+    "advanced": {
+        "enable_proxy": false,
+        "proxy_host": "127.0.0.1",
+        "proxy_port": 8080,
+        "enable_tor": false,
+        "tor_port": 9050,
+        "enable_vpn": false,
+        "vpn_config": "",
+        "enable_logging": true,
+        "log_level": "INFO",
+        "enable_screenshots": true,
+        "enable_video_recording": false,
+        "enable_network_capture": false,
+        "enable_memory_dumps": false,
+        "enable_disk_forensics": false,
+        "stealth_mode": false,
+        "randomize_user_agents": true,
+        "randomize_headers": true,
+        "enable_evasion": false,
+        "bypass_waf": false,
+        "custom_headers": {},
+        "custom_cookies": {},
+        "session_handling": true,
+        "csrf_handling": true,
+        "javascript_execution": true,
+        "browser_automation": false,
+        "headless_browser": true,
+        "parallel_execution": true,
+        "distributed_scanning": false,
+        "collaborative_mode": false,
+        "real_time_monitoring": true,
+        "auto_reporting": true,
+        "integration_webhook": "",
+        "slack_webhook": "",
+        "discord_webhook": "",
+        "teams_webhook": "",
+        "email_notifications": false,
+        "sms_notifications": false
     }
 }

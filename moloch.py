@@ -283,47 +283,222 @@ def install_tool(tool_name: str, config: Dict[str, Any]) -> bool:
         logger.error(f"Exception during installation of {tool_name}: {e}")
         return False
 
-def check_and_install_dependencies(config: Dict[str, Any]) -> bool:
-    """Check for required tools and attempt to install missing ones."""
-    logger.info("Checking and installing dependencies...")
-    all_good = True
-    tools_config = config.get("tools", {})
+def detect_package_manager() -> str:
+    """Detect the available package manager on the system."""
+    package_managers = {
+        'apt': ['apt-get', 'apt'],
+        'yum': ['yum'],
+        'dnf': ['dnf'],
+        'pacman': ['pacman'],
+        'brew': ['brew'],
+        'pkg': ['pkg'],
+        'zypper': ['zypper'],
+        'emerge': ['emerge']
+    }
+    
+    for pm_name, commands in package_managers.items():
+        for cmd in commands:
+            if which(cmd):
+                return pm_name
+    return None
 
-    # Check essential system tools first
-    essential_tools = ["git", "wget", "curl", "go", "python3"]
-    for tool in essential_tools:
-        if not which(tool):
-            logger.error(f"Essential system tool '{tool}' is missing. Please install it manually (e.g., 'sudo apt install {tool}' or 'brew install {tool}').")
-            all_good = False
-
-    if not all_good:
-        logger.error("Essential system dependencies are missing. Cannot proceed with tool installation.")
+def install_system_tool(tool_name: str, package_manager: str) -> bool:
+    """Install a system tool using the detected package manager."""
+    install_commands = {
+        'apt': f'sudo apt update && sudo apt install -y {tool_name}',
+        'yum': f'sudo yum install -y {tool_name}',
+        'dnf': f'sudo dnf install -y {tool_name}',
+        'pacman': f'sudo pacman -S --noconfirm {tool_name}',
+        'brew': f'brew install {tool_name}',
+        'pkg': f'sudo pkg install -y {tool_name}',
+        'zypper': f'sudo zypper install -y {tool_name}',
+        'emerge': f'sudo emerge {tool_name}'
+    }
+    
+    if package_manager not in install_commands:
+        logger.error(f"Unsupported package manager: {package_manager}")
+        return False
+    
+    try:
+        logger.info(f"Installing {tool_name} using {package_manager}...")
+        result = subprocess.run(
+            install_commands[package_manager],
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        
+        if result.returncode == 0:
+            logger.info(f"Successfully installed {tool_name}")
+            return True
+        else:
+            logger.error(f"Failed to install {tool_name}: {result.stderr}")
+            return False
+    except subprocess.TimeoutExpired:
+        logger.error(f"Installation of {tool_name} timed out")
+        return False
+    except Exception as e:
+        logger.error(f"Exception during installation of {tool_name}: {e}")
         return False
 
-    # Check and potentially install security tools (with user confirmation for time-consuming installs)
-    missing_tools = []
-    for tool_name, tool_config in tools_config.items():
-        if not which(tool_name):
-            missing_tools.append(tool_name)
+def install_tool_with_fallback(tool_name: str, config: Dict[str, Any]) -> bool:
+    """Install a tool with multiple fallback methods."""
+    tools_config = config.get("tools", {})
+    tool_config = tools_config.get(tool_name, {})
+    
+    # Try primary installation method from config
+    if "install_cmd" in tool_config:
+        logger.info(f"Attempting primary installation method for {tool_name}...")
+        if install_tool(tool_name, config):
+            return True
+        logger.warning(f"Primary installation failed for {tool_name}, trying fallbacks...")
+    
+    # Try package manager installation
+    package_manager = detect_package_manager()
+    if package_manager:
+        logger.info(f"Trying {package_manager} package manager for {tool_name}...")
+        if install_system_tool(tool_name, package_manager):
+            return True
+    
+    # Try alternative installation methods
+    alt_commands = {
+        'nmap': 'sudo apt install nmap -y || sudo yum install nmap -y || brew install nmap',
+        'nikto': 'sudo apt install nikto -y || sudo yum install nikto -y || brew install nikto',
+        'testssl': 'git clone https://github.com/drwetter/testssl.sh.git /tmp/testssl && sudo cp /tmp/testssl/testssl.sh /usr/local/bin/ && sudo chmod +x /usr/local/bin/testssl.sh',
+        'arjun': 'pip3 install arjun || pip install arjun'
+    }
+    
+    if tool_name in alt_commands:
+        try:
+            logger.info(f"Trying alternative installation for {tool_name}...")
+            result = subprocess.run(
+                alt_commands[tool_name],
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            if result.returncode == 0:
+                logger.info(f"Successfully installed {tool_name} using alternative method")
+                return True
+        except Exception as e:
+            logger.error(f"Alternative installation failed for {tool_name}: {e}")
+    
+    logger.error(f"All installation methods failed for {tool_name}")
+    return False
 
+def check_and_install_dependencies(config: Dict[str, Any], auto_install: bool = False) -> bool:
+    """Enhanced dependency checking and installation with better error handling."""
+    logger.info("Performing comprehensive dependency check...")
+    all_good = True
+    tools_config = config.get("tools", {})
+    
+    # Detect system information
+    package_manager = detect_package_manager()
+    logger.info(f"Detected package manager: {package_manager or 'None'}")
+
+    # Check essential system tools first
+    essential_tools = {
+        "git": "Version control system",
+        "wget": "Download utility", 
+        "curl": "HTTP client",
+        "go": "Go programming language",
+        "python3": "Python 3 interpreter",
+        "pip3": "Python package manager"
+    }
+    
+    missing_essential = []
+    for tool, description in essential_tools.items():
+        if not which(tool):
+            logger.warning(f"Essential tool '{tool}' ({description}) is missing")
+            missing_essential.append(tool)
+            all_good = False
+
+    if missing_essential and package_manager:
+        if auto_install:
+            logger.info("Auto-installing missing essential tools...")
+            for tool in missing_essential:
+                install_system_tool(tool, package_manager)
+        else:
+            print(f"\n⚠️  Missing essential tools: {', '.join(missing_essential)}")
+            install_choice = input("Install missing essential tools? (yes/no/auto): ").strip().lower()
+            if install_choice in ['yes', 'y', 'auto']:
+                for tool in missing_essential:
+                    install_system_tool(tool, package_manager)
+                if install_choice == 'auto':
+                    auto_install = True
+
+    # Re-check essential tools after installation attempt
+    still_missing = [tool for tool in missing_essential if not which(tool)]
+    if still_missing:
+        logger.error(f"Still missing essential tools: {', '.join(still_missing)}")
+        logger.error("Please install these manually before proceeding.")
+        return False
+
+    # Check and install security tools
+    missing_tools = []
+    available_tools = []
+    
+    for tool_name, tool_config in tools_config.items():
+        if tool_config.get("enabled", True):
+            if which(tool_name):
+                available_tools.append(tool_name)
+                logger.debug(f"✅ {tool_name} is available")
+            else:
+                missing_tools.append(tool_name)
+                logger.debug(f"❌ {tool_name} is missing")
+
+    logger.info(f"Available tools: {len(available_tools)}, Missing tools: {len(missing_tools)}")
+    
     if missing_tools:
-        logger.warning(f"Missing tools: {', '.join(missing_tools)}")
-        install_choice = input(f"Install missing tools? This may take several minutes. (yes/no): ").strip().lower()
+        if auto_install:
+            logger.info("Auto-installing missing security tools...")
+            install_all = True
+            selective = False
+        else:
+            print(f"\n📊 Tool Status Summary:")
+            print(f"   ✅ Available: {len(available_tools)} tools")
+            print(f"   ❌ Missing: {len(missing_tools)} tools")
+            print(f"   🔧 Missing tools: {', '.join(missing_tools[:10])}" + ("..." if len(missing_tools) > 10 else ""))
+            
+            install_choice = input("\nInstall missing tools? (yes/no/selective/auto): ").strip().lower()
+            install_all = install_choice in ['yes', 'y', 'auto']
+            selective = install_choice == 'selective'
+            
+            if install_choice == 'auto':
+                auto_install = True
         
-        if install_choice == 'yes':
-            logger.info("Installing missing tools. This may take some time...")
+        if install_all or selective:
+            successful_installs = 0
+            failed_installs = 0
+            
             for tool_name in missing_tools:
+                if selective:
+                    install_tool_choice = input(f"Install {tool_name}? (yes/no): ").strip().lower()
+                    if install_tool_choice not in ['yes', 'y']:
+                        continue
+                
                 logger.info(f"Installing {tool_name}...")
-                if install_tool(tool_name, config):
-                    logger.info(f"Tool '{tool_name}' installed successfully.")
-                else:
-                    logger.warning(f"Failed to install '{tool_name}'. It will be skipped if not essential.")
-                    # Add a small delay to prevent overwhelming the system
-                    time.sleep(1)
+                try:
+                    if install_tool_with_fallback(tool_name, config):
+                        successful_installs += 1
+                        logger.info(f"✅ {tool_name} installed successfully")
+                    else:
+                        failed_installs += 1
+                        logger.warning(f"❌ Failed to install {tool_name}")
+                except Exception as e:
+                    failed_installs += 1
+                    logger.error(f"❌ Exception installing {tool_name}: {e}")
+                
+                # Small delay to prevent overwhelming the system
+                time.sleep(1)
+            
+            logger.info(f"Installation complete: {successful_installs} successful, {failed_installs} failed")
         else:
             logger.info("Skipping tool installation. Some features may not work.")
     else:
-        logger.info("All configured security tools are available.")
+        logger.info("🎉 All configured security tools are available!")
     
     return True
 
@@ -923,23 +1098,51 @@ def safe_execute(func, *args, default=None, error_msg="Operation failed", **kwar
         return default
 
 # --- Core Tool Execution Logic ---
-def execute_tool(tool_name: str, args: List[str], output_file: Optional[Path] = None, run_dir: Optional[Path] = None, env: Optional[Dict[str, str]] = None) -> bool:
-    """Execute a security tool with configuration and error handling."""
+def execute_tool_with_retry(tool_name: str, args: List[str], output_file: Optional[Path] = None, 
+                          run_dir: Optional[Path] = None, env: Optional[Dict[str, str]] = None,
+                          max_retries: int = 3, retry_delay: int = 5) -> bool:
+    """Execute a security tool with retry mechanism and enhanced error handling."""
     config = load_config()
-    tool_config = config.get("tools", {}).get(tool_name, {})
-
-    if not tool_config.get("enabled", False):
-        logger.info(f"Tool {tool_name} is disabled in config.")
+    tools_config = config.get("tools", {})
+    tool_config = tools_config.get(tool_name, {})
+    
+    if not tool_config.get("enabled", True):
+        logger.warning(f"Tool {tool_name} is disabled in configuration")
         return False
+    
+    if not which(tool_name):
+        logger.error(f"Tool {tool_name} not found in PATH")
+        # Attempt auto-installation if configured
+        if "install_cmd" in tool_config:
+            logger.info(f"Attempting to install {tool_name}...")
+            if install_tool_with_fallback(tool_name, config):
+                logger.info(f"Successfully installed {tool_name}")
+            else:
+                logger.error(f"Failed to install {tool_name}")
+                return False
+        else:
+            return False
 
-    tool_path = which(tool_name)
-    if not tool_path:
-        logger.warning(f"Tool {tool_name} not found in PATH. Skipping.")
-        return False
-
-    cmd = [tool_path] + tool_config.get("flags", []) + args
-    timeout = config.get("performance", {}).get("tool_timeout", 600)
-
+    # Construct command with enhanced flags
+    base_flags = tool_config.get("flags", [])
+    performance_config = config.get("performance", {})
+    
+    # Add performance optimizations based on tool
+    enhanced_args = list(args)
+    if tool_name in ["httpx", "nuclei", "subfinder"]:
+        # Add rate limiting and threading
+        rate_limit = performance_config.get("rate_limit", 1000)
+        max_workers = performance_config.get("max_workers", 10)
+        
+        if "-rl" not in enhanced_args and tool_name in ["httpx", "nuclei"]:
+            enhanced_args.extend(["-rl", str(rate_limit)])
+        if "-c" not in enhanced_args and tool_name == "nuclei":
+            enhanced_args.extend(["-c", str(max_workers)])
+        if "-t" not in enhanced_args and tool_name == "httpx":
+            enhanced_args.extend(["-t", str(max_workers)])
+    
+    cmd = [tool_name] + base_flags + enhanced_args
+    
     # Special handling for tools requiring specific setups
     tool_env = os.environ.copy()
     if env:
@@ -953,30 +1156,66 @@ def execute_tool(tool_name: str, args: List[str], output_file: Optional[Path] = 
         # Ensure a blind XSS server is configured or warn
         if "your.xss.hunter.domain" in cmd:
             logger.warning("Dalfox configured with default blind XSS domain. Please configure your own in moloch.cfg.json.")
-
-    logger.info(f"Running {tool_name}: {' '.join(cmd)}")
     
-    try:
-        result = run_cmd(cmd, timeout=timeout, cwd=str(run_dir) if run_dir else None, env=tool_env)
-        success = result.returncode == 0
-        
-        if output_file and result.stdout:
-            # Ensure parent directory exists
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            write_lines(output_file, result.stdout.strip().split('\n'))
-            logger.info(f"Output written to {output_file}")
-        elif output_file and not result.stdout:
-            logger.warning(f"No output generated for {tool_name}, but output file was requested.")
-        
-        if not success:
-            logger.warning(f"Tool {tool_name} returned non-zero exit code: {result.returncode}")
-            if result.stderr:
-                logger.debug(f"Tool {tool_name} stderr: {result.stderr}")
-        
-        return success
-    except Exception as e:
-        logger.error(f"Exception while running {tool_name}: {e}")
-        return False
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Executing {tool_name} (attempt {attempt + 1}/{max_retries})")
+            logger.debug(f"Command: {' '.join(cmd)}")
+            
+            start_time = time.time()
+            timeout = performance_config.get("tool_timeout", 600)
+            
+            result = run_cmd(cmd, timeout=timeout, cwd=str(run_dir) if run_dir else None, env=tool_env)
+            execution_time = time.time() - start_time
+            
+            if result.returncode == 0:
+                logger.info(f"Tool {tool_name} completed successfully in {execution_time:.2f}s")
+                
+                if output_file and result.stdout:
+                    # Ensure parent directory exists
+                    output_file.parent.mkdir(parents=True, exist_ok=True)
+                    write_lines(output_file, result.stdout.strip().split('\n'))
+                    logger.info(f"Output written to {output_file}")
+                elif output_file and not result.stdout:
+                    logger.warning(f"No output generated for {tool_name}, but output file was requested.")
+                
+                return True
+            else:
+                logger.warning(f"Tool {tool_name} returned non-zero exit code: {result.returncode}")
+                if result.stderr:
+                    logger.debug(f"Tool {tool_name} stderr: {result.stderr}")
+                
+                # Some tools return non-zero but still produce valid output
+                if output_file and result.stdout:
+                    output_file.parent.mkdir(parents=True, exist_ok=True)
+                    write_lines(output_file, result.stdout.strip().split('\n'))
+                    logger.info(f"Tool {tool_name} produced output despite error code")
+                    return True
+                
+                # If this is not the last attempt, continue to retry
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    return False
+                        
+        except Exception as e:
+            logger.error(f"Unexpected error executing {tool_name}: {e}")
+            
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                continue
+            else:
+                return False
+    
+    logger.error(f"All {max_retries} attempts failed for {tool_name}")
+    return False
+
+def execute_tool(tool_name: str, args: List[str], output_file: Optional[Path] = None, run_dir: Optional[Path] = None, env: Optional[Dict[str, str]] = None) -> bool:
+    """Execute a security tool with configuration and error handling."""
+    return execute_tool_with_retry(tool_name, args, output_file, run_dir, env)
 
 # --- Reconnaissance Modules ---
 def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any]):
@@ -1851,7 +2090,7 @@ def settings_menu():
             input("Press Enter to continue...")
 
 def tool_status_menu():
-    """Enhanced tool status display with comprehensive diagnostics."""
+    """Enhanced tool status display with comprehensive diagnostics and automated installation."""
     print_banner()
     
     print("╔═══════════════════════════════════════════════════════════════════════════════╗")
@@ -1864,23 +2103,33 @@ def tool_status_menu():
     missing_tools = []
     disabled_tools = []
     
+    # Detect package manager
+    package_manager = detect_package_manager()
+    
     # Categorize tools
     for tool_name, tool_config in tools_config.items():
         if which(tool_name):
-            if tool_config.get("enabled", False):
+            if tool_config.get("enabled", True):
                 found_tools.append(tool_name)
             else:
                 disabled_tools.append(tool_name)
         else:
             missing_tools.append(tool_name)
     
+    # Display system information
+    print(f"║  \033[1;97mSystem Information:\033[0m")
+    print(f"║    Operating System: \033[1;97m{os.name.title()}\033[0m")
+    print(f"║    Package Manager: \033[1;97m{package_manager or 'Not detected'}\033[0m")
+    print(f"║    Python Version: \033[1;97m{sys.version.split()[0]}\033[0m")
+    print("║")
+    
     # Display available tools
     if found_tools:
         print("║  \033[1;92m✅ AVAILABLE & ENABLED TOOLS\033[0m")
         for tool in sorted(found_tools):
             tool_info = tools_config.get(tool, {})
-            timeout = tool_info.get("timeout", "300")
-            print(f"║    \033[1;32m✓\033[0m \033[1;97m{tool:<15}\033[0m - Ready (timeout: {timeout}s)")
+            flags = " ".join(tool_info.get("flags", [])[:3])  # Show first 3 flags
+            print(f"║    \033[1;32m✓\033[0m \033[1;97m{tool:<15}\033[0m - Ready ({flags}...)")
         print("║")
     
     # Display disabled tools
@@ -1890,11 +2139,13 @@ def tool_status_menu():
             print(f"║    \033[1;93m○\033[0m \033[1;97m{tool:<15}\033[0m - Installed but disabled in config")
         print("║")
     
-    # Display missing tools
+    # Display missing tools with installation details
     if missing_tools:
         print("║  \033[1;91m❌ MISSING TOOLS\033[0m")
         for tool in sorted(missing_tools):
-            print(f"║    \033[1;91m✗\033[0m \033[1;97m{tool:<15}\033[0m - Not found in system PATH")
+            tool_config = tools_config.get(tool, {})
+            install_method = "Go" if "go install" in tool_config.get("install_cmd", "") else "Package Manager"
+            print(f"║    \033[1;91m✗\033[0m \033[1;97m{tool:<15}\033[0m - Missing ({install_method})")
         print("║")
     
     # Summary statistics
@@ -1908,23 +2159,86 @@ def tool_status_menu():
     print(f"║    Available: \033[1;32m{available_tools}\033[0m ({available_tools/total_tools*100:.1f}%)")
     print(f"║    Enabled: \033[1;32m{enabled_tools}\033[0m ({enabled_tools/total_tools*100:.1f}%)")
     print(f"║    Missing: \033[1;91m{len(missing_tools)}\033[0m ({len(missing_tools)/total_tools*100:.1f}%)")
+    
+    # Health assessment
+    if len(missing_tools) == 0:
+        health_status = "\033[1;32mEXCELLENT\033[0m"
+        health_icon = "🎉"
+    elif len(missing_tools) <= total_tools * 0.25:
+        health_status = "\033[1;33mGOOD\033[0m"
+        health_icon = "👍"
+    elif len(missing_tools) <= total_tools * 0.5:
+        health_status = "\033[1;93mFAIR\033[0m"
+        health_icon = "⚠️"
+    else:
+        health_status = "\033[1;91mPOOR\033[0m"
+        health_icon = "❌"
+    
+    print(f"║    System Health: {health_icon} {health_status}")
     print("╚═══════════════════════════════════════════════════════════════════════════════╝")
     
-    # Installation option for missing tools
+    # Enhanced installation options for missing tools
     if missing_tools:
         print(f"\n\033[1;93m💡 {len(missing_tools)} tools are missing from your system.\033[0m")
-        install_choice = input("\033[1;93m🛠️  Attempt automatic installation? (yes/no): \033[0m").strip().lower()
-        if install_choice == 'yes':
-            print("\n\033[1;97m🔄 Starting installation process...\033[0m")
-            check_and_install_dependencies(config)
-        else:
+        print("\n\033[1;97m📋 Installation Options:\033[0m")
+        print("   \033[1;92m1.\033[0m 🚀 \033[1;97mAUTOMATIC INSTALLATION\033[0m - Install all missing tools automatically")
+        print("   \033[1;94m2.\033[0m 🎯 \033[1;97mSELECTIVE INSTALLATION\033[0m - Choose specific tools to install")
+        print("   \033[1;96m3.\033[0m 📖 \033[1;97mSHOW MANUAL COMMANDS\033[0m - Display installation commands")
+        print("   \033[1;93m4.\033[0m 🔧 \033[1;97mENABLE DISABLED TOOLS\033[0m - Enable available but disabled tools")
+        print("   \033[1;90m5.\033[0m 🔙 \033[1;97mSKIP INSTALLATION\033[0m - Continue without installing")
+        
+        install_choice = input("\n\033[1;93m🛠️  Select installation option (1-5): \033[0m").strip()
+        
+        if install_choice == '1':
+            print("\n\033[1;97m🔄 Starting automatic installation process...\033[0m")
+            check_and_install_dependencies(config, auto_install=True)
+        elif install_choice == '2':
+            print("\n\033[1;97m🎯 Selective installation mode...\033[0m")
+            check_and_install_dependencies(config, auto_install=False)
+        elif install_choice == '3':
+            print("\n\033[1;97m📖 MANUAL INSTALLATION COMMANDS:\033[0m")
+            print("\n\033[1;96m🔧 System Tools (using package manager):\033[0m")
+            if package_manager == 'apt':
+                print("   sudo apt update && sudo apt install -y nmap nikto curl wget git golang-go python3-pip")
+            elif package_manager == 'yum':
+                print("   sudo yum install -y nmap nikto curl wget git golang python3-pip")
+            elif package_manager == 'brew':
+                print("   brew install nmap nikto curl wget git go python3")
+            
+            print("\n\033[1;96m⚡ Go-based Security Tools:\033[0m")
+            go_tools = [tool for tool in missing_tools if "go install" in tools_config.get(tool, {}).get("install_cmd", "")]
+            for tool in go_tools:
+                install_cmd = tools_config.get(tool, {}).get("install_cmd", "")
+                print(f"   {install_cmd}")
+            
+            print("\n\033[1;96m🐍 Python-based Tools:\033[0m")
+            python_tools = [tool for tool in missing_tools if "pip" in tools_config.get(tool, {}).get("install_cmd", "")]
+            for tool in python_tools:
+                install_cmd = tools_config.get(tool, {}).get("install_cmd", "")
+                print(f"   {install_cmd}")
+                
+        elif install_choice == '4':
+            if disabled_tools:
+                print(f"\n\033[1;97m🔧 Enabling {len(disabled_tools)} disabled tools...\033[0m")
+                for tool in disabled_tools:
+                    config["tools"][tool]["enabled"] = True
+                save_config(config)
+                print(f"\033[1;32m✅ Enabled {len(disabled_tools)} tools successfully!\033[0m")
+            else:
+                print("\n\033[1;92m✅ No disabled tools found.\033[0m")
+                
+        elif install_choice == '5':
             print("\n\033[1;92m✅ Installation skipped.\033[0m")
-            print("\n\033[1;97m📋 Manual installation commands:\033[0m")
-            print("   - apt-get install nmap nuclei httpx subfinder")
-            print("   - go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest")
-            print("   - pip3 install katana-scanner")
+        else:
+            print("\n\033[1;91m❌ Invalid choice.\033[0m")
     else:
-        print(f"\n\033[1;32m🎉 Excellent! All {total_tools} configured tools are present!\033[0m")
+        print(f"\n\033[1;32m🎉 Excellent! All {total_tools} configured tools are present and ready!\033[0m")
+        
+        # Offer optimization suggestions
+        print("\n\033[1;97m💡 OPTIMIZATION SUGGESTIONS:\033[0m")
+        print("   • Update tools regularly: \033[1;93mgo install -a\033[0m")
+        print("   • Check nuclei templates: \033[1;93mnuclei -update-templates\033[0m")
+        print("   • Verify tool configurations in moloch.cfg.json")
         
     input("\nPress Enter to continue...")
 
