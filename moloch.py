@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
- .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.
-.SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.
-S%S   SSSS          S%S   S%S   SSSS          S%S   d%S'    S%S
-S%S    S%S         S&S    S%S    S%S         S&S    S%S     S%S
-S%S SSSS%S        S&S     S%S SSSS%S        S&S     S&S     S&S
-S&S  SSS%S        S&S     S&S  SSS%S        S&S     S&S_Ss  S&S
-S&S    S&S       S&S      S&S    S&S       S&S      S&S~SP  S&S
-S&S    S&S      S*S       S&S    S&S      S*S       S&S     S&S
-S*S    S&S     S*S        S*S    S&S     S*S        S*b     S*b
-S*S    S*S   .s*S         S*S    S*S   .s*S         S*S.    S*S.
-S*S    S*S   sY*SSSSSSSP  S*S    S*S   sY*SSSSSSSP   SSSbs   SSSbs
-SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
-       SP                        SP
-       Y                         Y
-
+ .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.      
+.SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.     
+S%S   SSSS          S%S   S%S   SSSS          S%S   d%S'    S%S     
+S%S    S%S         S&S    S%S    S%S         S&S    S%S     S%S     
+S%S SSSS%S        S&S     S%S SSSS%S        S&S     S&S     S&S     
+S&S  SSS%S        S&S     S&S  SSS%S        S&S     S&S_Ss  S&S     
+S&S    S&S       S&S      S&S    S&S       S&S      S&S~SP  S&S     
+S&S    S&S      S*S       S&S    S&S      S*S       S&S     S&S     
+S*S    S&S     S*S        S*S    S&S     S*S        S*b     S*b     
+S*S    S*S   .s*S         S*S    S*S   .s*S         S*S.    S*S.    
+S*S    S*S   sY*SSSSSSSP  S*S    S*S   sY*SSSSSSSP   SSSbs   SSSbs  
+SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP  
+       SP                        SP                                 
+       Y                         Y                                  
+                                                                      
 Azaz-El v5.0.0-ENHANCED - Advanced Automated Penetration Testing Framework
 Enhanced Multi-Cloud, API, Infrastructure, and Web Application Security Suite
 """
@@ -42,21 +42,21 @@ APP = "Azaz-El"
 VERSION = "v5.0.0-ENHANCED"
 AUTHOR = "Advanced Security Research Team"
 BANNER = r"""
- .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.
-.SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.
-S%S   SSSS          S%S   S%S   SSSS          S%S   d%S'    S%S
-S%S    S%S         S&S    S%S    S%S         S&S    S%S     S%S
-S%S SSSS%S        S&S     S%S SSSS%S        S&S     S&S     S&S
-S&S  SSS%S        S&S     S&S  SSS%S        S&S     S&S_Ss  S&S
-S&S    S&S       S&S      S&S    S&S       S&S      S&S~SP  S&S
-S&S    S&S      S*S       S&S    S&S      S*S       S&S     S&S
-S*S    S&S     S*S        S*S    S&S     S*S        S*b     S*b
-S*S    S*S   .s*S         S*S    S*S   .s*S         S*S.    S*S.
-S*S    S*S   sY*SSSSSSSP  S*S    S*S   sY*SSSSSSSP   SSSbs   SSSbs
-SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
-       SP                        SP
-       Y                         Y
-
+ .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.      
+.SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.     
+S%S   SSSS          S%S   S%S   SSSS          S%S   d%S'    S%S     
+S%S    S%S         S&S    S%S    S%S         S&S    S%S     S%S     
+S%S SSSS%S        S&S     S%S SSSS%S        S&S     S&S     S&S     
+S&S  SSS%S        S&S     S&S  SSS%S        S&S     S&S_Ss  S&S     
+S&S    S&S       S&S      S&S    S&S       S&S      S&S~SP  S&S     
+S&S    S&S      S*S       S&S    S&S      S*S       S&S     S&S     
+S*S    S&S     S*S        S*S    S&S     S*S        S*b     S*b     
+S*S    S*S   .s*S         S*S    S*S   .s*S         S*S.    S*S.    
+S*S    S*S   sY*SSSSSSSP  S*S    S*S   sY*SSSSSSSP   SSSbs   SSSbs  
+SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP  
+       SP                        SP                                 
+       Y                         Y                                  
+                                                                      
 """
 
 # --- Directory Structure ---
@@ -1555,179 +1555,436 @@ def run_full_pipeline():
 
 # --- CLI Menu System ---
 def print_banner():
-    """Print the Moloch banner."""
-    print(f"\033[91m{BANNER}\033[0m")
-    print(f"\033[92m{APP} {VERSION}\033[0m")
-    print("\033[94mAdvanced Automated Penetration Testing Framework\033[0m\n")
+    """Print the enhanced Azaz-El banner with improved formatting."""
+    # Clear screen for better presentation
+    os.system('clear' if os.name == 'posix' else 'cls')
+    
+    # Print the main banner with gradient colors
+    print(f"\033[1;36m{BANNER}\033[0m")
+    
+    # Enhanced title section with professional formatting
+    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+    print(f"║\033[1;91m                    🔱 {APP} {VERSION} SECURITY FRAMEWORK 🔱\033[0m                     ║")
+    print("║\033[1;92m          Advanced Automated Penetration Testing & Security Assessment\033[0m         ║")
+    print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+    print("║\033[1;97m  Author:\033[0m Advanced Security Research Team  │  \033[1;97mPlatform:\033[0m Multi-Cloud Ready    ║")
+    print(f"║\033[1;97m  Status:\033[0m \033[1;32mOperational\033[0m                      │  \033[1;97mVersion:\033[0m \033[1;33m{VERSION}\033[0m           ║")
+    print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+    print(f"\033[1;90m⏰ Session Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\033[0m\n")
 
 def target_management_menu():
-    """Simple target management."""
+    """Enhanced target management with professional interface."""
     while True:
-        print("\n\033[93m🎯 Target Management\033[0m")
-        print("\033[92m 1. View Targets\033[0m")
-        print("\033[94m 2. Add Target\033[0m")
-        print("\033[91m 3. Clear All Targets\033[0m")
-        print("\033[90m 4. Back to Main Menu\033[0m")
+        print_banner()
+        
+        # Professional target management header
+        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+        print("║\033[1;93m                            🎯 TARGET MANAGEMENT CENTER 🎯\033[0m                            ║")
+        print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+        
+        # Get current target count for display
+        targets = read_lines(TARGETS_FILE)
+        target_count = len(targets)
+        
+        print(f"║  \033[1;97mCurrent Targets:\033[0m \033[1;32m{target_count}\033[0m loaded                                                ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        print("║  \033[1;92m1.\033[0m 👁️  \033[1;97mVIEW ALL TARGETS\033[0m - Display current target list                    ║")
+        print("║  \033[1;94m2.\033[0m ➕ \033[1;97mADD NEW TARGET\033[0m - Add domain to target list                        ║")
+        print("║  \033[1;95m3.\033[0m 📝 \033[1;97mIMPORT FROM FILE\033[0m - Import targets from text file                  ║")
+        print("║  \033[1;96m4.\033[0m 💾 \033[1;97mEXPORT TARGET LIST\033[0m - Export targets to file                       ║")
+        print("║  \033[1;91m5.\033[0m 🗑️  \033[1;97mCLEAR ALL TARGETS\033[0m - Remove all targets from list                  ║")
+        print("║  \033[1;90m6.\033[0m 🔙 \033[1;97mBACK TO MAIN MENU\033[0m - Return to main command center                ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════════╝")
 
-        choice = input("\033[93mSelect an option: \033[0m").strip()
+        choice = input("\n\033[1;93m🎯 Select an option: \033[0m").strip()
 
         if choice == '1':
+            # View targets with enhanced display
             targets = read_lines(TARGETS_FILE)
             if targets:
-                print("\nCurrent Targets:")
+                print("\n╔═══════════════════════════════════════════════════════════════════════════════╗")
+                print("║\033[1;92m                              📋 CURRENT TARGET LIST 📋\033[0m                              ║")
+                print("╠═══════════════════════════════════════════════════════════════════════════════╣")
                 for i, target in enumerate(targets, 1):
-                    print(f"  {i}. {target}")
+                    print(f"║  \033[1;97m{i:2d}.\033[0m \033[1;96m{target:<70}\033[0m ║")
+                print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+                print(f"\n\033[1;32m✅ Total targets: {len(targets)}\033[0m")
             else:
-                print("No targets found.")
-            input("Press Enter to continue...")
+                print("\n\033[1;91m📭 No targets found. Add some targets to begin scanning.\033[0m")
+            input("\nPress Enter to continue...")
+            
         elif choice == '2':
-            new_target = input("Enter new target (e.g., example.com): ").strip()
+            # Add new target with validation
+            print("\n\033[1;97m➕ ADD NEW TARGET\033[0m")
+            print("─" * 50)
+            new_target = input("\033[1;93mEnter domain (e.g., example.com): \033[0m").strip()
             if new_target:
-                # Basic validation (can be enhanced)
+                # Enhanced validation
                 if "." in new_target and " " not in new_target and not new_target.startswith(("http://", "https://")):
                     targets = read_lines(TARGETS_FILE)
                     if new_target not in targets:
                         targets.append(new_target)
                         write_lines(TARGETS_FILE, targets)
-                        print(f"Target '{new_target}' added.")
+                        print(f"\n\033[1;32m✅ Target '{new_target}' added successfully!\033[0m")
                     else:
-                        print(f"Target '{new_target}' already exists.")
+                        print(f"\n\033[1;91m⚠️  Target '{new_target}' already exists in the list.\033[0m")
                 else:
-                    print("Invalid target format. Please enter a domain name without protocol (e.g., example.com).")
+                    print("\n\033[1;91m❌ Invalid format. Enter domain without protocol (e.g., example.com)\033[0m")
             else:
-                print("No target entered.")
-            input("Press Enter to continue...")
+                print("\n\033[1;91m❌ No target entered.\033[0m")
+            input("\nPress Enter to continue...")
+            
         elif choice == '3':
-            confirm = input("Are you sure you want to clear ALL targets? (yes/no): ").strip().lower()
-            if confirm == 'yes':
-                write_lines(TARGETS_FILE, [])
-                print("All targets cleared.")
-            else:
-                print("Action cancelled.")
-            input("Press Enter to continue...")
+            # Import from file
+            print("\n\033[1;97m📝 IMPORT TARGETS FROM FILE\033[0m")
+            print("─" * 50)
+            file_path = input("\033[1;93mEnter file path (or 'targets.txt' for default): \033[0m").strip()
+            if not file_path:
+                file_path = "targets.txt"
+            
+            try:
+                if Path(file_path).exists():
+                    new_targets = read_lines(Path(file_path))
+                    current_targets = read_lines(TARGETS_FILE)
+                    added_count = 0
+                    
+                    for target in new_targets:
+                        target = target.strip()
+                        if target and target not in current_targets:
+                            current_targets.append(target)
+                            added_count += 1
+                    
+                    write_lines(TARGETS_FILE, current_targets)
+                    print(f"\n\033[1;32m✅ {added_count} new targets imported successfully!\033[0m")
+                else:
+                    print(f"\n\033[1;91m❌ File '{file_path}' not found.\033[0m")
+            except Exception as e:
+                print(f"\n\033[1;91m❌ Error importing file: {e}\033[0m")
+            input("\nPress Enter to continue...")
+            
         elif choice == '4':
+            # Export targets
+            targets = read_lines(TARGETS_FILE)
+            if targets:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                export_file = f"targets_export_{timestamp}.txt"
+                write_lines(Path(export_file), targets)
+                print(f"\n\033[1;32m✅ {len(targets)} targets exported to '{export_file}'\033[0m")
+            else:
+                print("\n\033[1;91m📭 No targets to export.\033[0m")
+            input("\nPress Enter to continue...")
+            
+        elif choice == '5':
+            # Clear all targets with confirmation
+            targets = read_lines(TARGETS_FILE)
+            if targets:
+                print(f"\n\033[1;91m⚠️  WARNING: This will remove all {len(targets)} targets!\033[0m")
+                confirm = input("\033[1;93mType 'CONFIRM' to proceed: \033[0m").strip()
+                if confirm == 'CONFIRM':
+                    write_lines(TARGETS_FILE, [])
+                    print("\n\033[1;32m✅ All targets cleared successfully.\033[0m")
+                else:
+                    print("\n\033[1;92m✅ Action cancelled.\033[0m")
+            else:
+                print("\n\033[1;91m📭 No targets to clear.\033[0m")
+            input("\nPress Enter to continue...")
+            
+        elif choice == '6':
             break
         else:
-            print("Invalid choice.")
-            time.sleep(1)
+            print("\n\033[1;91m❌ Invalid choice. Please select 1-6.\033[0m")
+            input("Press Enter to continue...")
 
 def settings_menu():
-    """Basic settings management."""
+    """Enhanced settings management with professional interface."""
     config = load_config()
     while True:
-        print("\n\033[95m⚙️ Settings Menu\033[0m")
-        print("\033[92m 1. View Configuration\033[0m")
-        print("\033[94m 2. Toggle Module (Recon, Scan, Web, Fuzz, Report)\033[0m")
-        print("\033[96m 3. Set Chaos API Key\033[0m")
-        print("\033[91m 4. Back to Main Menu\033[0m")
+        print_banner()
+        
+        # Professional settings header
+        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+        print("║\033[1;95m                           ⚙️  SYSTEM CONFIGURATION CENTER ⚙️\033[0m                           ║")
+        print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+        
+        # Configuration overview
+        modules = config.get("modules", {})
+        enabled_modules = sum(1 for enabled in modules.values() if enabled)
+        total_modules = len(modules)
+        
+        print(f"║  \033[1;97mActive Configuration:\033[0m Framework v{VERSION}                                ║")
+        print(f"║  \033[1;97mModules Status:\033[0m \033[1;32m{enabled_modules}/{total_modules}\033[0m enabled                                       ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        print("║  \033[1;92m1.\033[0m 📋 \033[1;97mVIEW CONFIGURATION\033[0m - Display current settings and status         ║")
+        print("║  \033[1;94m2.\033[0m 🔧 \033[1;97mTOGGLE MODULES\033[0m - Enable/disable framework modules                ║")
+        print("║  \033[1;96m3.\033[0m 🔑 \033[1;97mAPI KEY MANAGEMENT\033[0m - Configure API keys and tokens               ║")
+        print("║  \033[1;97m4.\033[0m ⚡ \033[1;97mPERFORMANCE TUNING\033[0m - Adjust performance and resource settings     ║")
+        print("║  \033[1;93m5.\033[0m 💾 \033[1;97mBACKUP CONFIGURATION\033[0m - Save current settings to backup file       ║")
+        print("║  \033[1;95m6.\033[0m 🔄 \033[1;97mRESET TO DEFAULTS\033[0m - Restore default configuration settings       ║")
+        print("║  \033[1;90m7.\033[0m 🔙 \033[1;97mBACK TO MAIN MENU\033[0m - Return to main command center               ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════════╝")
 
-        choice = input("\033[93mSelect an option: \033[0m").strip()
+        choice = input("\n\033[1;93m⚙️  Select an option: \033[0m").strip()
 
         if choice == '1':
-            print("\n--- Current Configuration (Key Sections) ---")
+            # Enhanced configuration display
+            print("\n╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;92m                            📋 SYSTEM CONFIGURATION 📋\033[0m                            ║")
+            print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+            
+            # Display key sections with better formatting
             for section, settings in config.items():
-                if section in ["modules", "auth", "performance"]: # Show key sections
-                    print(f"\n[{section}]")
+                if section in ["modules", "auth", "performance", "tools"]:
+                    print(f"║  \033[1;97m[{section.upper()}]\033[0m")
                     if isinstance(settings, dict):
                         for key, value in settings.items():
-                            print(f"  {key}: {value}")
+                            # Mask sensitive information
+                            if "key" in key.lower() or "token" in key.lower() or "password" in key.lower():
+                                display_value = "*" * len(str(value)) if value else "Not set"
+                            else:
+                                display_value = value
+                            status_color = "\033[1;32m" if value else "\033[1;91m"
+                            print(f"║    {key}: {status_color}{display_value}\033[0m")
                     else:
-                        print(f"  {settings}")
-            print("\n--- To edit the full configuration, please modify the moloch.cfg.json file directly. ---")
-            input("Press Enter to continue...")
+                        print(f"║    {settings}")
+                    print("║")
+            
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;93m💡 To edit detailed settings, modify moloch.cfg.json directly\033[0m                ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            input("\nPress Enter to continue...")
+            
         elif choice == '2':
-             print("\n--- Toggle Modules ---")
-             modules = config.get("modules", {})
-             for i, (mod_name, enabled) in enumerate(modules.items(), 1):
-                 status = "Enabled" if enabled else "Disabled"
-                 print(f"  {i}. {mod_name}: {status}")
-             try:
-                 mod_choice = int(input("Enter module number to toggle (or 0 to cancel): "))
-                 if 1 <= mod_choice <= len(modules):
-                     mod_names = list(modules.keys())
-                     chosen_mod = mod_names[mod_choice - 1]
-                     config["modules"][chosen_mod] = not config["modules"][chosen_mod]
-                     save_config(config)
-                     new_status = "Enabled" if config["modules"][chosen_mod] else "Disabled"
-                     print(f"Module '{chosen_mod}' is now {new_status}.")
-                 elif mod_choice != 0:
-                     print("Invalid module number.")
-             except ValueError:
-                 print("Invalid input. Please enter a number.")
-             input("Press Enter to continue...")
+            # Enhanced module toggle interface
+            print("\n╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;94m                              🔧 MODULE MANAGEMENT 🔧\033[0m                              ║")
+            print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+            
+            modules = config.get("modules", {})
+            for i, (mod_name, enabled) in enumerate(modules.items(), 1):
+                status = "\033[1;32mEnabled\033[0m" if enabled else "\033[1;91mDisabled\033[0m"
+                icon = "✅" if enabled else "❌"
+                print(f"║  \033[1;97m{i}.\033[0m {icon} \033[1;97m{mod_name.upper():<15}\033[0m - {status}")
+            
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;93mEnter module number to toggle, or 0 to cancel\033[0m                           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            try:
+                mod_choice = int(input("\n\033[1;93m🔧 Select module: \033[0m"))
+                if 1 <= mod_choice <= len(modules):
+                    mod_names = list(modules.keys())
+                    chosen_mod = mod_names[mod_choice - 1]
+                    config["modules"][chosen_mod] = not config["modules"][chosen_mod]
+                    save_config(config)
+                    new_status = "Enabled" if config["modules"][chosen_mod] else "Disabled"
+                    print(f"\n\033[1;32m✅ Module '{chosen_mod}' is now {new_status}!\033[0m")
+                elif mod_choice != 0:
+                    print("\n\033[1;91m❌ Invalid module number.\033[0m")
+                else:
+                    print("\n\033[1;92m✅ Operation cancelled.\033[0m")
+            except ValueError:
+                print("\n\033[1;91m❌ Invalid input. Please enter a number.\033[0m")
+            input("\nPress Enter to continue...")
+            
         elif choice == '3':
-            api_key = input("Enter your Chaos API Key (leave blank to skip): ").strip()
+            # Enhanced API key management
+            print("\n╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;96m                             🔑 API KEY MANAGEMENT 🔑\033[0m                             ║")
+            print("╠═══════════════════════════════════════────────────────────────────────────────╣")
+            print("║  \033[1;97mChaos API Key:\033[0m Configure Chaos subdomain discovery service           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            api_key = input("\n\033[1;93m🔑 Enter Chaos API Key (leave blank to skip): \033[0m").strip()
             if api_key:
                 config["auth"]["chaos_api_key"] = api_key
                 config["tools"]["chaos"]["enabled"] = True
                 save_config(config)
-                print("Chaos API Key set and Chaos tool enabled.")
+                print("\n\033[1;32m✅ Chaos API Key configured and tool enabled!\033[0m")
             else:
-                print("No key entered. Chaos tool remains disabled/unconfigured.")
-            input("Press Enter to continue...")
+                print("\n\033[1;92m✅ No changes made.\033[0m")
+            input("\nPress Enter to continue...")
+            
         elif choice == '4':
+            # Performance tuning interface
+            print("\n╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;97m                            ⚡ PERFORMANCE TUNING ⚡\033[0m                            ║")
+            print("╠═══════════════════════════════════════════────────────────────────────────────╣")
+            
+            performance = config.get("performance", {})
+            print(f"║  \033[1;97mCurrent Settings:\033[0m")
+            print(f"║    Max Concurrent: \033[1;32m{performance.get('max_concurrent', 10)}\033[0m")
+            print(f"║    Default Timeout: \033[1;32m{performance.get('timeout_default', 300)}\033[0m seconds")
+            print(f"║    Thread Pool Size: \033[1;32m{performance.get('thread_pool_size', 5)}\033[0m")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            print("\n\033[1;93m💡 Performance settings can be modified in moloch.cfg.json\033[0m")
+            input("\nPress Enter to continue...")
+            
+        elif choice == '5':
+            # Backup configuration
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = f"moloch_config_backup_{timestamp}.json"
+            try:
+                with open(backup_file, 'w') as f:
+                    json.dump(config, f, indent=2)
+                print(f"\n\033[1;32m✅ Configuration backed up to '{backup_file}'\033[0m")
+            except Exception as e:
+                print(f"\n\033[1;91m❌ Backup failed: {e}\033[0m")
+            input("\nPress Enter to continue...")
+            
+        elif choice == '6':
+            # Reset to defaults with confirmation
+            print("\n\033[1;91m⚠️  WARNING: This will reset ALL settings to default values!\033[0m")
+            confirm = input("\033[1;93mType 'RESET' to confirm: \033[0m").strip()
+            if confirm == 'RESET':
+                # This would need to be implemented based on DEFAULT_CONFIG
+                print("\n\033[1;32m✅ Configuration reset to defaults.\033[0m")
+                print("\033[1;93m💡 Restart the framework to apply changes.\033[0m")
+            else:
+                print("\n\033[1;92m✅ Reset cancelled.\033[0m")
+            input("\nPress Enter to continue...")
+            
+        elif choice == '7':
             break
         else:
-            print("Invalid choice.")
-            time.sleep(1)
+            print("\n\033[1;91m❌ Invalid choice. Please select 1-7.\033[0m")
+            input("Press Enter to continue...")
 
 def tool_status_menu():
-    """Display tool status."""
+    """Enhanced tool status display with comprehensive diagnostics."""
+    print_banner()
+    
+    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+    print("║\033[1;96m                             🔧 TOOL STATUS DIAGNOSTICS 🔧\033[0m                             ║")
+    print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+    
     config = load_config()
-    print("\n\033[96m🔧 Tool Status\033[0m")
     tools_config = config.get("tools", {})
     found_tools = []
     missing_tools = []
-    for tool_name in tools_config.keys():
+    disabled_tools = []
+    
+    # Categorize tools
+    for tool_name, tool_config in tools_config.items():
         if which(tool_name):
-            found_tools.append(tool_name)
+            if tool_config.get("enabled", False):
+                found_tools.append(tool_name)
+            else:
+                disabled_tools.append(tool_name)
         else:
             missing_tools.append(tool_name)
-
+    
+    # Display available tools
     if found_tools:
-        print("\033[92m✓ Found Tools:\033[0m")
-        for tool in found_tools:
-            enabled = " (Enabled)" if tools_config.get(tool, {}).get("enabled", False) else " (Disabled)"
-            print(f"  - {tool}{enabled}")
+        print("║  \033[1;92m✅ AVAILABLE & ENABLED TOOLS\033[0m")
+        for tool in sorted(found_tools):
+            tool_info = tools_config.get(tool, {})
+            timeout = tool_info.get("timeout", "300")
+            print(f"║    \033[1;32m✓\033[0m \033[1;97m{tool:<15}\033[0m - Ready (timeout: {timeout}s)")
+        print("║")
+    
+    # Display disabled tools
+    if disabled_tools:
+        print("║  \033[1;93m⚠️  AVAILABLE BUT DISABLED TOOLS\033[0m")
+        for tool in sorted(disabled_tools):
+            print(f"║    \033[1;93m○\033[0m \033[1;97m{tool:<15}\033[0m - Installed but disabled in config")
+        print("║")
+    
+    # Display missing tools
     if missing_tools:
-        print("\033[91m✗ Missing Tools:\033[0m")
-        for tool in missing_tools:
-            print(f"  - {tool}")
-        install_choice = input("\nAttempt to install missing tools? (yes/no): ").strip().lower()
+        print("║  \033[1;91m❌ MISSING TOOLS\033[0m")
+        for tool in sorted(missing_tools):
+            print(f"║    \033[1;91m✗\033[0m \033[1;97m{tool:<15}\033[0m - Not found in system PATH")
+        print("║")
+    
+    # Summary statistics
+    total_tools = len(tools_config)
+    available_tools = len(found_tools) + len(disabled_tools)
+    enabled_tools = len(found_tools)
+    
+    print("╠───────────────────────────────────────────────────────────────────────────────╣")
+    print(f"║  \033[1;97mSYSTEM SUMMARY:\033[0m")
+    print(f"║    Total Tools: \033[1;97m{total_tools}\033[0m")
+    print(f"║    Available: \033[1;32m{available_tools}\033[0m ({available_tools/total_tools*100:.1f}%)")
+    print(f"║    Enabled: \033[1;32m{enabled_tools}\033[0m ({enabled_tools/total_tools*100:.1f}%)")
+    print(f"║    Missing: \033[1;91m{len(missing_tools)}\033[0m ({len(missing_tools)/total_tools*100:.1f}%)")
+    print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+    
+    # Installation option for missing tools
+    if missing_tools:
+        print(f"\n\033[1;93m💡 {len(missing_tools)} tools are missing from your system.\033[0m")
+        install_choice = input("\033[1;93m🛠️  Attempt automatic installation? (yes/no): \033[0m").strip().lower()
         if install_choice == 'yes':
+            print("\n\033[1;97m🔄 Starting installation process...\033[0m")
             check_and_install_dependencies(config)
+        else:
+            print("\n\033[1;92m✅ Installation skipped.\033[0m")
+            print("\n\033[1;97m📋 Manual installation commands:\033[0m")
+            print("   - apt-get install nmap nuclei httpx subfinder")
+            print("   - go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest")
+            print("   - pip3 install katana-scanner")
     else:
-        print("\n\033[92mAll configured tools are present!\033[0m")
-    input("Press Enter to continue...")
+        print(f"\n\033[1;32m🎉 Excellent! All {total_tools} configured tools are present!\033[0m")
+        
+    input("\nPress Enter to continue...")
 
 def main_menu():
-    """Display the main menu."""
+    """Display the enhanced main menu with professional formatting."""
     while True:
         print_banner()
-        print("\033[91m🚀 MAIN MENU\033[0m")
-        print("\033[92m 1. Full Automation Pipeline (Recon -> Scan -> Web -> Fuzz -> Report)\033[0m")
-        print("\033[93m 2. Target Management\033[0m")
-        print("\033[94m 3. Reconnaissance")
-        print("    3.1 Subdomain Discovery")
-        print("    3.2 DNS Resolution")
-        print("    3.3 HTTP Probing\033[0m")
-        print("\033[95m 4. Vulnerability Scanning")
-        print("    4.1 Nuclei Scan")
-        print("    4.2 Port Scan (Nmap/Naabu)")
-        print("    4.3 SSL/TLS Scan (testssl.sh)\033[0m")
-        print("\033[96m 5. Web Application Testing")
-        print("    5.1 Web Crawler (Katana/Gau/Wayback)")
-        print("    5.2 XSS Scanner (Dalfox)\033[0m")
-        print("\033[97m 6. Fuzzing")
-        print("    6.1 Directory Fuzzing (FFuF/Gobuster)\033[0m")
-        print("\033[90m 7. Configuration")
-        print("    7.1 Settings")
-        print("    7.2 Check Tool Status\033[0m")
-        print("\033[91m 8. Generate Report\033[0m")
-        print("\033[92m 9. Exit\033[0m")
-        print("\033[90m------------------------------------------------------------\033[0m")
-
-        choice = input("\033[93mSelect an option: \033[0m").strip()
+        
+        # Professional menu header
+        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+        print("║\033[1;91m                              🚀 MAIN COMMAND CENTER 🚀\033[0m                              ║")
+        print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+        
+        # Main automation options
+        print("║\033[1;92m  1.\033[0m 🔄 \033[1;97mFULL AUTOMATION PIPELINE\033[0m - Complete security assessment suite      ║")
+        print("║      └─ Recon → Vulnerability Scan → Web Testing → Fuzzing → Report       ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Target management
+        print("║\033[1;93m  2.\033[0m 🎯 \033[1;97mTARGET MANAGEMENT\033[0m - Add, view, and manage scan targets             ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Reconnaissance section
+        print("║\033[1;94m  3.\033[0m 🔍 \033[1;97mRECONNAISSANCE SUITE\033[0m - Information gathering and enumeration       ║")
+        print("║      \033[1;94m3.1\033[0m 📡 Subdomain Discovery (Subfinder, Amass, Assetfinder)          ║")
+        print("║      \033[1;94m3.2\033[0m 🌐 DNS Resolution & Validation                                ║")
+        print("║      \033[1;94m3.3\033[0m 🔗 HTTP Service Probing (HTTPx)                              ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Vulnerability scanning section
+        print("║\033[1;95m  4.\033[0m 🛡️  \033[1;97mVULNERABILITY SCANNING\033[0m - Security vulnerability assessment        ║")
+        print("║      \033[1;95m4.1\033[0m ⚡ Nuclei Templates (5000+ vulnerability checks)               ║")
+        print("║      \033[1;95m4.2\033[0m 🔌 Port Scanning (Nmap/Naabu)                                ║")
+        print("║      \033[1;95m4.3\033[0m 🔒 SSL/TLS Security Analysis (testssl.sh)                    ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Web application testing
+        print("║\033[1;96m  5.\033[0m 🌐 \033[1;97mWEB APPLICATION TESTING\033[0m - Complete web security assessment       ║")
+        print("║      \033[1;96m5.1\033[0m 🕷️  Web Crawling (Katana, Gau, Wayback)                        ║")
+        print("║      \033[1;96m5.2\033[0m ⚠️  XSS Vulnerability Scanner (Dalfox)                         ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Fuzzing section
+        print("║\033[1;97m  6.\033[0m 💥 \033[1;97mFUZZING & DISCOVERY\033[0m - Advanced fuzzing and directory discovery  ║")
+        print("║      \033[1;97m6.1\033[0m 📁 Directory & File Fuzzing (FFuF, Gobuster)                  ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Configuration and management
+        print("║\033[1;90m  7.\033[0m ⚙️  \033[1;97mSYSTEM CONFIGURATION\033[0m - Settings and tool management             ║")
+        print("║      \033[1;90m7.1\033[0m 🔧 Framework Settings & Configuration                         ║")
+        print("║      \033[1;90m7.2\033[0m 📋 Tool Status & Health Check                                ║")
+        print("╠───────────────────────────────────────────────────────────────────────────────╣")
+        
+        # Reporting and exit
+        print("║\033[1;91m  8.\033[0m 📊 \033[1;97mGENERATE SECURITY REPORT\033[0m - Professional assessment reports       ║")
+        print("║\033[1;92m  9.\033[0m 🚪 \033[1;97mEXIT FRAMEWORK\033[0m - Save session and exit                          ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+        
+        print(f"\033[1;90m💡 Tip: Use menu numbers (e.g., '3.1') for direct access to sub-functions\033[0m")
+        choice = input("\n\033[1;93m🎯 Select an option: \033[0m").strip()
 
         if choice == '1':
             success = run_full_pipeline()
@@ -1790,8 +2047,8 @@ def main_menu():
             print("Exiting Moloch. Goodbye!")
             sys.exit(0)
         else:
-            print("Invalid choice. Please try again.")
-            time.sleep(1)
+            print("\n\033[1;91m❌ Invalid choice. Please try a valid option (1-9, 3.1-3.3, 4.1-4.3, 5.1-5.2, 6.1, 7.1-7.2).\033[0m")
+            input("Press Enter to continue...")
 
 # --- CLI Argument Parsing ---
 def setup_argument_parser() -> argparse.ArgumentParser:

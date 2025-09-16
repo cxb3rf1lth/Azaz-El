@@ -1,44 +1,80 @@
 # Azaz-El v5.0.0-UNIFIED Professional Security Assessment Framework
 
+```
+ .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.      
+.SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.     
+S%S   SSSS          S%S   S%S   SSSS          S%S   d%S'    S%S     
+S%S    S%S         S&S    S%S    S%S         S&S    S%S     S%S     
+S%S SSSS%S        S&S     S%S SSSS%S        S&S     S&S     S&S     
+S&S  SSS%S        S&S     S&S  SSS%S        S&S     S&S_Ss  S&S     
+S&S    S&S       S&S      S&S    S&S       S&S      S&S~SP  S&S     
+S&S    S&S      S*S       S&S    S&S      S*S       S&S     S&S     
+S*S    S&S     S*S        S*S    S&S     S*S        S*b     S*b     
+S*S    S*S   .s*S         S*S    S*S   .s*S         S*S.    S*S.    
+S*S    S*S   sY*SSSSSSSP  S*S    S*S   sY*SSSSSSSP   SSSbs   SSSbs  
+SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP  
+       SP                        SP                                 
+       Y                         Y                                  
+                                                                      
+```
+
 🔱 **Advanced Unified Security Assessment Dashboard** 🔱
 
-## 🚀 Quick Start
+## 🚀 Automatic Installation & Quick Start
 
+### One-Line Installation (Recommended)
 ```bash
-# Launch interactive dashboard
+# Download and run the automated installer
+curl -sSL https://raw.githubusercontent.com/cxb3rf1lth/Azaz-El/main/install.sh | bash
+
+# Or clone and install manually
+git clone https://github.com/cxb3rf1lth/Azaz-El.git
+cd Azaz-El
+chmod +x install.sh
+./install.sh
+```
+
+### Quick Launch Commands
+```bash
+# 🎛️ Interactive Professional Dashboard (Recommended)
 python3 azaz_el_unified.py
 
-# Quick security scan
+# 🔧 Core Security Framework Interface  
+python3 moloch.py
+
+# ⚡ Quick Security Assessment
 python3 azaz_el_unified.py --target example.com --quick-scan
 
-# Complete security assessment
+# 🔄 Complete Security Pipeline
 python3 azaz_el_unified.py --target example.com --full-pipeline
 
-# System status check
+# 📊 System Status Check
 python3 azaz_el_unified.py --status
 ```
 
 ## ✨ What's New in v5.0.0-UNIFIED
 
-The Azaz-El framework has been completely redesigned with a **unified professional dashboard** that integrates all security scanning capabilities into a single, powerful interface:
+The Azaz-El framework has been completely redesigned with an **enhanced professional dashboard** featuring:
 
-### 🎛️ Professional Dashboard Interface
-- **Interactive Navigation**: Multi-level menu system with professional UI
-- **Real-time Monitoring**: Live system status and scan progress tracking
-- **Dual Interface Modes**: Both interactive dashboard and CLI operations
-- **Advanced Configuration**: Comprehensive settings and tool management
+### 🎨 Professional Interface Enhancements
+- **Enhanced ASCII Art Banner**: Beautiful new banner design with proper formatting
+- **Advanced Menu Navigation**: Professional boxed interface with clear categorization
+- **Comprehensive Status Display**: Real-time system monitoring and tool availability
+- **Color-Coded Interface**: Intuitive color scheme for better user experience
+- **Interactive Wizards**: Step-by-step guidance for complex operations
 
-### 🔧 Complete Integration
-- **Unified Security Engine**: All moloch.py functionality integrated into dashboard
-- **20+ Security Tools**: Comprehensive tool integration and status monitoring
+### 🔧 Complete Functionality Integration
+- **Unified Security Engine**: All moloch.py functionality seamlessly integrated
+- **20+ Security Tools**: Comprehensive tool integration with status monitoring
 - **Advanced Workflows**: Complete automation pipelines for all assessment types
-- **Professional Reporting**: Enhanced reporting with multiple formats
+- **Professional Reporting**: Enhanced reporting with multiple formats and templates
+- **Error Handling**: Robust error handling and user feedback systems
 
-### 📊 Enhanced Capabilities
-- **Multi-target Scanning**: Parallel processing of multiple targets
+### 📊 Enhanced Security Capabilities
+- **Multi-target Scanning**: Parallel processing of multiple targets with queue management
 - **Cloud Security Assessment**: Comprehensive multi-cloud security analysis
-- **Advanced Web Testing**: Complete web application security suite
-- **Compliance Tracking**: Security standard compliance monitoring
+- **Advanced Web Testing**: Complete web application security testing suite
+- **Compliance Tracking**: Security standard compliance monitoring and reporting
 
 ## 🎯 Core Features
 
@@ -55,28 +91,91 @@ The Azaz-El framework has been completely redesigned with a **unified profession
 - **Monitoring Mode**: Real-time system monitoring
 - **Hybrid Operations**: Seamless mode switching
 
-## 📋 Installation & Usage
+## 📋 Detailed Installation & Setup
 
-### Prerequisites
+### System Requirements
+- **Operating System**: Linux (Ubuntu 20.04+, Debian 10+, Kali Linux)
+- **Python**: Python 3.8 or higher
+- **Memory**: Minimum 4GB RAM (8GB+ recommended for large scans)
+- **Storage**: 2GB free space for tools and wordlists
+- **Network**: Internet connection for tool updates and API access
+
+### Installation Options
+
+#### Option 1: Automatic Installation (Recommended)
 ```bash
-# Python 3.8+ required
-pip3 install cryptography aiohttp
+# One-line installer with interactive menu
+curl -sSL https://raw.githubusercontent.com/cxb3rf1lth/Azaz-El/main/install.sh | bash
+
+# Manual download and install
+wget https://raw.githubusercontent.com/cxb3rf1lth/Azaz-El/main/install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-### Dashboard Operations
+#### Option 2: Manual Installation
 ```bash
-# Interactive Dashboard (recommended)
-python3 azaz_el_unified.py
+# 1. Clone repository
+git clone https://github.com/cxb3rf1lth/Azaz-El.git
+cd Azaz-El
 
-# Quick Operations
-python3 azaz_el_unified.py --target example.com --quick-scan
-python3 azaz_el_unified.py --target-file targets.txt --reconnaissance
-python3 azaz_el_unified.py --target example.com --full-pipeline --aggressive
+# 2. Install Python dependencies
+pip3 install -r requirements.txt
 
-# System Management
+# 3. Install Go-based security tools
+go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+go install github.com/projectdiscovery/katana/cmd/katana@latest
+
+# 4. Install system tools (Ubuntu/Debian)
+sudo apt update
+sudo apt install nmap ffuf curl wget git unzip
+
+# 5. Initialize framework
+python3 moloch.py --init
+```
+
+#### Option 3: Docker Installation (Coming Soon)
+```bash
+# Pull and run containerized version
+docker pull azazel/security-framework:latest
+docker run -it azazel/security-framework:latest
+```
+
+### Quick Verification
+```bash
+# Test framework functionality
 python3 azaz_el_unified.py --status
-python3 azaz_el_unified.py --config-check
-python3 azaz_el_unified.py --list-scans
+python3 moloch.py --version
+
+# Run built-in tests
+python3 test_enhanced_framework.py
+```
+
+## 🎛️ Professional Dashboard Interface
+
+### Main Dashboard Features
+- **🚀 Command Center**: Centralized control with professional navigation
+- **🎯 Target Management**: Advanced target import/export and validation
+- **⚙️ Configuration Center**: Comprehensive settings and API key management
+- **🔧 Tool Diagnostics**: Real-time tool status and health monitoring
+- **📊 Live Monitoring**: Active scan tracking and progress visualization
+
+### Enhanced Menu System
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                          🚀 MAIN COMMAND CENTER 🚀                          ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║  1. 🔄 FULL AUTOMATION PIPELINE - Complete security assessment suite      ║
+║  2. 🎯 TARGET MANAGEMENT - Advanced target management and validation       ║
+║  3. 🔍 RECONNAISSANCE SUITE - Information gathering and enumeration        ║
+║  4. 🛡️  VULNERABILITY SCANNING - Security vulnerability assessment         ║
+║  5. 🌐 WEB APPLICATION TESTING - Complete web security assessment          ║
+║  6. 💥 FUZZING & DISCOVERY - Advanced fuzzing and directory discovery     ║
+║  7. ⚙️  SYSTEM CONFIGURATION - Settings and tool management                ║
+║  8. 📊 GENERATE SECURITY REPORT - Professional assessment reports          ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ## 🎛️ Dashboard Features
@@ -118,20 +217,238 @@ The unified dashboard uses comprehensive configuration management through `moloc
 }
 ```
 
-## 🧪 Testing & Validation
+## 🎯 Comprehensive Usage Examples
 
+### Interactive Dashboard Mode (Recommended)
 ```bash
-# Run comprehensive test suite
-python3 test_enhanced_framework.py
+# Launch the professional dashboard
+python3 azaz_el_unified.py
 
-# Run unified dashboard demo
-python3 demo_unified_dashboard.py
-
-# Test specific functionality
-python3 azaz_el_unified.py --target demo.testfire.net --quick-scan
+# Navigate through menus using numbers:
+# 1 → Full automation pipeline
+# 2 → Target management (add/view/export targets)
+# 3.1 → Subdomain discovery
+# 4.1 → Nuclei vulnerability scanning
+# 7.2 → Tool status and diagnostics
 ```
 
-**Test Results**: ✅ 18/18 tests passing (100% success rate)
+### Command-Line Operations
+```bash
+# Quick security scan (reconnaissance + basic vulnerabilities)
+python3 azaz_el_unified.py --target example.com --quick-scan
+
+# Complete security assessment pipeline
+python3 azaz_el_unified.py --target example.com --full-pipeline --aggressive
+
+# Bulk target scanning from file
+echo -e "example.com\ntestsite.org\ndemo.app" > targets.txt
+python3 azaz_el_unified.py --target-file targets.txt --reconnaissance
+
+# System status and health check
+python3 azaz_el_unified.py --status --verbose
+
+# Configuration validation
+python3 azaz_el_unified.py --config-check
+
+# List previous scan results
+python3 azaz_el_unified.py --list-scans --limit 10
+```
+
+### Core Framework Interface
+```bash
+# Traditional moloch.py interface with enhanced menus
+python3 moloch.py
+
+# Initialize framework environment
+python3 moloch.py --init
+
+# Add target and run full pipeline
+python3 moloch.py --target example.com --run-full
+
+# Version and help information
+python3 moloch.py --version
+python3 moloch.py --help
+```
+
+### Advanced Scanning Examples
+```bash
+# Cloud security assessment
+python3 azaz_el_unified.py --target cloud-app.com --scan-type cloud --aggressive
+
+# API security testing
+python3 azaz_el_unified.py --target api.example.com --scan-type api --endpoints-file api_list.txt
+
+# Web application comprehensive testing
+python3 azaz_el_unified.py --target webapp.com --scan-type web --crawl-depth 3
+
+# Infrastructure assessment
+python3 azaz_el_unified.py --target corporate.com --scan-type infrastructure --port-range full
+```
+
+## 🔧 Configuration Management
+
+### Framework Configuration (moloch.cfg.json)
+```json
+{
+  "version": "5.0.0-UNIFIED",
+  "modules": {
+    "reconnaissance": true,
+    "vulnerability_scanning": true,
+    "web_testing": true,
+    "fuzzing": true,
+    "reporting": true
+  },
+  "tools": {
+    "nuclei": {"enabled": true, "timeout": 1200},
+    "subfinder": {"enabled": true, "timeout": 600},
+    "httpx": {"enabled": true, "timeout": 300},
+    "nmap": {"enabled": true, "timeout": 900},
+    "katana": {"enabled": true, "timeout": 600},
+    "ffuf": {"enabled": true, "timeout": 800}
+  },
+  "auth": {
+    "chaos_api_key": "",
+    "shodan_api_key": "",
+    "virustotal_api_key": ""
+  },
+  "performance": {
+    "max_concurrent": 10,
+    "timeout_default": 300,
+    "thread_pool_size": 5,
+    "memory_limit": "4GB"
+  },
+  "reporting": {
+    "formats": ["html", "json", "pdf"],
+    "include_screenshots": true,
+    "detailed_findings": true
+  }
+}
+```
+
+### API Key Configuration
+```bash
+# Through the dashboard (Menu 7.1 → API Key Management)
+python3 azaz_el_unified.py
+# Select: 7 → 3 → Enter API keys
+
+# Direct configuration file editing
+nano moloch.cfg.json
+# Add your API keys to the "auth" section
+```
+
+## 📊 Professional Reporting
+
+### Report Generation
+```bash
+# Generate comprehensive HTML report
+python3 azaz_el_unified.py --target example.com --full-pipeline --report-format html
+
+# Multiple format reports
+python3 azaz_el_unified.py --generate-report --run-id latest --formats html,json,pdf
+
+# Executive summary report
+python3 azaz_el_unified.py --generate-report --run-id latest --template executive
+```
+
+### Report Features
+- **📈 Executive Dashboard**: High-level security posture overview
+- **🔍 Technical Findings**: Detailed vulnerability descriptions and remediation
+- **📊 Risk Assessment**: CVSS scoring and impact analysis
+- **🎯 Recommendations**: Prioritized remediation guidance
+- **📸 Visual Evidence**: Screenshots and proof-of-concept demonstrations
+
+## 🧪 Testing & Validation
+
+### Built-in Test Suite
+```bash
+# Run comprehensive framework tests
+python3 test_enhanced_framework.py
+
+# Test specific functionality
+python3 test_fixes.py
+
+# Demo dashboard capabilities
+python3 demo_unified_dashboard.py
+```
+
+### Health Checks
+```bash
+# System diagnostic
+python3 azaz_el_unified.py --status --diagnostic
+
+# Tool availability check
+python3 moloch.py
+# Select: 7 → 2 (Tool Status)
+
+# Configuration validation
+python3 azaz_el_unified.py --config-check --verbose
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. Missing Dependencies
+```bash
+# Error: ModuleNotFoundError: No module named 'aiohttp'
+# Solution: Install Python dependencies
+pip3 install -r requirements.txt
+
+# Or use the installer
+./install.sh
+# Select option 2 (Python Dependencies Only)
+```
+
+#### 2. Tool Not Found Errors
+```bash
+# Error: nuclei command not found
+# Solution: Install Go tools
+go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+
+# Add Go bin to PATH
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### 3. Permission Issues
+```bash
+# Error: Permission denied
+# Solution: Fix file permissions
+chmod +x moloch.py azaz_el_unified.py install.sh
+
+# For system-wide tool installation
+sudo ./install.sh
+```
+
+#### 4. Configuration Issues
+```bash
+# Reset to default configuration
+python3 moloch.py --init
+
+# Backup current config and reset
+cp moloch.cfg.json moloch.cfg.json.backup
+python3 moloch.py --init
+```
+
+#### 5. Memory or Performance Issues
+```bash
+# Reduce concurrent operations in moloch.cfg.json
+{
+  "performance": {
+    "max_concurrent": 5,
+    "thread_pool_size": 3
+  }
+}
+
+# Use targeted scanning instead of full pipeline
+python3 azaz_el_unified.py --target example.com --scan-type reconnaissance
+```
+
+### Getting Help
+- **📖 Documentation**: Check README files and code comments
+- **🧪 Test Cases**: Review test_enhanced_framework.py for usage examples
+- **🎮 Demo**: Run demo_unified_dashboard.py for guided tour
+- **⚙️ Status Check**: Use --status flag for diagnostic information
 
 ## 📊 Security Tools Integration
 

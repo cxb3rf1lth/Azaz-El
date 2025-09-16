@@ -104,7 +104,30 @@ class AzazElDashboard:
             return False
     
     def print_banner(self):
-        """Print the professional dashboard banner"""
+        """Print the enhanced professional dashboard banner with ASCII art"""
+        # Clear screen for better presentation
+        os.system('clear' if os.name == 'posix' else 'cls')
+        
+        # Display the ASCII art banner
+        ascii_banner = """
+\033[1;36m .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.      
+.SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.     
+S%S   SSSS          S%S   S%S   SSSS          S%S   d%S'    S%S     
+S%S    S%S         S&S    S%S    S%S         S&S    S%S     S%S     
+S%S SSSS%S        S&S     S%S SSSS%S        S&S     S&S     S&S     
+S&S  SSS%S        S&S     S&S  SSS%S        S&S     S&S_Ss  S&S     
+S&S    S&S       S&S      S&S    S&S       S&S      S&S~SP  S&S     
+S&S    S&S      S*S       S&S    S&S      S*S       S&S     S&S     
+S*S    S&S     S*S        S*S    S&S     S*S        S*b     S*b     
+S*S    S*S   .s*S         S*S    S*S   .s*S         S*S.    S*S.    
+S*S    S*S   sY*SSSSSSSP  S*S    S*S   sY*SSSSSSSP   SSSbs   SSSbs  
+SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP  
+       SP                        SP                                 
+       Y                         Y                                  \033[0m
+"""
+        print(ascii_banner)
+        
+        # Professional dashboard frame
         banner = f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🔱 AZAZ-EL {self.version} PROFESSIONAL DASHBOARD 🔱                   ║
@@ -114,14 +137,19 @@ class AzazElDashboard:
 ║  Monitoring • Comprehensive Scanning • Automated Reporting • Cloud Ready    ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
-        print(f"\033[1;36m{banner}\033[0m")
+        print(f"\033[1;97m{banner}\033[0m")
         
-        # Show quick status
+        # Enhanced status display
         total_scanners = len(self.system_status["scanners"])
         available_scanners = sum(1 for status in self.system_status["scanners"].values() 
                                if "Available" in status)
         
+        total_tools = len(self.system_status["tools"])
+        available_tools = sum(1 for status in self.system_status["tools"].values() 
+                            if "Available" in status)
+        
         print(f"\033[1;32m📊 System Status: {available_scanners}/{total_scanners} Scanners Ready | "
+              f"{available_tools}/{total_tools} Tools Ready | "
               f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\033[0m\n")
     
     def main_dashboard(self):
