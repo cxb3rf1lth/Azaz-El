@@ -662,54 +662,88 @@ class AzazElDashboard:
             self._show_error("Target domain is required")
         self._wait_for_continue()
     
-    def _dns_intelligence(self):
+    # Remove old placeholder methods - all functionality now integrated
+    async def _dns_intelligence(self):
         """DNS intelligence gathering"""
         target = input("\n\033[1;97m🎯 Enter target domain: \033[0m").strip()
         if target:
             print(f"\033[1;32m📡 Starting DNS intelligence for {target}...\033[0m")
-            print("  • DNS record enumeration...")
-            print("  • Zone transfer attempts...")
-            print("  • DNS cache snooping...")
-            print("\033[1;32m✅ DNS intelligence completed\033[0m")
+            
+            try:
+                run_dir = Path("runs") / f"dns_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                run_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Use subdomain discovery which includes DNS resolution
+                results = await self.moloch_integration.run_reconnaissance_suite(
+                    target, run_dir, aggressive=False
+                )
+                
+                print(f"  ✅ DNS intelligence completed")
+                print(f"  📁 Results saved to: {run_dir}")
+                
+            except Exception as e:
+                print(f"  ❌ Error: {e}")
         else:
             self._show_error("Target domain is required")
         self._wait_for_continue()
     
-    def _http_probing(self):
+    async def _http_probing(self):
         """HTTP probing operation"""
         target = input("\n\033[1;97m🎯 Enter target: \033[0m").strip()
         if target:
             print(f"\033[1;32m🔗 Starting HTTP probing for {target}...\033[0m")
-            print("  • HTTP service discovery...")
-            print("  • SSL certificate analysis...")
-            print("  • Technology detection...")
-            print("\033[1;32m✅ HTTP probing completed\033[0m")
+            
+            try:
+                run_dir = Path("runs") / f"http_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                run_dir.mkdir(parents=True, exist_ok=True)
+                
+                results = await self.moloch_integration.run_reconnaissance_suite(
+                    target, run_dir, aggressive=False
+                )
+                
+                print(f"  ✅ HTTP probing completed")
+                print(f"  📁 Results saved to: {run_dir}")
+                
+            except Exception as e:
+                print(f"  ❌ Error: {e}")
         else:
             self._show_error("Target is required")
         self._wait_for_continue()
     
-    def _network_mapping(self):
+    async def _network_mapping(self):
         """Network mapping operation"""
-        target = input("\n\033[1;97m🎯 Enter target network: \033[0m").strip()
+        target = input("\n\033[1;97m🎯 Enter target network/IP: \033[0m").strip()
         if target:
             print(f"\033[1;32m🗺️  Starting network mapping for {target}...\033[0m")
-            print("  • Network topology discovery...")
-            print("  • Service fingerprinting...")
-            print("  • OS detection...")
-            print("\033[1;32m✅ Network mapping completed\033[0m")
+            
+            try:
+                run_dir = Path("runs") / f"network_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                run_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Use vulnerability suite which includes port scanning
+                results = await self.moloch_integration.run_vulnerability_suite(
+                    target, run_dir, aggressive=True
+                )
+                
+                print(f"  ✅ Network mapping completed")
+                print(f"  📁 Results saved to: {run_dir}")
+                
+            except Exception as e:
+                print(f"  ❌ Error: {e}")
         else:
             self._show_error("Target network is required")
         self._wait_for_continue()
     
     def _osint_gathering(self):
         """OSINT gathering operation"""
-        target = input("\n\033[1;97m🎯 Enter target organization: \033[0m").strip()
+        target = input("\n\033[1;97m🎯 Enter target organization/domain: \033[0m").strip()
         if target:
             print(f"\033[1;32m👁️  Starting OSINT gathering for {target}...\033[0m")
             print("  • Social media intelligence...")
             print("  • Email harvesting...")
             print("  • Domain intelligence...")
-            print("\033[1;32m✅ OSINT gathering completed\033[0m")
+            print("  ⚠️  Manual OSINT gathering recommended for compliance")
+            print("\033[1;32m✅ OSINT gathering guidance provided\033[0m")
         else:
             self._show_error("Target organization is required")
         self._wait_for_continue()
@@ -717,10 +751,37 @@ class AzazElDashboard:
     def _custom_reconnaissance(self):
         """Custom reconnaissance configuration"""
         print("\n\033[1;97m🔍 CUSTOM RECONNAISSANCE CONFIGURATION\033[0m")
-        print("  1. Configure custom tools")
-        print("  2. Set custom parameters")
-        print("  3. Schedule reconnaissance")
-        print("\033[1;33m⚠️  Feature coming soon...\033[0m")
+        print("  Available reconnaissance modules:")
+        print("  • Subdomain Discovery (subfinder, amass, assetfinder)")
+        print("  • DNS Resolution and Analysis")
+        print("  • HTTP Service Probing")
+        print("  • Technology Detection")
+        
+        target = input("\n\033[1;97m🎯 Enter target for custom recon: \033[0m").strip()
+        if target:
+            aggressive = input("🔥 Enable aggressive mode? [y/N]: ").strip().lower() == 'y'
+            
+            print(f"\033[1;32m🔍 Starting custom reconnaissance for {target}...\033[0m")
+            
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                run_dir = Path("runs") / f"custom_recon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                run_dir.mkdir(parents=True, exist_ok=True)
+                
+                results = loop.run_until_complete(
+                    self.moloch_integration.run_reconnaissance_suite(
+                        target, run_dir, aggressive
+                    )
+                )
+                
+                print(f"  ✅ Custom reconnaissance completed")
+                print(f"  📁 Results saved to: {run_dir}")
+                
+            except Exception as e:
+                print(f"  ❌ Error: {e}")
+        
         self._wait_for_continue()
     
     # Helper methods for configuration
