@@ -1048,8 +1048,46 @@ def run_dns_resolution(subdomain_file: Path, output_file: Path, config: Dict[str
         logger.warning(f"Subdomain file {subdomain_file} does not exist.")
         return False
 
-    # Using dnsx for resolution
+    # Try using dnsx first
     success = execute_tool("dnsx", ["-l", str(subdomain_file), "-o", str(output_file)], output_file=output_file)
+    
+    # Fallback to basic DNS resolution if dnsx is not available
+    if not success:
+        logger.warning("[RECON] dnsx not available, using basic DNS resolution...")
+        try:
+            import socket
+            subdomains = read_lines(subdomain_file)
+            resolved_hosts = []
+            
+            for subdomain in subdomains[:20]:  # Limit to prevent long delays
+                subdomain = subdomain.strip()
+                if not subdomain:
+                    continue
+                    
+                try:
+                    # Try to resolve the domain
+                    ip = socket.gethostbyname(subdomain)
+                    resolved_hosts.append(f"{subdomain} [{ip}]")
+                    logger.debug(f"Resolved {subdomain} -> {ip}")
+                except socket.gaierror:
+                    # If resolution fails, still include the domain for HTTP probing
+                    resolved_hosts.append(subdomain)
+                    logger.debug(f"Could not resolve {subdomain}, adding for HTTP probing")
+                except Exception as e:
+                    logger.debug(f"Error resolving {subdomain}: {e}")
+                    
+            if resolved_hosts:
+                write_lines(output_file, resolved_hosts)
+                logger.info(f"[RECON] Basic DNS resolution found {len(resolved_hosts)} hosts.")
+                return True
+            else:
+                logger.warning("[RECON] No hosts could be resolved.")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[RECON] Basic DNS resolution failed: {e}")
+            return False
+    
     if success:
         logger.info(f"[RECON] DNS resolution complete. Results in {output_file}")
         return True
@@ -1538,61 +1576,60 @@ def run_full_pipeline():
         (run_dir / "hosts").mkdir(exist_ok=True)
         dns_success = run_dns_resolution(subdomain_file, resolved_file, config)
 
-            if dns_success and resolved_file.exists():
-                # Probe for live hosts
-                live_file = run_dir / "hosts" / f"live_{target_safe}.txt"
-                http_success = run_http_probing(resolved_file, live_file, config)
+        if dns_success and resolved_file.exists():
+            # Probe for live hosts
+            live_file = run_dir / "hosts" / f"live_{target_safe}.txt"
+            http_success = run_http_probing(resolved_file, live_file, config)
 
-                # --- Phase 2: Scanning ---
-                if not config.get("modules", {}).get("scanning", True):
-                    logger.info("Scanning module disabled, skipping...")
-                else:
-                    logger.info("Phase 2: Scanning")
-                    vuln_dir = run_dir / "vulns"
-                    vuln_dir.mkdir(exist_ok=True)
-
-                    if http_success and live_file.exists():
-                        # Vulnerability Scan
-                        run_vulnerability_scan(live_file, vuln_dir, config)
-
-                        # SSL Scan (on main target, could loop through live hosts)
-                        ssl_file = vuln_dir / f"ssl_{target_safe}.json"
-                        run_ssl_scan(target, ssl_file, config)
-
-                        # Port Scan (example on main target, could loop through live hosts)
-                        port_file = run_dir / "hosts" / f"port_scan_{target_safe}"
-                        run_port_scan(target, port_file, config)
-                    else:
-                        logger.warning("HTTP probing failed or produced no live hosts, skipping scanning phases.")
-
-                # --- Phase 3: Web App Testing ---
-                if not config.get("modules", {}).get("web", True):
-                    logger.info("Web Application Testing module disabled, skipping...")
-                else:
-                    logger.info("Phase 3: Web Application Testing")
-                    crawl_dir = run_dir / "crawling"
-                    crawl_dir.mkdir(exist_ok=True)
-                    urls_file = crawl_dir / f"urls_{target_safe}.txt"
-                    crawled_urls = run_crawling(target, urls_file, config) # Crawl main target
-
-                    if crawled_urls: # Check if list is not empty
-                        # XSS Scan
-                        xss_file = crawl_dir / f"xss_{target_safe}.txt"
-                        run_xss_scan(urls_file, xss_file, config)
-                    else:
-                        logger.warning("Crawling produced no URLs, skipping XSS scan.")
-
-                # --- Phase 4: Fuzzing ---
-                if not config.get("modules", {}).get("fuzzing", True):
-                    logger.info("Fuzzing module disabled, skipping...")
-                else:
-                    logger.info("Phase 4: Fuzzing")
-                    fuzz_dir = run_dir / "fuzzing"
-                    fuzz_dir.mkdir(exist_ok=True)
-                    run_directory_fuzzing(target, fuzz_dir, config) # Fuzz main target
-
+            # --- Phase 2: Scanning ---
+            if not config.get("modules", {}).get("scanning", True):
+                logger.info("Scanning module disabled, skipping...")
             else:
-                logger.warning("DNS resolution failed or produced no results, skipping further phases.")
+                logger.info("Phase 2: Scanning")
+                vuln_dir = run_dir / "vulns"
+                vuln_dir.mkdir(exist_ok=True)
+
+                if http_success and live_file.exists():
+                    # Vulnerability Scan
+                    run_vulnerability_scan(live_file, vuln_dir, config)
+
+                    # SSL Scan (on main target, could loop through live hosts)
+                    ssl_file = vuln_dir / f"ssl_{target_safe}.json"
+                    run_ssl_scan(target, ssl_file, config)
+
+                    # Port Scan (example on main target, could loop through live hosts)
+                    port_file = run_dir / "hosts" / f"port_scan_{target_safe}"
+                    run_port_scan(target, port_file, config)
+                else:
+                    logger.warning("HTTP probing failed or produced no live hosts, skipping scanning phases.")
+
+            # --- Phase 3: Web App Testing ---
+            if not config.get("modules", {}).get("web", True):
+                logger.info("Web Application Testing module disabled, skipping...")
+            else:
+                logger.info("Phase 3: Web Application Testing")
+                crawl_dir = run_dir / "crawling"
+                crawl_dir.mkdir(exist_ok=True)
+                urls_file = crawl_dir / f"urls_{target_safe}.txt"
+                crawled_urls = run_crawling(target, urls_file, config) # Crawl main target
+
+                if crawled_urls: # Check if list is not empty
+                    # XSS Scan
+                    xss_file = crawl_dir / f"xss_{target_safe}.txt"
+                    run_xss_scan(urls_file, xss_file, config)
+                else:
+                    logger.warning("Crawling produced no URLs, skipping XSS scan.")
+
+            # --- Phase 4: Fuzzing ---
+            if not config.get("modules", {}).get("fuzzing", True):
+                logger.info("Fuzzing module disabled, skipping...")
+            else:
+                logger.info("Phase 4: Fuzzing")
+                fuzz_dir = run_dir / "fuzzing"
+                fuzz_dir.mkdir(exist_ok=True)
+                run_directory_fuzzing(target, fuzz_dir, config) # Fuzz main target
+        else:
+            logger.warning("DNS resolution failed or produced no results, skipping further phases.")
 
     # --- Phase 5: Reporting ---
     if not config.get("modules", {}).get("reporting", True):
