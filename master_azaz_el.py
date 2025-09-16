@@ -176,6 +176,10 @@ class MasterAzazElFramework:
         """Initialize the master framework environment"""
         self.logger.info("Initializing Master Azaz-El Framework")
         
+        # Initialize targets
+        self.targets = set()
+        self.load_targets()
+        
         # Update system status
         self.update_system_status()
         
@@ -191,6 +195,22 @@ class MasterAzazElFramework:
             self.logger.warning("Environment initialization had issues, continuing...")
         
         self.logger.info("Master framework initialization complete")
+        
+    def load_targets(self) -> None:
+        """Load targets from targets.txt file"""
+        try:
+            targets_file = Path("targets.txt")
+            if targets_file.exists():
+                with open(targets_file, 'r') as f:
+                    targets = [line.strip() for line in f if line.strip()]
+                    self.targets = set(targets)
+                    self.logger.info(f"Loaded {len(self.targets)} targets")
+            else:
+                self.targets = set()
+                self.logger.info("No targets file found, starting with empty target list")
+        except Exception as e:
+            self.logger.warning(f"Error loading targets: {e}")
+            self.targets = set()
     
     def update_system_status(self) -> None:
         """Update comprehensive system status"""
@@ -789,18 +809,881 @@ class MasterAzazElFramework:
     
     # Placeholder methods for menu implementations
     def reconnaissance_suite_menu(self):
-        """Reconnaissance suite interface - placeholder"""
-        self.show_info("Reconnaissance Suite interface will be implemented in the full version")
+        """Reconnaissance suite interface"""
+        while True:
+            self.print_master_banner()
+            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;94m                      🔍 RECONNAISSANCE SUITE\033[0m                      ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m1.\033[0m 🌐 Subdomain Discovery (subfinder, assetfinder, amass)              ║")
+            print("║  \033[1;97m2.\033[0m 🔍 DNS Resolution & Validation                                    ║")
+            print("║  \033[1;97m3.\033[0m 🌍 HTTP Service Probing (httpx)                                 ║") 
+            print("║  \033[1;97m4.\033[0m ⚡ Full Reconnaissance Pipeline                                  ║")
+            print("║  \033[1;97m5.\033[0m 📊 View Recent Reconnaissance Results                           ║")
+            print("║  \033[1;97m6.\033[0m ⚙️ Configure Reconnaissance Settings                            ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m0.\033[0m ↩️ Return to Main Menu                                           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            choice = self.get_user_input()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                self.handle_subdomain_discovery()
+            elif choice == "2":
+                self.handle_dns_resolution()
+            elif choice == "3":
+                self.handle_http_probing()
+            elif choice == "4":
+                asyncio.run(self.handle_full_reconnaissance())
+            elif choice == "5":
+                self.view_reconnaissance_results()
+            elif choice == "6":
+                self.configure_reconnaissance_settings()
+            else:
+                self.show_error(f"Invalid option: {choice}")
+                
+    def handle_subdomain_discovery(self):
+        """Handle subdomain discovery operations"""
+        if not self.targets:
+            self.show_error("No targets configured. Please add targets first.")
+            return
+            
+        target = self.select_target_interactive()
+        if not target:
+            return
+            
+        try:
+            self.show_info(f"Starting subdomain discovery for {target}")
+            
+            # Create run directory
+            run_dir = self.moloch_integration.config['general']['runs_dir']
+            run_path = Path(run_dir) / f"recon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute subdomain discovery using moloch
+            from moloch import run_subdomain_discovery
+            success = run_subdomain_discovery(target, run_path / "subdomains", self.moloch_integration.config)
+            
+            if success:
+                self.show_success(f"Subdomain discovery completed for {target}")
+                print(f"📁 Results saved to: {run_path / 'subdomains'}")
+            else:
+                self.show_error("Subdomain discovery failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during subdomain discovery: {e}")
+        
         self.wait_for_continue()
+        
+    def handle_dns_resolution(self):
+        """Handle DNS resolution operations"""
+        if not self.targets:
+            self.show_error("No targets configured. Please add targets first.")
+            return
+            
+        # Look for recent subdomain files
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        subdomain_files = list(runs_dir.glob("*/subdomains/*.txt"))
+        
+        if not subdomain_files:
+            self.show_error("No subdomain files found. Please run subdomain discovery first.")
+            return
+            
+        try:
+            # Use most recent subdomain file
+            latest_file = max(subdomain_files, key=lambda x: x.stat().st_mtime)
+            output_file = latest_file.parent.parent / "resolved_hosts.txt"
+            
+            self.show_info(f"Resolving subdomains from {latest_file.name}")
+            
+            from moloch import run_dns_resolution
+            success = run_dns_resolution(latest_file, output_file, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("DNS resolution completed")
+                print(f"📁 Results saved to: {output_file}")
+            else:
+                self.show_error("DNS resolution failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during DNS resolution: {e}")
+            
+        self.wait_for_continue()
+        
+    def handle_http_probing(self):
+        """Handle HTTP service probing"""
+        # Look for recent resolved host files
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        resolved_files = list(runs_dir.glob("*/resolved_hosts.txt"))
+        
+        if not resolved_files:
+            self.show_error("No resolved host files found. Please run DNS resolution first.")
+            return
+            
+        try:
+            # Use most recent resolved file
+            latest_file = max(resolved_files, key=lambda x: x.stat().st_mtime)
+            output_file = latest_file.parent / "live_hosts.txt"
+            
+            self.show_info(f"Probing HTTP services from {latest_file.name}")
+            
+            from moloch import run_http_probing
+            success = run_http_probing(latest_file, output_file, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("HTTP probing completed")
+                print(f"📁 Results saved to: {output_file}")
+                
+                # Show quick stats
+                if output_file.exists():
+                    with open(output_file, 'r') as f:
+                        live_count = len([line.strip() for line in f if line.strip()])
+                    print(f"🌍 Found {live_count} live HTTP services")
+            else:
+                self.show_error("HTTP probing failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during HTTP probing: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_full_reconnaissance(self):
+        """Handle full reconnaissance pipeline"""
+        if not self.targets:
+            self.show_error("No targets configured. Please add targets first.")
+            return
+            
+        target = self.select_target_interactive()
+        if not target:
+            return
+            
+        try:
+            self.show_info(f"Starting full reconnaissance pipeline for {target}")
+            print("🔄 This will run: Subdomain Discovery → DNS Resolution → HTTP Probing")
+            
+            confirm = input("\n⚠️ Continue with full reconnaissance? (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"full_recon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute full reconnaissance using moloch integration
+            results = await self.moloch_integration.run_reconnaissance_suite(
+                target, run_path, aggressive=False
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success(f"Full reconnaissance completed for {target}")
+                print(f"📁 Results saved to: {run_path}")
+                print(f"🌐 Found {len(results.get('subdomains', []))} subdomains")
+                print(f"🌍 Found {len(results.get('live_hosts', []))} live hosts")
+            else:
+                self.show_error("Reconnaissance pipeline failed")
+                if results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during reconnaissance pipeline: {e}")
+            
+        self.wait_for_continue()
+        
+    def view_reconnaissance_results(self):
+        """View recent reconnaissance results"""
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        
+        # Find recent reconnaissance runs
+        recon_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and 
+                     ('recon_' in d.name or 'full_recon_' in d.name)]
+        recon_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if not recon_dirs:
+            self.show_info("No reconnaissance results found")
+            self.wait_for_continue()
+            return
+            
+        print("\n📊 \033[1;97mRecent Reconnaissance Results:\033[0m")
+        print("=" * 60)
+        
+        for i, run_dir in enumerate(recon_dirs[:10], 1):
+            print(f"\n{i}. 📁 {run_dir.name}")
+            
+            # Check for subdomain files
+            subdomain_dir = run_dir / "subdomains"
+            if subdomain_dir.exists():
+                subdomain_files = list(subdomain_dir.glob("*.txt"))
+                total_subdomains = 0
+                for file in subdomain_files:
+                    with open(file, 'r') as f:
+                        total_subdomains += len([line.strip() for line in f if line.strip()])
+                print(f"   🌐 Subdomains: {total_subdomains}")
+            
+            # Check for resolved hosts
+            resolved_file = run_dir / "resolved_hosts.txt"
+            if resolved_file.exists():
+                with open(resolved_file, 'r') as f:
+                    resolved_count = len([line.strip() for line in f if line.strip()])
+                print(f"   🔍 Resolved: {resolved_count}")
+            
+            # Check for live hosts
+            live_file = run_dir / "live_hosts.txt"
+            if live_file.exists():
+                with open(live_file, 'r') as f:
+                    live_count = len([line.strip() for line in f if line.strip()])
+                print(f"   🌍 Live: {live_count}")
+                    
+        self.wait_for_continue()
+        
+    def configure_reconnaissance_settings(self):
+        """Configure reconnaissance settings"""
+        print("\n⚙️ \033[1;97mReconnaissance Configuration:\033[0m")
+        print("=" * 50)
+        
+        config = self.moloch_integration.config
+        recon_config = config.get('reconnaissance', {})
+        
+        print(f"📊 Current Settings:")
+        print(f"   • Subdomain Tools: {', '.join(recon_config.get('subdomain_tools', ['subfinder']))}")
+        print(f"   • DNS Resolver: {recon_config.get('dns_resolver', 'system')}")
+        print(f"   • HTTP Timeout: {recon_config.get('http_timeout', 10)}s")
+        print(f"   • Threads: {recon_config.get('threads', 20)}")
+        print(f"   • Aggressive Mode: {recon_config.get('aggressive_mode', False)}")
+        
+        print(f"\n💡 Use moloch.cfg.json to modify these settings")
+        self.wait_for_continue()
+        
+    def select_target_interactive(self):
+        """Interactive target selection"""
+        if len(self.targets) == 1:
+            return list(self.targets)[0]
+            
+        print(f"\n🎯 \033[1;97mSelect Target:\033[0m")
+        targets_list = list(self.targets)
+        for i, target in enumerate(targets_list, 1):
+            print(f"  {i}. {target}")
+            
+        try:
+            choice = input(f"\nSelect target (1-{len(targets_list)}): ")
+            index = int(choice) - 1
+            if 0 <= index < len(targets_list):
+                return targets_list[index]
+        except (ValueError, IndexError):
+            pass
+            
+        self.show_error("Invalid target selection")
+        return None
     
     def vulnerability_scanning_menu(self):
-        """Vulnerability scanning interface - placeholder"""
-        self.show_info("Vulnerability Scanning interface will be implemented in the full version")
+        """Vulnerability scanning interface"""
+        while True:
+            self.print_master_banner()
+            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;95m                      🛡️ VULNERABILITY SCANNING\033[0m                      ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m1.\033[0m ⚡ Nuclei Templates (5000+ vulnerability checks)               ║")
+            print("║  \033[1;97m2.\033[0m 🔌 Port Scanning (Nmap/Naabu)                                ║")
+            print("║  \033[1;97m3.\033[0m 🔒 SSL/TLS Security Analysis (testssl.sh)                    ║")
+            print("║  \033[1;97m4.\033[0m 💥 Full Vulnerability Assessment                             ║")
+            print("║  \033[1;97m5.\033[0m 📊 View Vulnerability Results                               ║")
+            print("║  \033[1;97m6.\033[0m ⚙️ Configure Vulnerability Scans                            ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m0.\033[0m ↩️ Return to Main Menu                                           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            choice = self.get_user_input()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                self.handle_nuclei_scan()
+            elif choice == "2":
+                self.handle_port_scan()
+            elif choice == "3":
+                self.handle_ssl_scan()
+            elif choice == "4":
+                asyncio.run(self.handle_full_vulnerability_assessment())
+            elif choice == "5":
+                self.view_vulnerability_results()
+            elif choice == "6":
+                self.configure_vulnerability_settings()
+            else:
+                self.show_error(f"Invalid option: {choice}")
+                
+    def handle_nuclei_scan(self):
+        """Handle Nuclei vulnerability scanning"""
+        # Look for live hosts from reconnaissance
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        live_files = list(runs_dir.glob("*/live_hosts.txt"))
+        
+        if not live_files:
+            self.show_error("No live hosts found. Please run reconnaissance first.")
+            return
+            
+        try:
+            # Use most recent live hosts file
+            latest_file = max(live_files, key=lambda x: x.stat().st_mtime)
+            
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            vuln_dir = run_path / f"vuln_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            vuln_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.show_info(f"Starting Nuclei scan on hosts from {latest_file.name}")
+            
+            from moloch import run_vulnerability_scan
+            success = run_vulnerability_scan(latest_file, vuln_dir, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("Nuclei vulnerability scan completed")
+                print(f"📁 Results saved to: {vuln_dir}")
+                
+                # Show quick stats
+                results_file = vuln_dir / "nuclei_results.json"
+                if results_file.exists():
+                    with open(results_file, 'r') as f:
+                        try:
+                            results = [json.loads(line) for line in f if line.strip()]
+                            print(f"🔍 Found {len(results)} vulnerabilities")
+                        except:
+                            print("🔍 Scan completed, check results file")
+            else:
+                self.show_error("Nuclei scan failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during Nuclei scan: {e}")
+            
+        self.wait_for_continue()
+        
+    def handle_port_scan(self):
+        """Handle port scanning"""
+        if not self.targets:
+            self.show_error("No targets configured. Please add targets first.")
+            return
+            
+        target = self.select_target_interactive()
+        if not target:
+            return
+            
+        try:
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            port_dir = run_path / f"port_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            port_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.show_info(f"Starting port scan for {target}")
+            
+            from moloch import run_port_scan
+            success = run_port_scan(target, port_dir, self.moloch_integration.config)
+            
+            if success:
+                self.show_success(f"Port scan completed for {target}")
+                print(f"📁 Results saved to: {port_dir}")
+            else:
+                self.show_error("Port scan failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during port scan: {e}")
+            
+        self.wait_for_continue()
+        
+    def handle_ssl_scan(self):
+        """Handle SSL/TLS security analysis"""
+        # Look for live HTTPS hosts
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        live_files = list(runs_dir.glob("*/live_hosts.txt"))
+        
+        if not live_files:
+            self.show_error("No live hosts found. Please run reconnaissance first.")
+            return
+            
+        try:
+            # Use most recent live hosts file
+            latest_file = max(live_files, key=lambda x: x.stat().st_mtime)
+            
+            # Filter for HTTPS hosts
+            https_hosts = []
+            with open(latest_file, 'r') as f:
+                for line in f:
+                    if line.strip() and 'https://' in line.strip():
+                        https_hosts.append(line.strip())
+            
+            if not https_hosts:
+                self.show_error("No HTTPS hosts found in live hosts file")
+                return
+            
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            ssl_dir = run_path / f"ssl_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            ssl_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create HTTPS hosts file
+            https_file = ssl_dir / "https_hosts.txt"
+            with open(https_file, 'w') as f:
+                f.write('\n'.join(https_hosts))
+            
+            self.show_info(f"Starting SSL/TLS scan on {len(https_hosts)} HTTPS hosts")
+            
+            from moloch import run_ssl_scan
+            success = run_ssl_scan(https_file, ssl_dir, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("SSL/TLS scan completed")
+                print(f"📁 Results saved to: {ssl_dir}")
+            else:
+                self.show_error("SSL/TLS scan failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during SSL/TLS scan: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_full_vulnerability_assessment(self):
+        """Handle full vulnerability assessment pipeline"""
+        if not self.targets:
+            self.show_error("No targets configured. Please add targets first.")
+            return
+            
+        target = self.select_target_interactive()
+        if not target:
+            return
+            
+        try:
+            self.show_info(f"Starting full vulnerability assessment for {target}")
+            print("🔄 This will run: Nuclei → Port Scan → SSL/TLS Analysis")
+            
+            confirm = input("\n⚠️ Continue with full vulnerability assessment? (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"full_vuln_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute vulnerability assessment using moloch integration
+            results = await self.moloch_integration.run_vulnerability_suite(
+                target, run_path, aggressive=False
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success(f"Full vulnerability assessment completed for {target}")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                vuln_count = len(results.get('vulnerabilities', []))
+                port_count = len(results.get('open_ports', []))
+                ssl_issues = len(results.get('ssl_issues', []))
+                
+                print(f"🔍 Found {vuln_count} vulnerabilities")
+                print(f"🔌 Found {port_count} open ports")
+                print(f"🔒 Found {ssl_issues} SSL/TLS issues")
+            else:
+                self.show_error("Vulnerability assessment failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during vulnerability assessment: {e}")
+            
+        self.wait_for_continue()
+        
+    def view_vulnerability_results(self):
+        """View recent vulnerability scan results"""
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        
+        # Find recent vulnerability scan runs
+        vuln_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and 
+                    ('vuln_scan_' in d.name or 'port_scan_' in d.name or 'ssl_scan_' in d.name or 'full_vuln_' in d.name)]
+        vuln_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if not vuln_dirs:
+            self.show_info("No vulnerability scan results found")
+            self.wait_for_continue()
+            return
+            
+        print("\n📊 \033[1;97mRecent Vulnerability Scan Results:\033[0m")
+        print("=" * 60)
+        
+        for i, run_dir in enumerate(vuln_dirs[:10], 1):
+            print(f"\n{i}. 📁 {run_dir.name}")
+            
+            # Check for nuclei results
+            nuclei_file = run_dir / "nuclei_results.json"
+            if nuclei_file.exists():
+                try:
+                    with open(nuclei_file, 'r') as f:
+                        results = [json.loads(line) for line in f if line.strip()]
+                        severities = {}
+                        for result in results:
+                            severity = result.get('info', {}).get('severity', 'unknown')
+                            severities[severity] = severities.get(severity, 0) + 1
+                        
+                        total = len(results)
+                        print(f"   ⚡ Nuclei: {total} findings")
+                        if severities:
+                            severity_str = ", ".join([f"{k}: {v}" for k, v in severities.items()])
+                            print(f"      ({severity_str})")
+                except:
+                    print("   ⚡ Nuclei: Results file present")
+            
+            # Check for port scan results
+            nmap_files = list(run_dir.glob("*nmap*"))
+            if nmap_files:
+                print(f"   🔌 Port scan: {len(nmap_files)} files")
+            
+            # Check for SSL scan results
+            ssl_files = list(run_dir.glob("*ssl*"))
+            if ssl_files:
+                print(f"   🔒 SSL scan: {len(ssl_files)} files")
+                    
+        self.wait_for_continue()
+        
+    def configure_vulnerability_settings(self):
+        """Configure vulnerability scanning settings"""
+        print("\n⚙️ \033[1;97mVulnerability Scan Configuration:\033[0m")
+        print("=" * 50)
+        
+        config = self.moloch_integration.config
+        vuln_config = config.get('vulnerability', {})
+        
+        print(f"📊 Current Settings:")
+        print(f"   • Nuclei Templates: {vuln_config.get('nuclei_templates', 'default')}")
+        print(f"   • Port Scan Method: {vuln_config.get('port_scanner', 'nmap')}")
+        print(f"   • SSL Scanner: {vuln_config.get('ssl_scanner', 'testssl')}")
+        print(f"   • Scan Intensity: {vuln_config.get('intensity', 'normal')}")
+        print(f"   • Timeout: {vuln_config.get('timeout', 300)}s")
+        
+        print(f"\n💡 Use moloch.cfg.json to modify these settings")
         self.wait_for_continue()
     
     def web_application_testing_menu(self):
-        """Web application testing interface - placeholder"""
-        self.show_info("Web Application Testing interface will be implemented in the full version")
+        """Web application testing interface"""
+        while True:
+            self.print_master_banner()
+            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;96m                    🌐 WEB APPLICATION TESTING\033[0m                      ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m1.\033[0m 🕷️ Web Crawling & Content Discovery (katana)                   ║")
+            print("║  \033[1;97m2.\033[0m 💥 XSS Testing (dalfox)                                       ║")
+            print("║  \033[1;97m3.\033[0m 📁 Directory & File Fuzzing (ffuf, gobuster)                 ║")
+            print("║  \033[1;97m4.\033[0m 🔍 Parameter Discovery (arjun)                               ║")
+            print("║  \033[1;97m5.\033[0m 🌐 Full Web Application Assessment                           ║")
+            print("║  \033[1;97m6.\033[0m 📊 View Web Testing Results                                  ║")
+            print("║  \033[1;97m7.\033[0m ⚙️ Configure Web Testing Settings                            ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m0.\033[0m ↩️ Return to Main Menu                                           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            choice = self.get_user_input()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                self.handle_web_crawling()
+            elif choice == "2":
+                self.handle_xss_testing()
+            elif choice == "3":
+                self.handle_directory_fuzzing()
+            elif choice == "4":
+                self.handle_parameter_discovery()
+            elif choice == "5":
+                asyncio.run(self.handle_full_web_assessment())
+            elif choice == "6":
+                self.view_web_testing_results()
+            elif choice == "7":
+                self.configure_web_testing_settings()
+            else:
+                self.show_error(f"Invalid option: {choice}")
+                
+    def handle_web_crawling(self):
+        """Handle web crawling and content discovery"""
+        # Look for live web hosts
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        live_files = list(runs_dir.glob("*/live_hosts.txt"))
+        
+        if not live_files:
+            self.show_error("No live hosts found. Please run reconnaissance first.")
+            return
+            
+        try:
+            # Use most recent live hosts file
+            latest_file = max(live_files, key=lambda x: x.stat().st_mtime)
+            
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            crawl_dir = run_path / f"web_crawl_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            crawl_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.show_info(f"Starting web crawling on hosts from {latest_file.name}")
+            
+            from moloch import run_crawling
+            success = run_crawling(latest_file, crawl_dir, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("Web crawling completed")
+                print(f"📁 Results saved to: {crawl_dir}")
+                
+                # Show quick stats
+                katana_files = list(crawl_dir.glob("*katana*"))
+                if katana_files:
+                    print(f"🕷️ Generated {len(katana_files)} crawl result files")
+            else:
+                self.show_error("Web crawling failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during web crawling: {e}")
+            
+        self.wait_for_continue()
+        
+    def handle_xss_testing(self):
+        """Handle XSS vulnerability testing"""
+        # Look for crawled URLs
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        crawl_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and 'web_crawl_' in d.name]
+        
+        if not crawl_dirs:
+            self.show_error("No crawled URLs found. Please run web crawling first.")
+            return
+            
+        try:
+            # Use most recent crawl directory
+            latest_crawl = max(crawl_dirs, key=lambda x: x.stat().st_mtime)
+            
+            # Find katana output files
+            katana_files = list(latest_crawl.glob("*katana*"))
+            if not katana_files:
+                self.show_error("No katana output files found")
+                return
+            
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            xss_dir = run_path / f"xss_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            xss_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.show_info(f"Starting XSS testing on crawled URLs")
+            
+            from moloch import run_xss_scan
+            success = run_xss_scan(katana_files[0], xss_dir, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("XSS testing completed")
+                print(f"📁 Results saved to: {xss_dir}")
+            else:
+                self.show_error("XSS testing failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during XSS testing: {e}")
+            
+        self.wait_for_continue()
+        
+    def handle_directory_fuzzing(self):
+        """Handle directory and file fuzzing"""
+        # Look for live web hosts
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        live_files = list(runs_dir.glob("*/live_hosts.txt"))
+        
+        if not live_files:
+            self.show_error("No live hosts found. Please run reconnaissance first.")
+            return
+            
+        try:
+            # Use most recent live hosts file
+            latest_file = max(live_files, key=lambda x: x.stat().st_mtime)
+            
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            fuzz_dir = run_path / f"dir_fuzz_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            fuzz_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.show_info(f"Starting directory fuzzing on hosts from {latest_file.name}")
+            
+            from moloch import run_directory_fuzzing
+            success = run_directory_fuzzing(latest_file, fuzz_dir, self.moloch_integration.config)
+            
+            if success:
+                self.show_success("Directory fuzzing completed")
+                print(f"📁 Results saved to: {fuzz_dir}")
+                
+                # Show quick stats
+                fuzz_files = list(fuzz_dir.glob("*"))
+                if fuzz_files:
+                    print(f"📁 Generated {len(fuzz_files)} fuzzing result files")
+            else:
+                self.show_error("Directory fuzzing failed")
+                
+        except Exception as e:
+            self.show_error(f"Error during directory fuzzing: {e}")
+            
+        self.wait_for_continue()
+        
+    def handle_parameter_discovery(self):
+        """Handle parameter discovery"""
+        # Look for live web hosts
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        live_files = list(runs_dir.glob("*/live_hosts.txt"))
+        
+        if not live_files:
+            self.show_error("No live hosts found. Please run reconnaissance first.")
+            return
+            
+        try:
+            # Use most recent live hosts file
+            latest_file = max(live_files, key=lambda x: x.stat().st_mtime)
+            
+            # Create run directory
+            run_path = Path(self.moloch_integration.config['general']['runs_dir'])
+            param_dir = run_path / f"param_disc_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            param_dir.mkdir(parents=True, exist_ok=True)
+            
+            self.show_info(f"Starting parameter discovery (arjun) on hosts from {latest_file.name}")
+            
+            # Use arjun for parameter discovery
+            from moloch import execute_tool
+            
+            # Extract just the base URLs
+            with open(latest_file, 'r') as f:
+                hosts = [line.strip() for line in f if line.strip()]
+            
+            if hosts:
+                # Run arjun on first few hosts
+                target_hosts = hosts[:5]  # Limit to first 5 hosts for demo
+                for i, host in enumerate(target_hosts):
+                    output_file = param_dir / f"arjun_params_{i}.json"
+                    self.show_info(f"Discovering parameters for {host}")
+                    
+                    # Run arjun (if available)
+                    success = execute_tool("arjun", ["-u", host, "-o", str(output_file)], 
+                                         output_file=output_file, run_dir=param_dir)
+                    
+                    if not success:
+                        self.show_info(f"Arjun not available or failed for {host}")
+                
+                self.show_success("Parameter discovery completed")
+                print(f"📁 Results saved to: {param_dir}")
+            else:
+                self.show_error("No valid hosts found")
+                
+        except Exception as e:
+            self.show_error(f"Error during parameter discovery: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_full_web_assessment(self):
+        """Handle full web application assessment"""
+        # Look for live web hosts
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        live_files = list(runs_dir.glob("*/live_hosts.txt"))
+        
+        if not live_files:
+            self.show_error("No live hosts found. Please run reconnaissance first.")
+            return
+            
+        try:
+            self.show_info("Starting full web application assessment")
+            print("🔄 This will run: Crawling → XSS Testing → Directory Fuzzing")
+            
+            confirm = input("\n⚠️ Continue with full web assessment? (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Use most recent live hosts file
+            latest_file = max(live_files, key=lambda x: x.stat().st_mtime)
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"full_web_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute web testing suite using moloch integration
+            results = await self.moloch_integration.run_web_testing_suite(
+                str(latest_file), run_path, aggressive=False
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("Full web assessment completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                crawled_urls = len(results.get('crawled_urls', []))
+                xss_findings = len(results.get('xss_findings', []))
+                directories = len(results.get('directories', []))
+                
+                print(f"🕷️ Crawled {crawled_urls} URLs")
+                print(f"💥 Found {xss_findings} XSS vulnerabilities")
+                print(f"📁 Discovered {directories} directories")
+            else:
+                self.show_error("Web assessment failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during web assessment: {e}")
+            
+        self.wait_for_continue()
+        
+    def view_web_testing_results(self):
+        """View recent web testing results"""
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        
+        # Find recent web testing runs
+        web_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and 
+                   any(x in d.name for x in ['web_crawl_', 'xss_scan_', 'dir_fuzz_', 'param_disc_', 'full_web_'])]
+        web_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if not web_dirs:
+            self.show_info("No web testing results found")
+            self.wait_for_continue()
+            return
+            
+        print("\n📊 \033[1;97mRecent Web Testing Results:\033[0m")
+        print("=" * 60)
+        
+        for i, run_dir in enumerate(web_dirs[:10], 1):
+            print(f"\n{i}. 📁 {run_dir.name}")
+            
+            # Check for different types of results
+            if 'web_crawl_' in run_dir.name:
+                katana_files = list(run_dir.glob("*katana*"))
+                print(f"   🕷️ Crawling: {len(katana_files)} result files")
+            elif 'xss_scan_' in run_dir.name:
+                dalfox_files = list(run_dir.glob("*dalfox*"))
+                print(f"   💥 XSS: {len(dalfox_files)} result files")
+            elif 'dir_fuzz_' in run_dir.name:
+                fuzz_files = list(run_dir.glob("*"))
+                print(f"   📁 Directory Fuzzing: {len(fuzz_files)} files")
+            elif 'param_disc_' in run_dir.name:
+                param_files = list(run_dir.glob("*arjun*"))
+                print(f"   🔍 Parameter Discovery: {len(param_files)} files")
+            elif 'full_web_' in run_dir.name:
+                all_files = list(run_dir.glob("*"))
+                print(f"   🌐 Full Assessment: {len(all_files)} files")
+                    
+        self.wait_for_continue()
+        
+    def configure_web_testing_settings(self):
+        """Configure web testing settings"""
+        print("\n⚙️ \033[1;97mWeb Testing Configuration:\033[0m")
+        print("=" * 50)
+        
+        config = self.moloch_integration.config
+        web_config = config.get('web_testing', {})
+        
+        print(f"📊 Current Settings:")
+        print(f"   • Crawler: {web_config.get('crawler', 'katana')}")
+        print(f"   • XSS Scanner: {web_config.get('xss_scanner', 'dalfox')}")
+        print(f"   • Directory Fuzzer: {web_config.get('dir_fuzzer', 'ffuf')}")
+        print(f"   • Parameter Discovery: {web_config.get('param_discovery', 'arjun')}")
+        print(f"   • Crawl Depth: {web_config.get('crawl_depth', 3)}")
+        print(f"   • Request Timeout: {web_config.get('timeout', 30)}s")
+        
+        print(f"\n💡 Use moloch.cfg.json to modify these settings")
         self.wait_for_continue()
     
     def cloud_security_assessment_menu(self):
