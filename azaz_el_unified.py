@@ -36,7 +36,7 @@ class AzazElDashboard:
     def __init__(self) -> None:
         """Initialize the unified dashboard system"""
         self.version = "v5.0.0-UNIFIED"
-        self.config_manager = ConfigurationManager("moloch.cfg.json")
+        self.config_manager = ConfigurationManager(Path("moloch.cfg.json"))
         self.logger = get_logger("azaz-el-dashboard")
         self.report_generator = AdvancedReportGenerator(self.config_manager.load_config())
         

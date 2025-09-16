@@ -106,7 +106,7 @@ class MasterAzazElFramework:
         
         # Initialize configuration management
         try:
-            self.config_manager = ConfigurationManager("moloch.cfg.json")
+            self.config_manager = ConfigurationManager(Path("moloch.cfg.json"))
             self.config = self.config_manager.load_config()
         except:
             self.config = load_config()
@@ -657,6 +657,48 @@ class MasterAzazElFramework:
         self.wait_for_continue()
     
     # Target management implementations
+    def _validate_target_format(self, target: str) -> tuple[bool, str]:
+        """Validate target format and return (is_valid, error_message)"""
+        if not target or not target.strip():
+            return False, "Target cannot be empty"
+        
+        target = target.strip()
+        
+        if ' ' in target:
+            return False, "Target cannot contain spaces"
+        
+        if len(target) > 253:  # DNS limit
+            return False, "Target is too long (max 253 characters)"
+        
+        # Check for basic format
+        if target.startswith(('http://', 'https://')):
+            # URL validation
+            if not '.' in target or target.count('.') < 1:
+                return False, "Invalid URL format"
+        elif '.' in target:
+            # Domain validation
+            if target.startswith('.') or target.endswith('.') or '..' in target:
+                return False, "Invalid domain format"
+            if not all(c.isalnum() or c in '.-' for c in target):
+                return False, "Domain contains invalid characters"
+        elif ':' in target:
+            # IPv6 or port validation
+            pass  # Accept for now
+        elif target.replace('.', '').isdigit():
+            # IPv4 validation
+            parts = target.split('.')
+            if len(parts) != 4:
+                return False, "Invalid IPv4 format"
+            try:
+                if not all(0 <= int(part) <= 255 for part in parts):
+                    return False, "Invalid IPv4 address range"
+            except ValueError:
+                return False, "Invalid IPv4 format"
+        else:
+            return False, "Unrecognized target format"
+        
+        return True, ""
+
     def add_single_target(self) -> None:
         """Add a single target to the target list"""
         self.print_master_banner()
@@ -672,13 +714,10 @@ class MasterAzazElFramework:
         
         target = input("\n🎯 \033[1;97mEnter target: \033[0m").strip()
         
-        if not target:
-            self.show_error("Target cannot be empty")
-            return
-        
-        # Basic validation
-        if ' ' in target:
-            self.show_error("Target cannot contain spaces")
+        # Validate target format
+        is_valid, error_message = self._validate_target_format(target)
+        if not is_valid:
+            self.show_error(error_message)
             return
         
         # Load existing targets
@@ -791,39 +830,15 @@ class MasterAzazElFramework:
             for i, target in enumerate(targets, 1):
                 print(f"🔍 Validating {i}/{len(targets)}: {target}")
                 
-                # Basic validation logic
-                is_valid = True
-                issues = []
-                
-                # Check for spaces
-                if ' ' in target:
-                    is_valid = False
-                    issues.append("contains spaces")
-                
-                # Check for basic format
-                if target.startswith(('http://', 'https://')):
-                    # URL validation
-                    if not target.count('.') >= 1:
-                        is_valid = False
-                        issues.append("invalid URL format")
-                elif '.' in target:
-                    # Domain validation
-                    if target.startswith('.') or target.endswith('.'):
-                        is_valid = False
-                        issues.append("invalid domain format")
-                elif ':' in target or target.replace('.', '').isdigit():
-                    # IP validation (basic)
-                    pass  # Accept IPs as-is for now
-                else:
-                    is_valid = False
-                    issues.append("unrecognized format")
+                # Use our validation function
+                is_valid, error_message = self._validate_target_format(target)
                 
                 if is_valid:
                     valid_targets.append(target)
                     print(f"   ✅ Valid")
                 else:
-                    invalid_targets.append((target, issues))
-                    print(f"   ❌ Invalid: {', '.join(issues)}")
+                    invalid_targets.append((target, [error_message]))
+                    print(f"   ❌ Invalid: {error_message}")
             
             print("═" * 60)
             print(f"📊 \033[1;97mValidation Summary:\033[0m")
