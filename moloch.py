@@ -16,8 +16,8 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
        SP                        SP
        Y                         Y
 
-Moloch v3.5.0-MOLOCH - Advanced Automated Penetration Testing Framework
-Advanced Reconnaissance, Vulnerability Scanning, and Reporting Suite
+Azaz-El v5.0.0-ENHANCED - Advanced Automated Penetration Testing Framework
+Enhanced Multi-Cloud, API, Infrastructure, and Web Application Security Suite
 """
 
 import os
@@ -38,9 +38,9 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 import hashlib # For hashing results
 
 # --- Configuration ---
-APP = "Moloch"
-VERSION = "v3.5.0-MOLOCH"
-AUTHOR = "Professional Penetration Tester"
+APP = "Azaz-El"
+VERSION = "v5.0.0-ENHANCED"
+AUTHOR = "Advanced Security Research Team"
 BANNER = r"""
  .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.
 .SS~SSSSS    YSSSSSSSS%S  .SS~SSSSS    YSSSSSSSS%S   d%%SP  SS.

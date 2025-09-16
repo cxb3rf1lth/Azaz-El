@@ -176,7 +176,7 @@ class ConfigurationManager:
     def _create_default_config(self) -> Dict[str, Any]:
         """Create default configuration"""
         return {
-            "version": "4.0.0",
+            "version": "5.0.0",
             "tools": {
                 "subfinder": {
                     "enabled": True,
@@ -198,6 +198,77 @@ class ConfigurationManager:
                     "install_cmd": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest",
                     "timeout": 300,
                     "priority": 1
+                },
+                # New Advanced Tools
+                "gf": {
+                    "enabled": True,
+                    "flags": ["-save"],
+                    "install_cmd": "go install github.com/tomnomnom/gf@latest",
+                    "timeout": 180,
+                    "priority": 2
+                },
+                "unfurl": {
+                    "enabled": True,
+                    "flags": ["domains"],
+                    "install_cmd": "go install github.com/tomnomnom/unfurl@latest",
+                    "timeout": 120,
+                    "priority": 2
+                },
+                "anew": {
+                    "enabled": True,
+                    "flags": [],
+                    "install_cmd": "go install github.com/tomnomnom/anew@latest",
+                    "timeout": 60,
+                    "priority": 3
+                },
+                "notify": {
+                    "enabled": False,
+                    "flags": ["-silent"],
+                    "install_cmd": "go install -v github.com/projectdiscovery/notify/cmd/notify@latest",
+                    "timeout": 60,
+                    "priority": 3
+                },
+                "interactsh-client": {
+                    "enabled": True,
+                    "flags": ["-json"],
+                    "install_cmd": "go install -v github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest",
+                    "timeout": 300,
+                    "priority": 2
+                },
+                "alterx": {
+                    "enabled": True,
+                    "flags": ["-silent"],
+                    "install_cmd": "go install github.com/projectdiscovery/alterx/cmd/alterx@latest",
+                    "timeout": 180,
+                    "priority": 2
+                },
+                "tlsx": {
+                    "enabled": True,
+                    "flags": ["-silent", "-json"],
+                    "install_cmd": "go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest",
+                    "timeout": 300,
+                    "priority": 2
+                },
+                "cdncheck": {
+                    "enabled": True,
+                    "flags": ["-silent"],
+                    "install_cmd": "go install github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest",
+                    "timeout": 120,
+                    "priority": 2
+                },
+                "mapcidr": {
+                    "enabled": True,
+                    "flags": ["-silent"],
+                    "install_cmd": "go install github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest",
+                    "timeout": 120,
+                    "priority": 2
+                },
+                "asnmap": {
+                    "enabled": True,
+                    "flags": ["-silent"],
+                    "install_cmd": "go install github.com/projectdiscovery/asnmap/cmd/asnmap@latest",
+                    "timeout": 180,
+                    "priority": 2
                 }
             },
             "wordlists": {
