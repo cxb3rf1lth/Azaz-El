@@ -276,129 +276,340 @@ class MasterAzazElFramework:
         print()  # Add spacing
     
     def display_master_menu(self) -> None:
-        """Display the comprehensive master menu"""
+        """Display the modern TUI interface"""
+        self.create_modern_tui_interface()
+    
+    def create_modern_tui_interface(self) -> None:
+        """Create the modern, sophisticated TUI interface"""
         while True:
-            self.print_master_banner()
-            self.update_system_status()
-            
-            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-            print("║\033[1;91m                        🚀 MASTER COMMAND CENTER 🚀\033[0m                        ║")
-            print("║\033[1;97m                   Professional Security Assessment Suite\033[0m                   ║")
-            print("╠═══════════════════════════════════════════════════════════════════════════════╣")
-            
-            # Main automation pipeline
-            print("║\033[1;92m  1.\033[0m 🔄 \033[1;97mFULL AUTOMATION PIPELINE\033[0m - Complete security assessment       ║")
-            print("║      └─ Recon → Vuln Scan → Web Testing → Fuzzing → Cloud → Report      ║")
-            
-            # Core scanning modules
-            print("╠───────────────────────────────────────────────────────────────────────────────╣")
-            print("║\033[1;93m  2.\033[0m 🎯 \033[1;97mTARGET MANAGEMENT\033[0m - Add, view, and manage scan targets        ║")
-            print("║\033[1;94m  3.\033[0m 🔍 \033[1;97mRECONNAISSANCE SUITE\033[0m - Advanced intelligence gathering        ║")
-            print("║      3.1 📡 Subdomain Discovery     3.2 🌐 DNS Resolution               ║")
-            print("║      3.3 🔗 HTTP Service Probing    3.4 📊 Comprehensive Analysis       ║")
-            
-            print("║\033[1;95m  4.\033[0m 🛡️  \033[1;97mVULNERABILITY SCANNING\033[0m - Security vulnerability assessment   ║")
-            print("║      4.1 ⚡ Nuclei Templates        4.2 🔌 Port Scanning               ║")
-            print("║      4.3 🔒 SSL/TLS Analysis        4.4 🔧 Custom Vulnerability Tests  ║")
-            
-            print("║\033[1;96m  5.\033[0m 🌐 \033[1;97mWEB APPLICATION TESTING\033[0m - Complete web security analysis     ║")
-            print("║      5.1 🕷️  Web Crawling            5.2 ⚠️  XSS Vulnerability Scanner   ║")
-            print("║      5.3 🔍 Parameter Discovery     5.4 🎯 Injection Testing           ║")
-            
-            print("║\033[1;92m  6.\033[0m ☁️  \033[1;97mCLOUD SECURITY ASSESSMENT\033[0m - Multi-cloud security analysis    ║")
-            print("║      6.1 ☁️  AWS Security Analysis   6.2 🌩️  Azure Security Assessment   ║")
-            print("║      6.3 ⛅ GCP Security Review     6.4 🔐 Cloud Configuration Audit   ║")
-            
-            # Advanced modules
-            print("╠───────────────────────────────────────────────────────────────────────────────╣")
-            print("║\033[1;91m  7.\033[0m 🔌 \033[1;97mAPI SECURITY TESTING\033[0m - Advanced API security assessment     ║")
-            print("║\033[1;93m  8.\033[0m 🏗️  \033[1;97mINFRASTRUCTURE SCANNING\033[0m - Network and infrastructure security ║")
-            print("║\033[1;94m  9.\033[0m 💥 \033[1;97mFUZZING & DISCOVERY\033[0m - Advanced fuzzing and directory discovery║")
-            
-            # System management
-            print("╠───────────────────────────────────────────────────────────────────────────────╣")
-            print("║\033[1;95m 10.\033[0m ⚙️  \033[1;97mSYSTEM CONFIGURATION\033[0m - Settings and tool management         ║")
-            print("║     10.1 🔧 Framework Settings     10.2 📋 Tool Status & Health Check    ║")
-            print("║     10.3 🔑 API Key Management     10.4 🛠️  Tool Installation & Updates  ║")
-            
-            print("║\033[1;96m 11.\033[0m 📊 \033[1;97mREPORTING & ANALYTICS\033[0m - Professional reports and analysis   ║")
-            print("║     11.1 📈 Generate Reports       11.2 📋 Scan History & Analytics     ║")
-            print("║     11.3 🎯 Custom Report Builder  11.4 📤 Export & Integration        ║")
-            
-            print("║\033[1;92m 12.\033[0m 🎛️  \033[1;97mSYSTEM DASHBOARD\033[0m - Real-time monitoring and status         ║")
-            print("║     12.1 📊 Live Monitoring        12.2 🔄 Active Scan Management      ║")
-            print("║     12.3 ⚡ Performance Metrics    12.4 🔔 Alerts & Notifications     ║")
-            
-            # Exit option
-            print("╠───────────────────────────────────────────────────────────────────────────────╣")
-            print("║\033[1;91m  0.\033[0m 🚪 \033[1;97mEXIT MASTER FRAMEWORK\033[0m - Save session and exit              ║")
-            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
-            
-            print("\n💡 \033[1;97mTip:\033[0m Use menu numbers (e.g., '3.1') for direct access to sub-functions")
-            print("💡 \033[1;97mQuick Commands:\033[0m 'status' = system status, 'help' = command help")
-            
             try:
-                choice = input("\n🎯 \033[1;97mSelect operation mode\033[0m [\033[1;92m1-12\033[0m, \033[1;91m0\033[0m]: ").strip()
+                self.clear_screen()
+                self.display_modern_header()
+                self.display_system_dashboard()
+                self.display_navigation_menu()
                 
-                if choice == "0":
-                    self.exit_framework()
+                choice = self.get_user_input()
+                if not self.handle_navigation_choice(choice):
                     break
-                elif choice == "1":
-                    # Create a new event loop to handle the async pipeline
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        loop.run_until_complete(self.run_full_automation_pipeline())
-                    finally:
-                        loop.close()
-                elif choice == "2":
-                    self.target_management_menu()
-                elif choice == "3":
-                    self.reconnaissance_suite_menu()
-                elif choice.startswith("3."):
-                    self.handle_reconnaissance_submenu(choice)
-                elif choice == "4":
-                    self.vulnerability_scanning_menu()
-                elif choice.startswith("4."):
-                    self.handle_vulnerability_submenu(choice)
-                elif choice == "5":
-                    self.web_application_testing_menu()
-                elif choice.startswith("5."):
-                    self.handle_web_testing_submenu(choice)
-                elif choice == "6":
-                    self.cloud_security_assessment_menu()
-                elif choice.startswith("6."):
-                    self.handle_cloud_submenu(choice)
-                elif choice == "7":
-                    self.api_security_testing_menu()
-                elif choice == "8":
-                    self.infrastructure_scanning_menu()
-                elif choice == "9":
-                    self.fuzzing_discovery_menu()
-                elif choice == "10":
-                    self.system_configuration_menu()
-                elif choice.startswith("10."):
-                    self.handle_system_config_submenu(choice)
-                elif choice == "11":
-                    self.reporting_analytics_menu()
-                elif choice.startswith("11."):
-                    self.handle_reporting_submenu(choice)
-                elif choice == "12":
-                    self.system_dashboard_menu()
-                elif choice.startswith("12."):
-                    self.handle_dashboard_submenu(choice)
-                elif choice.lower() == "status":
-                    self.show_detailed_system_status()
-                elif choice.lower() == "help":
-                    self.show_help_menu()
-                else:
-                    self.show_error(f"Invalid option: {choice}")
                     
             except KeyboardInterrupt:
-                print("\n\n🔄 \033[1;93mOperation cancelled by user\033[0m")
-                self.wait_for_continue()
+                self.show_info("🔄 Returning to main menu...")
+                break
             except Exception as e:
-                self.show_error(f"An error occurred: {e}")
+                self.show_error(f"TUI Error: {e}")
+                self.wait_for_continue()
+    
+    def clear_screen(self) -> None:
+        """Clear the terminal screen"""
+        os.system('clear' if os.name == 'posix' else 'cls')
+    
+    def display_modern_header(self) -> None:
+        """Display the modern header with system information"""
+        import datetime
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        print("╔" + "═" * 98 + "╗")
+        print(f"║ \033[1;91m{MASTER_APP} {MASTER_VERSION}\033[0m - \033[1;96mUnified Security Assessment Framework\033[0m".ljust(120) + f"\033[1;90m{current_time}\033[0m ║")
+        print("╠" + "═" * 98 + "╣")
+    
+    def display_system_dashboard(self) -> None:
+        """Display real-time system dashboard"""
+        # Update performance metrics
+        self.update_performance_metrics()
+        
+        # System health indicator
+        health = self.system_status.get("health", "Unknown")
+        health_color = {
+            "Excellent": "\033[1;32m",
+            "Good": "\033[1;33m", 
+            "Fair": "\033[1;93m",
+            "Poor": "\033[1;91m"
+        }.get(health, "\033[1;90m")
+        
+        print(f"║ \033[1;97mSYSTEM DASHBOARD\033[0m".ljust(108) + " ║")
+        print("╠" + "─" * 98 + "╣")
+        print(f"║  🏥 Health: {health_color}{health}\033[0m" + 
+              f"  💾 Memory: \033[1;94m{self.performance_metrics['memory_usage']:.1f}%\033[0m" +
+              f"  🖥️  CPU: \033[1;92m{self.performance_metrics['cpu_usage']:.1f}%\033[0m" +
+              f"  💽 Disk: \033[1;93m{self.performance_metrics['disk_usage']:.1f}%\033[0m".ljust(80) + " ║")
+        
+        # Active scans info
+        active_count = len(self.active_scans)
+        scan_info = f"\033[1;95m{active_count} Active\033[0m" if active_count > 0 else "\033[1;90mNone\033[0m"
+        
+        # Tools status
+        available_tools = len([t for t in self.system_status.get("tools", {}).values() if "Available" in str(t)])
+        total_tools = len(self.system_status.get("tools", {}))
+        tools_ratio = f"{available_tools}/{total_tools}" if total_tools > 0 else "0/0"
+        
+        print(f"║  🔄 Scans: {scan_info}" +
+              f"  🔧 Tools: \033[1;96m{tools_ratio}\033[0m" +
+              f"  📊 History: \033[1;97m{len(self.scan_history)}\033[0m".ljust(80) + " ║")
+        print("╠" + "═" * 98 + "╣")
+    
+    def display_navigation_menu(self) -> None:
+        """Display the enhanced navigation menu with visual indicators"""
+        print("║ \033[1;97mMAIN NAVIGATION CONTROL CENTER\033[0m".ljust(108) + " ║")
+        print("╠" + "─" * 98 + "╣")
+        
+        # Core functionality
+        print("║ \033[1;92m[1]\033[0m 🚀 \033[1;97mFULL AUTOMATION PIPELINE\033[0m - Complete security assessment workflow    ║")
+        print("║     └─ Recon → Vuln Scan → Web Testing → Cloud → API → Infrastructure → Report  ║")
+        print("╠" + "─" * 98 + "╣")
+        
+        # Target management
+        print("║ \033[1;93m[2]\033[0m 🎯 \033[1;97mTARGET MANAGEMENT HUB\033[0m - Advanced target configuration and validation  ║")
+        
+        # Scanning modules  
+        print("║ \033[1;94m[3]\033[0m 🔍 \033[1;97mRECONNAISSANCE SUITE\033[0m - Intelligence gathering and enumeration        ║")
+        print("║ \033[1;95m[4]\033[0m 🛡️  \033[1;97mVULNERABILITY ASSESSMENT\033[0m - Advanced security vulnerability scanning    ║")
+        print("║ \033[1;96m[5]\033[0m 🌐 \033[1;97mWEB APPLICATION TESTING\033[0m - Comprehensive web security analysis         ║")
+        print("║ \033[1;97m[6]\033[0m ☁️  \033[1;97mCLOUD SECURITY AUDIT\033[0m - Multi-cloud security assessment              ║")
+        print("║ \033[1;91m[7]\033[0m 🔌 \033[1;97mAPI SECURITY TESTING\033[0m - RESTful and GraphQL API security analysis    ║")
+        print("║ \033[1;92m[8]\033[0m 🏗️  \033[1;97mINFRASTRUCTURE SCANNING\033[0m - Network infrastructure security assessment  ║")
+        
+        print("╠" + "─" * 98 + "╣")
+        
+        # System management
+        print("║ \033[1;90m[9]\033[0m 🔧 \033[1;97mSYSTEM CONFIGURATION\033[0m - Framework settings and tool management        ║")
+        print("║ \033[1;90m[A]\033[0m 📊 \033[1;97mREPORTING & ANALYTICS\033[0m - Advanced reporting and data visualization    ║")
+        print("║ \033[1;90m[B]\033[0m 📈 \033[1;97mMONITORING DASHBOARD\033[0m - Real-time system monitoring and metrics      ║")
+        print("║ \033[1;90m[C]\033[0m ⚙️  \033[1;97mADVANCED SETTINGS\033[0m - Expert configuration and tool installation    ║")
+        
+        print("╠" + "─" * 98 + "╣")
+        
+        # Navigation help
+        print("║ \033[1;90m[H]\033[0m ❓ \033[1;97mHELP & DOCUMENTATION\033[0m   \033[1;90m[Q]\033[0m 🚪 \033[1;97mEXIT FRAMEWORK\033[0m                     ║")
+        print("╚" + "═" * 98 + "╝")
+        
+        # Navigation tips
+        print("\n\033[1;96m💡 Navigation Tips:\033[0m")
+        print("   • Use number keys [1-9] or letters [A-C] for main functions")
+        print("   • Press [H] for detailed help and keyboard shortcuts")
+        print("   • Press [Ctrl+C] at any time to return to this menu")
+        print("   • Use [Q] or [Ctrl+D] to exit the framework")
+    
+    def get_user_input(self) -> str:
+        """Get user input with enhanced prompt"""
+        try:
+            return input("\n\033[1;97m🎮 Select option: \033[0m").strip().upper()
+        except (EOFError, KeyboardInterrupt):
+            return "Q"
+    
+    def handle_navigation_choice(self, choice: str) -> bool:
+        """Handle navigation choices with comprehensive routing"""
+        if choice in ['Q', 'QUIT', 'EXIT']:
+            return False
+        elif choice == '1':
+            asyncio.run(self.run_full_automation_pipeline())
+        elif choice == '2':
+            self.target_management_hub()
+        elif choice == '3':
+            self.reconnaissance_suite_menu()
+        elif choice == '4':
+            self.vulnerability_scanning_menu() 
+        elif choice == '5':
+            self.web_application_testing_menu()
+        elif choice == '6':
+            self.cloud_security_assessment_menu()
+        elif choice == '7':
+            self.api_security_testing_menu()
+        elif choice == '8':
+            self.infrastructure_scanning_menu()
+        elif choice == '9':
+            self.system_configuration_menu()
+        elif choice == 'A':
+            self.reporting_analytics_menu()
+        elif choice == 'B':
+            self.system_dashboard_menu()
+        elif choice == 'C':
+            self.advanced_settings_menu()
+        elif choice == 'H':
+            self.show_help_documentation()
+        else:
+            self.show_error("Invalid option selected. Please try again.")
+            self.wait_for_continue()
+        
+        return True
+    
+    def update_performance_metrics(self) -> None:
+        """Update real-time performance metrics"""
+        try:
+            # CPU usage
+            self.performance_metrics["cpu_usage"] = psutil.cpu_percent(interval=0.1)
+            
+            # Memory usage
+            memory = psutil.virtual_memory()
+            self.performance_metrics["memory_usage"] = memory.percent
+            
+            # Disk usage
+            disk = psutil.disk_usage('/')
+            self.performance_metrics["disk_usage"] = disk.percent
+            
+            # Network status (simplified)
+            self.performance_metrics["network_status"] = "Active"
+            
+        except Exception as e:
+            self.logger.debug(f"Error updating performance metrics: {e}")
+    
+    def target_management_hub(self) -> None:
+        """Enhanced target management with validation and bulk operations"""
+        self.show_info("🎯 Launching Enhanced Target Management Hub...")
+        # For now, delegate to moloch's target management
+        try:
+            from moloch import target_management_menu
+            target_management_menu()
+        except Exception as e:
+            self.show_error(f"Target management error: {e}")
+            self.wait_for_continue()
+    
+    def advanced_settings_menu(self) -> None:
+        """Advanced settings and tool installation menu"""
+        self.show_info("⚙️ Launching Advanced Settings Panel...")
+        try:
+            from moloch import tool_status_menu, settings_menu
+            
+            while True:
+                self.clear_screen()
+                print("╔" + "═" * 80 + "╗")
+                print("║\033[1;95m                    ⚙️  ADVANCED SETTINGS PANEL ⚙️\033[0m                    ║")
+                print("╠" + "═" * 80 + "╣")
+                print("║  \033[1;92m1.\033[0m 🔧 \033[1;97mTOOL STATUS & INSTALLATION\033[0m - Manage security tools        ║")
+                print("║  \033[1;94m2.\033[0m ⚙️  \033[1;97mFRAMEWORK CONFIGURATION\033[0m - System settings management     ║")
+                print("║  \033[1;96m3.\033[0m 🔄 \033[1;97mUPDATE ALL TOOLS\033[0m - Update all installed security tools    ║")
+                print("║  \033[1;93m4.\033[0m 🏗️  \033[1;97mSYSTEM DIAGNOSTICS\033[0m - Comprehensive system health check  ║")
+                print("║  \033[1;90m5.\033[0m 🔙 \033[1;97mRETURN TO MAIN MENU\033[0m - Back to navigation center         ║")
+                print("╚" + "═" * 80 + "╝")
+                
+                choice = input("\n\033[1;97m🎮 Select option: \033[0m").strip()
+                
+                if choice == '1':
+                    tool_status_menu()
+                elif choice == '2':
+                    settings_menu()
+                elif choice == '3':
+                    self.update_all_tools()
+                elif choice == '4':
+                    self.run_system_diagnostics()
+                elif choice == '5':
+                    break
+                else:
+                    self.show_error("Invalid option. Please try again.")
+                    
+        except Exception as e:
+            self.show_error(f"Advanced settings error: {e}")
+            self.wait_for_continue()
+    
+    def update_all_tools(self) -> None:
+        """Update all installed security tools"""
+        self.show_info("🔄 Updating all security tools...")
+        
+        # Update Go-based tools
+        go_tools = [
+            "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+            "github.com/projectdiscovery/httpx/cmd/httpx@latest", 
+            "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
+            "github.com/projectdiscovery/naabu/v2/cmd/naabu@latest",
+            "github.com/projectdiscovery/katana/cmd/katana@latest"
+        ]
+        
+        for tool in go_tools:
+            try:
+                self.show_info(f"Updating {tool.split('/')[-1].split('@')[0]}...")
+                subprocess.run(['go', 'install', '-v', tool], check=True, capture_output=True)
+            except Exception as e:
+                self.show_error(f"Failed to update {tool}: {e}")
+        
+        # Update nuclei templates
+        try:
+            self.show_info("Updating Nuclei templates...")
+            subprocess.run(['nuclei', '-update-templates'], check=True, capture_output=True)
+        except Exception as e:
+            self.show_error(f"Failed to update nuclei templates: {e}")
+        
+        self.show_success("🎉 Tool update process completed!")
+        self.wait_for_continue()
+    
+    def run_system_diagnostics(self) -> None:
+        """Run comprehensive system diagnostics"""
+        self.show_info("🏗️ Running comprehensive system diagnostics...")
+        
+        print("\n╔" + "═" * 80 + "╗")
+        print("║\033[1;96m                       🏗️  SYSTEM DIAGNOSTICS 🏗️\033[0m                       ║")
+        print("╠" + "═" * 80 + "╣")
+        
+        # System information
+        import platform
+        print(f"║  OS: \033[1;97m{platform.system()} {platform.release()}\033[0m")
+        print(f"║  Python: \033[1;97m{platform.python_version()}\033[0m")
+        print(f"║  Architecture: \033[1;97m{platform.machine()}\033[0m")
+        
+        # Performance metrics
+        self.update_performance_metrics()
+        print(f"║  CPU Usage: \033[1;92m{self.performance_metrics['cpu_usage']:.1f}%\033[0m")
+        print(f"║  Memory Usage: \033[1;94m{self.performance_metrics['memory_usage']:.1f}%\033[0m")
+        print(f"║  Disk Usage: \033[1;93m{self.performance_metrics['disk_usage']:.1f}%\033[0m")
+        
+        # Tool availability
+        config = load_config()
+        tools_config = config.get("tools", {})
+        available = sum(1 for tool in tools_config if which(tool))
+        total = len(tools_config)
+        
+        print(f"║  Tools Available: \033[1;96m{available}/{total}\033[0m ({available/total*100:.1f}%)")
+        
+        # Framework health
+        health_score = (available/total) * 100 if total > 0 else 0
+        if health_score >= 90:
+            health = "\033[1;32mEXCELLENT\033[0m"
+        elif health_score >= 70:
+            health = "\033[1;33mGOOD\033[0m"
+        elif health_score >= 50:
+            health = "\033[1;93mFAIR\033[0m"
+        else:
+            health = "\033[1;91mPOOR\033[0m"
+        
+        print(f"║  Overall Health: {health}")
+        print("╚" + "═" * 80 + "╝")
+        
+        self.wait_for_continue()
+    
+    def show_help_documentation(self) -> None:
+        """Display comprehensive help and documentation"""
+        self.clear_screen()
+        print("╔" + "═" * 80 + "╗")
+        print("║\033[1;93m                      ❓ HELP & DOCUMENTATION ❓\033[0m                      ║") 
+        print("╠" + "═" * 80 + "╣")
+        print("║  \033[1;97mKEYBOARD SHORTCUTS:\033[0m")
+        print("║    Ctrl+C     - Return to main menu from any screen")
+        print("║    Ctrl+D     - Exit framework")
+        print("║    H          - Show this help screen")
+        print("║    Q          - Quit/Exit current screen")
+        print("║")
+        print("║  \033[1;97mMAIN FUNCTIONS:\033[0m")
+        print("║    [1] Full Pipeline    - Complete automated security assessment")
+        print("║    [2] Target Mgmt      - Add/remove/validate targets")
+        print("║    [3] Reconnaissance   - Information gathering")
+        print("║    [4] Vulnerability    - Security vulnerability scanning")
+        print("║    [5] Web Testing      - Web application security")
+        print("║    [6] Cloud Security   - Multi-cloud assessment") 
+        print("║    [7] API Testing      - API security analysis")
+        print("║    [8] Infrastructure   - Network infrastructure scanning")
+        print("║")
+        print("║  \033[1;97mSYSTEM MANAGEMENT:\033[0m")
+        print("║    [9] Configuration    - Framework settings")
+        print("║    [A] Reporting        - Generate reports")
+        print("║    [B] Monitoring       - Real-time dashboard")
+        print("║    [C] Advanced         - Tool installation & updates")
+        print("║")
+        print("║  \033[1;97mTIPS:\033[0m")
+        print("║    • Ensure targets are added before running scans")
+        print("║    • Install missing tools via Advanced Settings")
+        print("║    • Monitor system resources during large scans")
+        print("║    • Review reports for detailed findings")
+        print("╚" + "═" * 80 + "╝")
+        
+        self.wait_for_continue()
     
     async def run_full_automation_pipeline(self):
         """Execute the complete automated security assessment pipeline"""

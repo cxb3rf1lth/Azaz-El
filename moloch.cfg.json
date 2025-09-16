@@ -33,15 +33,20 @@
             "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O findomain && chmod +x findomain && sudo mv findomain /usr/local/bin/"
         },
         "chaos": {
-            "enabled": false,
+            "enabled": true,
             "flags": [
-                "-d"
+                "-d",
+                "-silent"
             ],
             "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
         },
         "shuffledns": {
-            "enabled": false,
-            "flags": [],
+            "enabled": true,
+            "flags": [
+                "-silent",
+                "-r",
+                "8.8.8.8,1.1.1.1"
+            ],
             "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"
         },
         "httpx": {
