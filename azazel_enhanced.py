@@ -27,7 +27,7 @@ class AzazelEnhancedCLI:
     """Enhanced command-line interface for Azaz-El framework"""
     
     def __init__(self):
-        self.config_manager = ConfigurationManager("moloch.cfg.json")
+        self.config_manager = ConfigurationManager(Path("moloch.cfg.json"))
         self.logger = get_logger("azaz-el-cli")
         self.report_generator = AdvancedReportGenerator(self.config_manager.load_config())
         
