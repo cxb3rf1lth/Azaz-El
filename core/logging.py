@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 import sys
+import time
 
 class JSONFormatter(logging.Formatter):
     """Custom JSON formatter for structured logging"""
@@ -44,6 +45,15 @@ class AdvancedLogger:
         self.name = name
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Performance metrics tracking
+        self.performance_metrics = {
+            "scan_start_time": None,
+            "phase_timings": {},
+            "tool_execution_times": {},
+            "error_count": 0,
+            "finding_counts": {}
+        }
         
         # Create main logger
         self.logger = logging.getLogger(name)
@@ -183,8 +193,15 @@ class AdvancedLogger:
             "phase": phase,
             "progress": progress,
             "findings_count": findings_count,
-            "category": "scan_progress"
+            "category": "scan_progress",
+            "elapsed_time": self._get_elapsed_time(),
+            "estimated_remaining": self._estimate_remaining_time(progress)
         }
+        
+        # Update performance metrics
+        if phase not in self.performance_metrics["finding_counts"]:
+            self.performance_metrics["finding_counts"][phase] = 0
+        self.performance_metrics["finding_counts"][phase] = findings_count
         
         message = f"Scan progress for {target}: {phase} - {progress:.1f}% ({findings_count} findings)"
         self._log_with_extra(logging.INFO, message, extra_data)
@@ -202,6 +219,55 @@ class AdvancedLogger:
         
         message = f"Vulnerability found on {target}: {vuln_type} ({severity})"
         self._log_with_extra(logging.WARNING, message, extra_data)
+    
+    def _get_elapsed_time(self):
+        """Get elapsed time since scan start"""
+        if self.performance_metrics["scan_start_time"]:
+            return time.time() - self.performance_metrics["scan_start_time"]
+        return 0
+    
+    def _estimate_remaining_time(self, progress: float):
+        """Estimate remaining scan time based on current progress"""
+        if progress <= 0:
+            return None
+        elapsed = self._get_elapsed_time()
+        if elapsed <= 0:
+            return None
+        total_estimated = elapsed / (progress / 100.0)
+        return max(0, total_estimated - elapsed)
+    
+    def start_scan_timer(self):
+        """Start the scan performance timer"""
+        self.performance_metrics["scan_start_time"] = time.time()
+    
+    def log_phase_completion(self, phase: str, duration: float, findings: int = 0):
+        """Log phase completion with timing"""
+        self.performance_metrics["phase_timings"][phase] = duration
+        extra_data = {
+            "phase": phase,
+            "duration": duration,
+            "findings": findings,
+            "category": "phase_completion"
+        }
+        message = f"Phase '{phase}' completed in {duration:.2f}s with {findings} findings"
+        self._log_with_extra(logging.INFO, message, extra_data)
+    
+    def log_performance_summary(self):
+        """Log overall performance summary"""
+        total_time = self._get_elapsed_time()
+        total_findings = sum(self.performance_metrics["finding_counts"].values())
+        
+        summary = {
+            "total_scan_time": total_time,
+            "total_findings": total_findings,
+            "phase_timings": self.performance_metrics["phase_timings"],
+            "tool_execution_times": self.performance_metrics["tool_execution_times"],
+            "error_count": self.performance_metrics["error_count"],
+            "category": "performance_summary"
+        }
+        
+        message = f"Scan completed: {total_time:.2f}s, {total_findings} findings, {self.performance_metrics['error_count']} errors"
+        self._log_with_extra(logging.INFO, message, summary)
 
 # Global logger instance
 _global_logger: Optional[AdvancedLogger] = None
