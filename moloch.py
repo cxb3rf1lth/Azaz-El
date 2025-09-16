@@ -2047,8 +2047,8 @@ def main_menu():
             print("Exiting Moloch. Goodbye!")
             sys.exit(0)
         else:
-            print("Invalid choice. Please try again.")
-            time.sleep(1)
+            print("\n\033[1;91m❌ Invalid choice. Please try a valid option (1-9, 3.1-3.3, 4.1-4.3, 5.1-5.2, 6.1, 7.1-7.2).\033[0m")
+            input("Press Enter to continue...")
 
 # --- CLI Argument Parsing ---
 def setup_argument_parser() -> argparse.ArgumentParser:
