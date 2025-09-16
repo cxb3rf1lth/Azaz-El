@@ -1,0 +1,27 @@
+2025-09-16 13:24:09,571 - moloch_logger - INFO - initialize_environment:339 - === Initializing Moloch Environment ===
+2025-09-16 13:24:09,571 - moloch_logger - INFO - create_directories:308 - Creating necessary directories...
+2025-09-16 13:24:09,571 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/runs
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/logs
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/plugins
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/payloads
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/wordlists
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/lists_merged
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/exploits
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/backups
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/tools
+2025-09-16 13:24:09,572 - moloch_logger - DEBUG - create_directories:316 - Ensured directory exists: /home/runner/work/Azaz-El/Azaz-El/reports
+2025-09-16 13:24:09,572 - moloch_logger - INFO - create_default_wordlists:323 - Ensuring default wordlists exist...
+2025-09-16 13:24:09,572 - moloch_logger - INFO - create_targets_file:333 - Created default targets file: /home/runner/work/Azaz-El/Azaz-El/targets.txt
+2025-09-16 13:24:09,573 - moloch_logger - INFO - save_config:373 - Configuration saved.
+2025-09-16 13:24:09,573 - moloch_logger - INFO - check_and_install_dependencies:280 - Checking and installing dependencies...
+2025-09-16 13:24:09,573 - moloch_logger - DEBUG - _bump_path:202 - Created Go bin directory: /home/runner/go/bin
+2025-09-16 13:24:09,573 - moloch_logger - DEBUG - _bump_path:217 - Added to PATH: /home/runner/go/bin
+2025-09-16 13:24:09,573 - moloch_logger - DEBUG - _bump_path:217 - Added to PATH: /home/runner/work/Azaz-El/Azaz-El/tools
+2025-09-16 13:24:09,574 - moloch_logger - WARNING - check_and_install_dependencies:298 - Tool 'subfinder' not found.
+2025-09-16 13:24:09,574 - moloch_logger - INFO - install_tool:263 - Attempting to install subfinder...
+2025-09-16 13:24:09,574 - moloch_logger - DEBUG - run_cmd:228 - Executing: g o   i n s t a l l   - v   g i t h u b . c o m / p r o j e c t d i s c o v e r y / s u b f i n d e r / v 2 / c m d / s u b f i n d e r @ l a t e s t
+2025-09-16 13:25:11,433 - moloch_logger - INFO - install_tool:269 - Successfully installed subfinder
+2025-09-16 13:25:11,434 - moloch_logger - INFO - check_and_install_dependencies:300 - Tool 'subfinder' is now available.
+2025-09-16 13:25:11,434 - moloch_logger - WARNING - check_and_install_dependencies:298 - Tool 'amass' not found.
+2025-09-16 13:25:11,434 - moloch_logger - INFO - install_tool:263 - Attempting to install amass...
+2025-09-16 13:25:11,434 - moloch_logger - DEBUG - run_cmd:228 - Executing: g o   i n s t a l l   - v   g i t h u b . c o m / o w a s p - a m a s s / a m a s s / v 4 / . . . @ m a s t e r
