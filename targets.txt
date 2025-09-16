@@ -1,3 +1,2 @@
-# Add your targets here, one per line
-# example.com
-# test.example.org
+example.com
+testphp.vulnweb.com
