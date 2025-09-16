@@ -878,6 +878,12 @@ def sanitize_filename(name: str) -> str:
     """Sanitize string for use as a filename."""
     return re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', name)
 
+def ensure_path(path_obj) -> Path:
+    """Ensure the object is a Path instance."""
+    if isinstance(path_obj, str):
+        return Path(path_obj)
+    return path_obj
+
 def new_run() -> Path:
     """Create a new run directory."""
     run_id = f"{APP.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
@@ -937,6 +943,12 @@ def execute_tool(tool_name: str, args: List[str], output_file: Optional[Path] = 
         logger.warning(f"Tool {tool_name} not found in PATH. Skipping.")
         return False
 
+    # Ensure run_dir is a Path object if provided
+    if run_dir:
+        run_dir = ensure_path(run_dir)
+    if output_file:
+        output_file = ensure_path(output_file)
+
     cmd = [tool_path] + tool_config.get("flags", []) + args
     timeout = config.get("performance", {}).get("tool_timeout", 600)
 
@@ -985,14 +997,13 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
     subdomains: Set[str] = set()
 
     tools_to_run = [
-        ("subfinder", [target], output_dir / "subfinder.txt"),
+        ("subfinder", ["-d", target], output_dir / "subfinder.txt"),
         ("assetfinder", [target], output_dir / "assetfinder.txt"),
-        ("findomain", [target], output_dir / "findomain.txt"),
+        ("findomain", ["-t", target], output_dir / "findomain.txt"),
     ]
 
-    # Add Amass if configured
-    amass_flags = config.get("tools", {}).get("amass", {}).get("flags", [])
-    tools_to_run.append(("amass", amass_flags + ["-d", target], output_dir / "amass.txt"))
+    # Add Amass if configured - use only the domain flag since enum flags are already in config
+    tools_to_run.append(("amass", ["-d", target], output_dir / "amass.txt"))
 
     # Add Chaos if API key is present and tool is enabled
     chaos_key = config.get("auth", {}).get("chaos_api_key")
@@ -1018,6 +1029,13 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
 
     # Deduplication and saving
     unique_subdomains = sorted(list(subdomains))
+    
+    # If no subdomains found, add the target domain itself as a fallback
+    if not unique_subdomains:
+        logger.warning(f"[RECON] No subdomains found for {target}, adding target domain as fallback")
+        unique_subdomains = [target]
+        subdomains.add(target)
+    
     final_subdomain_file = output_dir / f"subdomains_{sanitize_filename(target)}.txt"
     write_lines(final_subdomain_file, unique_subdomains)
     logger.info(f"[RECON] Subdomain discovery complete. Total unique subdomains: {len(unique_subdomains)}")
@@ -1030,8 +1048,46 @@ def run_dns_resolution(subdomain_file: Path, output_file: Path, config: Dict[str
         logger.warning(f"Subdomain file {subdomain_file} does not exist.")
         return False
 
-    # Using dnsx for resolution
+    # Try using dnsx first
     success = execute_tool("dnsx", ["-l", str(subdomain_file), "-o", str(output_file)], output_file=output_file)
+    
+    # Fallback to basic DNS resolution if dnsx is not available
+    if not success:
+        logger.warning("[RECON] dnsx not available, using basic DNS resolution...")
+        try:
+            import socket
+            subdomains = read_lines(subdomain_file)
+            resolved_hosts = []
+            
+            for subdomain in subdomains[:20]:  # Limit to prevent long delays
+                subdomain = subdomain.strip()
+                if not subdomain:
+                    continue
+                    
+                try:
+                    # Try to resolve the domain
+                    ip = socket.gethostbyname(subdomain)
+                    resolved_hosts.append(f"{subdomain} [{ip}]")
+                    logger.debug(f"Resolved {subdomain} -> {ip}")
+                except socket.gaierror:
+                    # If resolution fails, still include the domain for HTTP probing
+                    resolved_hosts.append(subdomain)
+                    logger.debug(f"Could not resolve {subdomain}, adding for HTTP probing")
+                except Exception as e:
+                    logger.debug(f"Error resolving {subdomain}: {e}")
+                    
+            if resolved_hosts:
+                write_lines(output_file, resolved_hosts)
+                logger.info(f"[RECON] Basic DNS resolution found {len(resolved_hosts)} hosts.")
+                return True
+            else:
+                logger.warning("[RECON] No hosts could be resolved.")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[RECON] Basic DNS resolution failed: {e}")
+            return False
+    
     if success:
         logger.info(f"[RECON] DNS resolution complete. Results in {output_file}")
         return True
@@ -1047,6 +1103,41 @@ def run_http_probing(resolved_file: Path, output_file: Path, config: Dict[str, A
         return False
 
     success = execute_tool("httpx", ["-l", str(resolved_file), "-o", str(output_file)], output_file=output_file)
+    
+    # Fallback: if httpx failed but we have resolved hosts, try basic HTTP/HTTPS probing
+    if not success and resolved_file.exists():
+        logger.warning("[RECON] httpx failed, attempting basic HTTP probing...")
+        try:
+            resolved_hosts = read_lines(resolved_file)
+            live_hosts = []
+            
+            for host in resolved_hosts[:10]:  # Limit to first 10 to avoid long delays
+                for protocol in ["http", "https"]:
+                    test_url = f"{protocol}://{host.strip()}"
+                    try:
+                        import urllib.request
+                        import ssl
+                        # Quick test with minimal timeout
+                        ctx = ssl.create_default_context()
+                        ctx.check_hostname = False
+                        ctx.verify_mode = ssl.CERT_NONE
+                        
+                        req = urllib.request.Request(test_url)
+                        req.add_header('User-Agent', 'Mozilla/5.0 (compatible; Azaz-El)')
+                        with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+                            live_hosts.append(test_url)
+                            break  # Found working protocol, move to next host
+                    except:
+                        continue  # Try next protocol/host
+                        
+            if live_hosts:
+                write_lines(output_file, live_hosts)
+                logger.info(f"[RECON] Basic HTTP probing found {len(live_hosts)} live hosts.")
+                return True
+                
+        except Exception as e:
+            logger.error(f"[RECON] Basic HTTP probing also failed: {e}")
+    
     if success:
         logger.info(f"[RECON] HTTP probing complete. Results in {output_file}")
         return True
@@ -1453,7 +1544,7 @@ def generate_simple_report(run_dir: Path, config: Dict[str, Any]):
 def run_full_pipeline():
     """Run the full, enhanced automated pipeline."""
     logger.info("🔥 Starting Moloch Full Automation Pipeline 🔥")
-    run_dir = new_run()
+    run_dir = ensure_path(new_run())  # Ensure it's always a Path object
     config = load_config()
 
     targets = read_lines(TARGETS_FILE)
@@ -1475,70 +1566,70 @@ def run_full_pipeline():
 
         subdomains = run_subdomain_discovery(target, subdomain_dir, config)
 
-        if subdomains:
-            # Resolve subdomains
-            subdomain_file = subdomain_dir / f"subdomains_{target_safe}.txt"
-            resolved_file = run_dir / "hosts" / f"resolved_{target_safe}.txt"
-            run_dir / "hosts".mkdir(exist_ok=True)
-            dns_success = run_dns_resolution(subdomain_file, resolved_file, config)
+        # With fallback mechanism, we should always have at least the target domain
+        # Resolve subdomains (including fallback target domain)
+        subdomain_file = subdomain_dir / f"subdomains_{target_safe}.txt"
+        resolved_file = run_dir / "hosts" / f"resolved_{target_safe}.txt"
+        # Ensure run_dir is always a Path object to prevent AttributeError
+        if isinstance(run_dir, str):
+            run_dir = Path(run_dir)
+        (run_dir / "hosts").mkdir(exist_ok=True)
+        dns_success = run_dns_resolution(subdomain_file, resolved_file, config)
 
-            if dns_success and resolved_file.exists():
-                # Probe for live hosts
-                live_file = run_dir / "hosts" / f"live_{target_safe}.txt"
-                http_success = run_http_probing(resolved_file, live_file, config)
+        if dns_success and resolved_file.exists():
+            # Probe for live hosts
+            live_file = run_dir / "hosts" / f"live_{target_safe}.txt"
+            http_success = run_http_probing(resolved_file, live_file, config)
 
-                # --- Phase 2: Scanning ---
-                if not config.get("modules", {}).get("scanning", True):
-                    logger.info("Scanning module disabled, skipping...")
-                else:
-                    logger.info("Phase 2: Scanning")
-                    vuln_dir = run_dir / "vulns"
-                    vuln_dir.mkdir(exist_ok=True)
-
-                    if http_success and live_file.exists():
-                        # Vulnerability Scan
-                        run_vulnerability_scan(live_file, vuln_dir, config)
-
-                        # SSL Scan (on main target, could loop through live hosts)
-                        ssl_file = vuln_dir / f"ssl_{target_safe}.json"
-                        run_ssl_scan(target, ssl_file, config)
-
-                        # Port Scan (example on main target, could loop through live hosts)
-                        port_file = run_dir / "hosts" / f"port_scan_{target_safe}"
-                        run_port_scan(target, port_file, config)
-                    else:
-                        logger.warning("HTTP probing failed or produced no live hosts, skipping scanning phases.")
-
-                # --- Phase 3: Web App Testing ---
-                if not config.get("modules", {}).get("web", True):
-                    logger.info("Web Application Testing module disabled, skipping...")
-                else:
-                    logger.info("Phase 3: Web Application Testing")
-                    crawl_dir = run_dir / "crawling"
-                    crawl_dir.mkdir(exist_ok=True)
-                    urls_file = crawl_dir / f"urls_{target_safe}.txt"
-                    crawled_urls = run_crawling(target, urls_file, config) # Crawl main target
-
-                    if crawled_urls: # Check if list is not empty
-                        # XSS Scan
-                        xss_file = crawl_dir / f"xss_{target_safe}.txt"
-                        run_xss_scan(urls_file, xss_file, config)
-                    else:
-                        logger.warning("Crawling produced no URLs, skipping XSS scan.")
-
-                # --- Phase 4: Fuzzing ---
-                if not config.get("modules", {}).get("fuzzing", True):
-                    logger.info("Fuzzing module disabled, skipping...")
-                else:
-                    logger.info("Phase 4: Fuzzing")
-                    fuzz_dir = run_dir / "fuzzing"
-                    fuzz_dir.mkdir(exist_ok=True)
-                    run_directory_fuzzing(target, fuzz_dir, config) # Fuzz main target
-
+            # --- Phase 2: Scanning ---
+            if not config.get("modules", {}).get("scanning", True):
+                logger.info("Scanning module disabled, skipping...")
             else:
-                logger.warning("DNS resolution failed or produced no results, skipping further phases.")
+                logger.info("Phase 2: Scanning")
+                vuln_dir = run_dir / "vulns"
+                vuln_dir.mkdir(exist_ok=True)
+
+                if http_success and live_file.exists():
+                    # Vulnerability Scan
+                    run_vulnerability_scan(live_file, vuln_dir, config)
+
+                    # SSL Scan (on main target, could loop through live hosts)
+                    ssl_file = vuln_dir / f"ssl_{target_safe}.json"
+                    run_ssl_scan(target, ssl_file, config)
+
+                    # Port Scan (example on main target, could loop through live hosts)
+                    port_file = run_dir / "hosts" / f"port_scan_{target_safe}"
+                    run_port_scan(target, port_file, config)
+                else:
+                    logger.warning("HTTP probing failed or produced no live hosts, skipping scanning phases.")
+
+            # --- Phase 3: Web App Testing ---
+            if not config.get("modules", {}).get("web", True):
+                logger.info("Web Application Testing module disabled, skipping...")
+            else:
+                logger.info("Phase 3: Web Application Testing")
+                crawl_dir = run_dir / "crawling"
+                crawl_dir.mkdir(exist_ok=True)
+                urls_file = crawl_dir / f"urls_{target_safe}.txt"
+                crawled_urls = run_crawling(target, urls_file, config) # Crawl main target
+
+                if crawled_urls: # Check if list is not empty
+                    # XSS Scan
+                    xss_file = crawl_dir / f"xss_{target_safe}.txt"
+                    run_xss_scan(urls_file, xss_file, config)
+                else:
+                    logger.warning("Crawling produced no URLs, skipping XSS scan.")
+
+            # --- Phase 4: Fuzzing ---
+            if not config.get("modules", {}).get("fuzzing", True):
+                logger.info("Fuzzing module disabled, skipping...")
+            else:
+                logger.info("Phase 4: Fuzzing")
+                fuzz_dir = run_dir / "fuzzing"
+                fuzz_dir.mkdir(exist_ok=True)
+                run_directory_fuzzing(target, fuzz_dir, config) # Fuzz main target
         else:
-            logger.warning("No subdomains found, skipping further phases.")
+            logger.warning("DNS resolution failed or produced no results, skipping further phases.")
 
     # --- Phase 5: Reporting ---
     if not config.get("modules", {}).get("reporting", True):
