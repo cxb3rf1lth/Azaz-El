@@ -1687,13 +1687,786 @@ class MasterAzazElFramework:
         self.wait_for_continue()
     
     def cloud_security_assessment_menu(self):
-        """Cloud security assessment interface - placeholder"""
-        self.show_info("Cloud Security Assessment interface will be implemented in the full version")
+        """Cloud security assessment interface"""
+        while True:
+            self.print_master_banner()
+            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;93m                    ☁️ CLOUD SECURITY ASSESSMENT\033[0m                     ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m1.\033[0m ☁️ AWS Security Assessment                                     ║")
+            print("║  \033[1;97m2.\033[0m 🔵 Azure Security Assessment                                   ║")
+            print("║  \033[1;97m3.\033[0m 🌐 GCP Security Assessment                                     ║")
+            print("║  \033[1;97m4.\033[0m 🪣 S3 Bucket Enumeration & Analysis                           ║")
+            print("║  \033[1;97m5.\033[0m 🔐 Cloud IAM Policy Analysis                                  ║")
+            print("║  \033[1;97m6.\033[0m 📊 View Cloud Security Results                               ║")
+            print("║  \033[1;97m7.\033[0m ⚙️ Configure Cloud Security Settings                         ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m0.\033[0m ↩️ Return to Main Menu                                           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            choice = self.get_user_input()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                asyncio.run(self.handle_aws_assessment())
+            elif choice == "2":
+                asyncio.run(self.handle_azure_assessment())
+            elif choice == "3":
+                asyncio.run(self.handle_gcp_assessment())
+            elif choice == "4":
+                asyncio.run(self.handle_s3_bucket_enum())
+            elif choice == "5":
+                asyncio.run(self.handle_iam_analysis())
+            elif choice == "6":
+                self.view_cloud_security_results()
+            elif choice == "7":
+                self.configure_cloud_security_settings()
+            else:
+                self.show_error(f"Invalid option: {choice}")
+                
+    async def handle_aws_assessment(self):
+        """Handle AWS security assessment"""
+        if not self.integrations_available or not hasattr(self, 'cloud_scanner'):
+            self.show_error("Cloud scanner not available")
+            return
+            
+        try:
+            self.show_info("Starting AWS security assessment")
+            print("🔄 This will check: IAM, S3, EC2, VPC, CloudTrail, and more")
+            
+            confirm = input("\n⚠️ Continue with AWS assessment? (requires AWS credentials) (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"aws_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute AWS assessment
+            results = await self.cloud_scanner.assess_aws_security(
+                output_dir=run_path,
+                comprehensive=True
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("AWS security assessment completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                findings = results.get('findings', [])
+                high_risk = len([f for f in findings if f.get('severity') == 'high'])
+                medium_risk = len([f for f in findings if f.get('severity') == 'medium'])
+                
+                print(f"🔍 Found {len(findings)} total findings")
+                print(f"🚨 High risk: {high_risk}")
+                print(f"⚠️ Medium risk: {medium_risk}")
+            else:
+                self.show_error("AWS assessment failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during AWS assessment: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_azure_assessment(self):
+        """Handle Azure security assessment"""
+        if not self.integrations_available or not hasattr(self, 'cloud_scanner'):
+            self.show_error("Cloud scanner not available")
+            return
+            
+        try:
+            self.show_info("Starting Azure security assessment")
+            print("🔄 This will check: Azure AD, Storage, VMs, Key Vault, and more")
+            
+            confirm = input("\n⚠️ Continue with Azure assessment? (requires Azure credentials) (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"azure_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute Azure assessment
+            results = await self.cloud_scanner.assess_azure_security(
+                output_dir=run_path,
+                comprehensive=True
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("Azure security assessment completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                findings = results.get('findings', [])
+                critical = len([f for f in findings if f.get('severity') == 'critical'])
+                high_risk = len([f for f in findings if f.get('severity') == 'high'])
+                
+                print(f"🔍 Found {len(findings)} total findings")
+                print(f"💥 Critical: {critical}")
+                print(f"🚨 High risk: {high_risk}")
+            else:
+                self.show_error("Azure assessment failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during Azure assessment: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_gcp_assessment(self):
+        """Handle GCP security assessment"""
+        if not self.integrations_available or not hasattr(self, 'cloud_scanner'):
+            self.show_error("Cloud scanner not available")
+            return
+            
+        try:
+            self.show_info("Starting GCP security assessment")
+            print("🔄 This will check: IAM, Storage, Compute, VPC, and more")
+            
+            confirm = input("\n⚠️ Continue with GCP assessment? (requires GCP credentials) (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"gcp_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute GCP assessment
+            results = await self.cloud_scanner.assess_gcp_security(
+                output_dir=run_path,
+                comprehensive=True
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("GCP security assessment completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                findings = results.get('findings', [])
+                print(f"🔍 Found {len(findings)} total findings")
+            else:
+                self.show_error("GCP assessment failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during GCP assessment: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_s3_bucket_enum(self):
+        """Handle S3 bucket enumeration and analysis"""
+        if not self.integrations_available or not hasattr(self, 'cloud_scanner'):
+            self.show_error("Cloud scanner not available")
+            return
+            
+        try:
+            self.show_info("Starting S3 bucket enumeration")
+            
+            # Get target domains for bucket enumeration
+            if not self.targets:
+                domain = input("\n🎯 Enter domain for S3 bucket enumeration: ").strip()
+                if not domain:
+                    return
+            else:
+                domain = self.select_target_interactive()
+                if not domain:
+                    return
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"s3_enum_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute S3 enumeration
+            results = await self.cloud_scanner.enumerate_s3_buckets(
+                domain=domain,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("S3 bucket enumeration completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                buckets = results.get('buckets', [])
+                public_buckets = results.get('public_buckets', [])
+                
+                print(f"🪣 Found {len(buckets)} buckets")
+                print(f"🚨 Public buckets: {len(public_buckets)}")
+                
+                if public_buckets:
+                    print("\n⚠️ Public buckets found:")
+                    for bucket in public_buckets[:5]:  # Show first 5
+                        print(f"   • {bucket}")
+            else:
+                self.show_error("S3 enumeration failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during S3 enumeration: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_iam_analysis(self):
+        """Handle cloud IAM policy analysis"""
+        if not self.integrations_available or not hasattr(self, 'cloud_scanner'):
+            self.show_error("Cloud scanner not available")
+            return
+            
+        try:
+            self.show_info("Starting IAM policy analysis")
+            
+            # Select cloud provider
+            print("\n☁️ Select cloud provider:")
+            print("1. AWS")
+            print("2. Azure")
+            print("3. GCP")
+            
+            choice = input("\nSelect provider (1-3): ").strip()
+            provider_map = {"1": "aws", "2": "azure", "3": "gcp"}
+            
+            if choice not in provider_map:
+                self.show_error("Invalid provider selection")
+                return
+                
+            provider = provider_map[choice]
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"iam_analysis_{provider}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute IAM analysis
+            results = await self.cloud_scanner.analyze_iam_policies(
+                provider=provider,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success(f"{provider.upper()} IAM analysis completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                policies = results.get('policies', [])
+                risky_policies = results.get('risky_policies', [])
+                
+                print(f"📋 Analyzed {len(policies)} policies")
+                print(f"⚠️ Risky policies: {len(risky_policies)}")
+            else:
+                self.show_error("IAM analysis failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during IAM analysis: {e}")
+            
+        self.wait_for_continue()
+        
+    def view_cloud_security_results(self):
+        """View recent cloud security results"""
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        
+        # Find recent cloud security runs
+        cloud_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and 
+                     any(x in d.name for x in ['aws_scan_', 'azure_scan_', 'gcp_scan_', 's3_enum_', 'iam_analysis_'])]
+        cloud_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if not cloud_dirs:
+            self.show_info("No cloud security results found")
+            self.wait_for_continue()
+            return
+            
+        print("\n📊 \033[1;97mRecent Cloud Security Results:\033[0m")
+        print("=" * 60)
+        
+        for i, run_dir in enumerate(cloud_dirs[:10], 1):
+            print(f"\n{i}. 📁 {run_dir.name}")
+            
+            # Check for different types of results
+            if 'aws_scan_' in run_dir.name:
+                results_files = list(run_dir.glob("*.json"))
+                print(f"   ☁️ AWS Assessment: {len(results_files)} result files")
+            elif 'azure_scan_' in run_dir.name:
+                results_files = list(run_dir.glob("*.json"))
+                print(f"   🔵 Azure Assessment: {len(results_files)} result files")
+            elif 'gcp_scan_' in run_dir.name:
+                results_files = list(run_dir.glob("*.json"))
+                print(f"   🌐 GCP Assessment: {len(results_files)} result files")
+            elif 's3_enum_' in run_dir.name:
+                bucket_files = list(run_dir.glob("*bucket*"))
+                print(f"   🪣 S3 Enumeration: {len(bucket_files)} files")
+            elif 'iam_analysis_' in run_dir.name:
+                policy_files = list(run_dir.glob("*policy*"))
+                print(f"   🔐 IAM Analysis: {len(policy_files)} files")
+                    
+        self.wait_for_continue()
+        
+    def configure_cloud_security_settings(self):
+        """Configure cloud security settings"""
+        print("\n⚙️ \033[1;97mCloud Security Configuration:\033[0m")
+        print("=" * 50)
+        
+        config = self.moloch_integration.config
+        cloud_config = config.get('cloud_security', {})
+        
+        print(f"📊 Current Settings:")
+        print(f"   • AWS Profile: {cloud_config.get('aws_profile', 'default')}")
+        print(f"   • Azure Subscription: {cloud_config.get('azure_subscription', 'default')}")
+        print(f"   • GCP Project: {cloud_config.get('gcp_project', 'default')}")
+        print(f"   • S3 Enumeration: {cloud_config.get('s3_enumeration', True)}")
+        print(f"   • Comprehensive Scan: {cloud_config.get('comprehensive', False)}")
+        print(f"   • Timeout: {cloud_config.get('timeout', 300)}s")
+        
+        print(f"\n💡 Use moloch.cfg.json to modify these settings")
+        print(f"📋 Ensure cloud credentials are properly configured")
         self.wait_for_continue()
     
     def api_security_testing_menu(self):
-        """API security testing interface - placeholder"""
-        self.show_info("API Security Testing interface will be implemented in the full version")
+        """API security testing interface"""
+        while True:
+            self.print_master_banner()
+            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+            print("║\033[1;92m                      🔌 API SECURITY TESTING\033[0m                       ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m1.\033[0m 🔍 REST API Discovery & Testing                                ║")
+            print("║  \033[1;97m2.\033[0m 📊 GraphQL API Security Testing                               ║")
+            print("║  \033[1;97m3.\033[0m 🧽 SOAP API Security Testing                                  ║")
+            print("║  \033[1;97m4.\033[0m 🔐 API Authentication Testing                                ║")
+            print("║  \033[1;97m5.\033[0m 📋 API Documentation Analysis                                ║")
+            print("║  \033[1;97m6.\033[0m 💥 Full API Security Assessment                              ║")
+            print("║  \033[1;97m7.\033[0m 📊 View API Testing Results                                  ║")
+            print("║  \033[1;97m8.\033[0m ⚙️ Configure API Testing Settings                            ║")
+            print("╠───────────────────────────────────────────────────────────────────────────────╣")
+            print("║  \033[1;97m0.\033[0m ↩️ Return to Main Menu                                           ║")
+            print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+            
+            choice = self.get_user_input()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                asyncio.run(self.handle_rest_api_testing())
+            elif choice == "2":
+                asyncio.run(self.handle_graphql_testing())
+            elif choice == "3":
+                asyncio.run(self.handle_soap_testing())
+            elif choice == "4":
+                asyncio.run(self.handle_api_auth_testing())
+            elif choice == "5":
+                asyncio.run(self.handle_api_documentation_analysis())
+            elif choice == "6":
+                asyncio.run(self.handle_full_api_assessment())
+            elif choice == "7":
+                self.view_api_testing_results()
+            elif choice == "8":
+                self.configure_api_testing_settings()
+            else:
+                self.show_error(f"Invalid option: {choice}")
+                
+    async def handle_rest_api_testing(self):
+        """Handle REST API discovery and testing"""
+        if not self.integrations_available or not hasattr(self, 'api_scanner'):
+            self.show_error("API scanner not available")
+            return
+            
+        try:
+            # Get target URL for API testing
+            if not self.targets:
+                api_url = input("\n🎯 Enter API base URL (e.g., https://api.example.com): ").strip()
+                if not api_url:
+                    return
+            else:
+                print("\n🎯 Select target or enter custom API URL:")
+                print("0. Enter custom URL")
+                target = self.select_target_interactive()
+                if target == "0" or not target:
+                    api_url = input("Enter API base URL: ").strip()
+                    if not api_url:
+                        return
+                else:
+                    api_url = target
+            
+            self.show_info(f"Starting REST API testing for {api_url}")
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"rest_api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute REST API testing
+            results = await self.api_scanner.test_rest_api(
+                base_url=api_url,
+                output_dir=run_path,
+                comprehensive=True
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("REST API testing completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                endpoints = results.get('endpoints', [])
+                vulnerabilities = results.get('vulnerabilities', [])
+                
+                print(f"🔍 Discovered {len(endpoints)} API endpoints")
+                print(f"🚨 Found {len(vulnerabilities)} vulnerabilities")
+                
+                if vulnerabilities:
+                    high_vuln = len([v for v in vulnerabilities if v.get('severity') == 'high'])
+                    if high_vuln > 0:
+                        print(f"💥 High severity vulnerabilities: {high_vuln}")
+            else:
+                self.show_error("REST API testing failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during REST API testing: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_graphql_testing(self):
+        """Handle GraphQL API security testing"""
+        if not self.integrations_available or not hasattr(self, 'api_scanner'):
+            self.show_error("API scanner not available")
+            return
+            
+        try:
+            # Get GraphQL endpoint
+            graphql_url = input("\n🎯 Enter GraphQL endpoint URL: ").strip()
+            if not graphql_url:
+                return
+                
+            self.show_info(f"Starting GraphQL API testing for {graphql_url}")
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"graphql_api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute GraphQL testing
+            results = await self.api_scanner.test_graphql_api(
+                endpoint_url=graphql_url,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("GraphQL API testing completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                queries = results.get('queries', [])
+                mutations = results.get('mutations', [])
+                vulnerabilities = results.get('vulnerabilities', [])
+                
+                print(f"📊 Found {len(queries)} queries, {len(mutations)} mutations")
+                print(f"🚨 Found {len(vulnerabilities)} vulnerabilities")
+            else:
+                self.show_error("GraphQL API testing failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during GraphQL testing: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_soap_testing(self):
+        """Handle SOAP API security testing"""
+        if not self.integrations_available or not hasattr(self, 'api_scanner'):
+            self.show_error("API scanner not available")
+            return
+            
+        try:
+            # Get SOAP WSDL URL
+            wsdl_url = input("\n🎯 Enter SOAP WSDL URL: ").strip()
+            if not wsdl_url:
+                return
+                
+            self.show_info(f"Starting SOAP API testing for {wsdl_url}")
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"soap_api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute SOAP testing
+            results = await self.api_scanner.test_soap_api(
+                wsdl_url=wsdl_url,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("SOAP API testing completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                operations = results.get('operations', [])
+                vulnerabilities = results.get('vulnerabilities', [])
+                
+                print(f"🧽 Found {len(operations)} SOAP operations")
+                print(f"🚨 Found {len(vulnerabilities)} vulnerabilities")
+            else:
+                self.show_error("SOAP API testing failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during SOAP testing: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_api_auth_testing(self):
+        """Handle API authentication testing"""
+        if not self.integrations_available or not hasattr(self, 'api_scanner'):
+            self.show_error("API scanner not available")
+            return
+            
+        try:
+            # Get API endpoint
+            api_url = input("\n🎯 Enter API URL for authentication testing: ").strip()
+            if not api_url:
+                return
+                
+            self.show_info(f"Starting API authentication testing for {api_url}")
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"api_auth_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute API authentication testing
+            results = await self.api_scanner.test_api_authentication(
+                api_url=api_url,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("API authentication testing completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                auth_methods = results.get('auth_methods', [])
+                weaknesses = results.get('auth_weaknesses', [])
+                
+                print(f"🔐 Detected {len(auth_methods)} authentication methods")
+                print(f"⚠️ Found {len(weaknesses)} authentication weaknesses")
+            else:
+                self.show_error("API authentication testing failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during API authentication testing: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_api_documentation_analysis(self):
+        """Handle API documentation analysis"""
+        if not self.integrations_available or not hasattr(self, 'api_scanner'):
+            self.show_error("API scanner not available")
+            return
+            
+        try:
+            print("\n📋 API Documentation Analysis Options:")
+            print("1. OpenAPI/Swagger documentation")
+            print("2. RAML documentation") 
+            print("3. API Blueprint documentation")
+            
+            choice = input("\nSelect documentation type (1-3): ").strip()
+            
+            if choice == "1":
+                doc_url = input("Enter OpenAPI/Swagger URL: ").strip()
+                doc_type = "openapi"
+            elif choice == "2":
+                doc_url = input("Enter RAML URL: ").strip()
+                doc_type = "raml"
+            elif choice == "3":
+                doc_url = input("Enter API Blueprint URL: ").strip()
+                doc_type = "blueprint"
+            else:
+                self.show_error("Invalid documentation type")
+                return
+                
+            if not doc_url:
+                return
+                
+            self.show_info(f"Starting {doc_type.upper()} documentation analysis")
+            
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"api_docs_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute documentation analysis
+            results = await self.api_scanner.analyze_api_documentation(
+                doc_url=doc_url,
+                doc_type=doc_type,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("API documentation analysis completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show summary
+                endpoints = results.get('endpoints', [])
+                security_issues = results.get('security_issues', [])
+                
+                print(f"📋 Analyzed {len(endpoints)} documented endpoints")
+                print(f"⚠️ Found {len(security_issues)} security issues in documentation")
+            else:
+                self.show_error("API documentation analysis failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during API documentation analysis: {e}")
+            
+        self.wait_for_continue()
+        
+    async def handle_full_api_assessment(self):
+        """Handle full API security assessment"""
+        if not self.integrations_available or not hasattr(self, 'api_scanner'):
+            self.show_error("API scanner not available")
+            return
+            
+        try:
+            # Get API URL
+            api_url = input("\n🎯 Enter API base URL for full assessment: ").strip()
+            if not api_url:
+                return
+                
+            self.show_info(f"Starting full API security assessment for {api_url}")
+            print("🔄 This will run: Discovery → Testing → Authentication → Documentation Analysis")
+            
+            confirm = input("\n⚠️ Continue with full API assessment? (y/N): ")
+            if confirm.lower() != 'y':
+                return
+                
+            # Create run directory
+            run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+            run_path = run_dir / f"full_api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            run_path.mkdir(parents=True, exist_ok=True)
+            
+            # Execute full API assessment
+            results = await self.api_scanner.full_api_assessment(
+                api_url=api_url,
+                output_dir=run_path
+            )
+            
+            if results and not results.get('errors'):
+                self.show_success("Full API security assessment completed")
+                print(f"📁 Results saved to: {run_path}")
+                
+                # Show comprehensive summary
+                endpoints = results.get('endpoints', [])
+                vulnerabilities = results.get('vulnerabilities', [])
+                auth_issues = results.get('auth_issues', [])
+                
+                print(f"🔍 Discovered {len(endpoints)} API endpoints")
+                print(f"🚨 Found {len(vulnerabilities)} vulnerabilities")
+                print(f"🔐 Found {len(auth_issues)} authentication issues")
+                
+                # Categorize vulnerabilities by severity
+                severity_count = {}
+                for vuln in vulnerabilities:
+                    severity = vuln.get('severity', 'unknown')
+                    severity_count[severity] = severity_count.get(severity, 0) + 1
+                
+                if severity_count:
+                    print("\n📊 Vulnerability breakdown:")
+                    for severity, count in severity_count.items():
+                        print(f"   {severity.capitalize()}: {count}")
+            else:
+                self.show_error("Full API assessment failed")
+                if results and results.get('errors'):
+                    for error in results['errors']:
+                        print(f"   ❌ {error}")
+                        
+        except Exception as e:
+            self.show_error(f"Error during full API assessment: {e}")
+            
+        self.wait_for_continue()
+        
+    def view_api_testing_results(self):
+        """View recent API testing results"""
+        runs_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        
+        # Find recent API testing runs
+        api_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and 
+                   any(x in d.name for x in ['rest_api_', 'graphql_api_', 'soap_api_', 'api_auth_', 'api_docs_', 'full_api_'])]
+        api_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if not api_dirs:
+            self.show_info("No API testing results found")
+            self.wait_for_continue()
+            return
+            
+        print("\n📊 \033[1;97mRecent API Testing Results:\033[0m")
+        print("=" * 60)
+        
+        for i, run_dir in enumerate(api_dirs[:10], 1):
+            print(f"\n{i}. 📁 {run_dir.name}")
+            
+            # Check for different types of results
+            if 'rest_api_' in run_dir.name:
+                result_files = list(run_dir.glob("*.json"))
+                print(f"   🔍 REST API Testing: {len(result_files)} result files")
+            elif 'graphql_api_' in run_dir.name:
+                result_files = list(run_dir.glob("*.json"))
+                print(f"   📊 GraphQL Testing: {len(result_files)} result files")
+            elif 'soap_api_' in run_dir.name:
+                result_files = list(run_dir.glob("*.json"))
+                print(f"   🧽 SOAP Testing: {len(result_files)} result files")
+            elif 'api_auth_' in run_dir.name:
+                auth_files = list(run_dir.glob("*auth*"))
+                print(f"   🔐 Auth Testing: {len(auth_files)} result files")
+            elif 'api_docs_' in run_dir.name:
+                doc_files = list(run_dir.glob("*"))
+                print(f"   📋 Documentation Analysis: {len(doc_files)} files")
+            elif 'full_api_' in run_dir.name:
+                all_files = list(run_dir.glob("*"))
+                print(f"   🔌 Full API Assessment: {len(all_files)} files")
+                    
+        self.wait_for_continue()
+        
+    def configure_api_testing_settings(self):
+        """Configure API testing settings"""
+        print("\n⚙️ \033[1;97mAPI Testing Configuration:\033[0m")
+        print("=" * 50)
+        
+        config = self.moloch_integration.config
+        api_config = config.get('api_testing', {})
+        
+        print(f"📊 Current Settings:")
+        print(f"   • Request Timeout: {api_config.get('request_timeout', 30)}s")
+        print(f"   • Rate Limiting: {api_config.get('rate_limit', 10)} req/sec")
+        print(f"   • Authentication Methods: {', '.join(api_config.get('auth_methods', ['bearer', 'basic', 'oauth']))}")
+        print(f"   • Payload Fuzzing: {api_config.get('payload_fuzzing', True)}")
+        print(f"   • Schema Validation: {api_config.get('schema_validation', True)}")
+        print(f"   • Deep Testing: {api_config.get('deep_testing', False)}")
+        
+        print(f"\n💡 Use moloch.cfg.json to modify these settings")
         self.wait_for_continue()
     
     def infrastructure_scanning_menu(self):
@@ -1840,8 +2613,99 @@ class MasterAzazElFramework:
         self.wait_for_continue()
     
     def import_target_list(self):
-        self.show_info("Import target list functionality will be implemented")
+        """Import target list from file"""
+        print("\n📥 \033[1;97mImport Target List:\033[0m")
+        print("Supported formats: TXT (one target per line), CSV, JSON")
+        
+        file_path = input("\n📁 Enter file path: ").strip()
+        if not file_path:
+            return
+            
+        try:
+            file_path = Path(file_path)
+            if not file_path.exists():
+                self.show_error(f"File not found: {file_path}")
+                return
+                
+            new_targets = set()
+            
+            if file_path.suffix.lower() == '.txt':
+                # Plain text file
+                with open(file_path, 'r') as f:
+                    for line in f:
+                        target = line.strip()
+                        if target and not target.startswith('#'):
+                            new_targets.add(target)
+                            
+            elif file_path.suffix.lower() == '.csv':
+                # CSV file
+                import csv
+                with open(file_path, 'r') as f:
+                    reader = csv.reader(f)
+                    for row in reader:
+                        if row and len(row) > 0:
+                            target = row[0].strip()
+                            if target and not target.startswith('#'):
+                                new_targets.add(target)
+                                
+            elif file_path.suffix.lower() == '.json':
+                # JSON file
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        for target in data:
+                            if isinstance(target, str):
+                                new_targets.add(target.strip())
+                            elif isinstance(target, dict) and 'target' in target:
+                                new_targets.add(target['target'].strip())
+                    elif isinstance(data, dict) and 'targets' in data:
+                        for target in data['targets']:
+                            if isinstance(target, str):
+                                new_targets.add(target.strip())
+            else:
+                self.show_error("Unsupported file format. Use .txt, .csv, or .json")
+                return
+                
+            if new_targets:
+                # Show preview
+                print(f"\n📋 Found {len(new_targets)} targets:")
+                for i, target in enumerate(list(new_targets)[:10], 1):
+                    print(f"  {i}. {target}")
+                if len(new_targets) > 10:
+                    print(f"  ... and {len(new_targets) - 10} more")
+                
+                # Confirm import
+                confirm = input(f"\n✅ Import {len(new_targets)} targets? (y/N): ")
+                if confirm.lower() == 'y':
+                    # Add to existing targets
+                    original_count = len(self.targets)
+                    self.targets.update(new_targets)
+                    new_count = len(self.targets) - original_count
+                    
+                    # Save to targets.txt
+                    self.save_targets()
+                    
+                    self.show_success(f"Imported {new_count} new targets (total: {len(self.targets)})")
+                else:
+                    print("Import cancelled")
+            else:
+                self.show_info("No valid targets found in file")
+                
+        except Exception as e:
+            self.show_error(f"Error importing targets: {e}")
+            
         self.wait_for_continue()
+        
+    def save_targets(self):
+        """Save targets to targets.txt file"""
+        try:
+            targets_file = Path("targets.txt")
+            with open(targets_file, 'w') as f:
+                for target in sorted(self.targets):
+                    f.write(f"{target}\n")
+            self.logger.info(f"Saved {len(self.targets)} targets to {targets_file}")
+        except Exception as e:
+            self.logger.error(f"Error saving targets: {e}")
     
     def view_current_targets(self) -> None:
         """View current targets in the target list"""
@@ -1892,8 +2756,150 @@ class MasterAzazElFramework:
         self.wait_for_continue()
     
     def remove_targets(self):
-        self.show_info("Remove targets functionality will be implemented")
-        self.wait_for_continue()
+        """Remove targets from the list"""
+        if not self.targets:
+            self.show_info("No targets to remove")
+            self.wait_for_continue()
+            return
+            
+        while True:
+            print("\n🗑️ \033[1;97mRemove Targets:\033[0m")
+            print("1. Remove specific target")
+            print("2. Remove multiple targets")
+            print("3. Clear all targets")
+            print("4. Remove by pattern/filter")
+            print("0. Return to previous menu")
+            
+            choice = input("\nSelect option (0-4): ").strip()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                self.remove_single_target()
+            elif choice == "2":
+                self.remove_multiple_targets()
+            elif choice == "3":
+                self.clear_all_targets()
+            elif choice == "4":
+                self.remove_targets_by_pattern()
+            else:
+                self.show_error("Invalid option")
+                
+    def remove_single_target(self):
+        """Remove a single target"""
+        print(f"\n🎯 \033[1;97mCurrent Targets ({len(self.targets)}):\033[0m")
+        targets_list = list(self.targets)
+        
+        for i, target in enumerate(targets_list, 1):
+            print(f"  {i}. {target}")
+            
+        try:
+            choice = input(f"\nSelect target to remove (1-{len(targets_list)}): ")
+            index = int(choice) - 1
+            
+            if 0 <= index < len(targets_list):
+                target_to_remove = targets_list[index]
+                confirm = input(f"\n⚠️ Remove '{target_to_remove}'? (y/N): ")
+                
+                if confirm.lower() == 'y':
+                    self.targets.remove(target_to_remove)
+                    self.save_targets()
+                    self.show_success(f"Removed target: {target_to_remove}")
+                else:
+                    print("Removal cancelled")
+            else:
+                self.show_error("Invalid target selection")
+                
+        except (ValueError, IndexError):
+            self.show_error("Invalid input")
+            
+    def remove_multiple_targets(self):
+        """Remove multiple targets"""
+        print(f"\n🎯 \033[1;97mCurrent Targets ({len(self.targets)}):\033[0m")
+        targets_list = list(self.targets)
+        
+        for i, target in enumerate(targets_list, 1):
+            print(f"  {i}. {target}")
+            
+        print("\n💡 Enter target numbers separated by commas (e.g., 1,3,5)")
+        selection = input("Select targets to remove: ").strip()
+        
+        if not selection:
+            return
+            
+        try:
+            indices = [int(x.strip()) - 1 for x in selection.split(',')]
+            targets_to_remove = []
+            
+            for index in indices:
+                if 0 <= index < len(targets_list):
+                    targets_to_remove.append(targets_list[index])
+                    
+            if targets_to_remove:
+                print(f"\n📋 Targets to remove:")
+                for target in targets_to_remove:
+                    print(f"  • {target}")
+                    
+                confirm = input(f"\n⚠️ Remove {len(targets_to_remove)} targets? (y/N): ")
+                
+                if confirm.lower() == 'y':
+                    for target in targets_to_remove:
+                        self.targets.remove(target)
+                    self.save_targets()
+                    self.show_success(f"Removed {len(targets_to_remove)} targets")
+                else:
+                    print("Removal cancelled")
+            else:
+                self.show_error("No valid targets selected")
+                
+        except ValueError:
+            self.show_error("Invalid input format")
+            
+    def clear_all_targets(self):
+        """Clear all targets"""
+        if not self.targets:
+            self.show_info("No targets to clear")
+            return
+            
+        print(f"\n⚠️ \033[1;91mThis will remove ALL {len(self.targets)} targets!\033[0m")
+        confirm = input("Are you sure? Type 'DELETE ALL' to confirm: ")
+        
+        if confirm == "DELETE ALL":
+            self.targets.clear()
+            self.save_targets()
+            self.show_success("All targets removed")
+        else:
+            print("Clear operation cancelled")
+            
+    def remove_targets_by_pattern(self):
+        """Remove targets by pattern/filter"""
+        pattern = input("\n🔍 Enter pattern to match (supports wildcards *): ").strip()
+        if not pattern:
+            return
+            
+        import fnmatch
+        matching_targets = []
+        
+        for target in self.targets:
+            if fnmatch.fnmatch(target.lower(), pattern.lower()):
+                matching_targets.append(target)
+                
+        if matching_targets:
+            print(f"\n📋 Targets matching pattern '{pattern}':")
+            for target in matching_targets:
+                print(f"  • {target}")
+                
+            confirm = input(f"\n⚠️ Remove {len(matching_targets)} matching targets? (y/N): ")
+            
+            if confirm.lower() == 'y':
+                for target in matching_targets:
+                    self.targets.remove(target)
+                self.save_targets()
+                self.show_success(f"Removed {len(matching_targets)} targets matching pattern")
+            else:
+                print("Removal cancelled")
+        else:
+            self.show_info(f"No targets match pattern: {pattern}")
     
     def validate_targets(self) -> None:
         """Validate targets in the target list"""
@@ -1960,12 +2966,648 @@ class MasterAzazElFramework:
         self.wait_for_continue()
     
     def export_target_list(self):
-        self.show_info("Export target list functionality will be implemented")
+        """Export target list to various formats"""
+        if not self.targets:
+            self.show_info("No targets to export")
+            self.wait_for_continue()
+            return
+            
+        print("\n📤 \033[1;97mExport Target List:\033[0m")
+        print("1. Plain text (.txt)")
+        print("2. CSV format (.csv)")
+        print("3. JSON format (.json)")
+        print("4. XML format (.xml)")
+        print("5. Custom format")
+        
+        choice = input("\nSelect export format (1-5): ").strip()
+        
+        if choice not in ['1', '2', '3', '4', '5']:
+            self.show_error("Invalid format selection")
+            return
+            
+        # Get output filename
+        default_name = f"targets_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        filename = input(f"\nEnter filename (default: {default_name}): ").strip()
+        
+        if not filename:
+            filename = default_name
+            
+        try:
+            if choice == "1":
+                # Plain text
+                filepath = Path(f"{filename}.txt")
+                with open(filepath, 'w') as f:
+                    for target in sorted(self.targets):
+                        f.write(f"{target}\n")
+                        
+            elif choice == "2":
+                # CSV format
+                import csv
+                filepath = Path(f"{filename}.csv")
+                with open(filepath, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['Target', 'Added_Date', 'Status'])
+                    for target in sorted(self.targets):
+                        writer.writerow([target, datetime.now().strftime('%Y-%m-%d'), 'Active'])
+                        
+            elif choice == "3":
+                # JSON format
+                filepath = Path(f"{filename}.json")
+                export_data = {
+                    "export_info": {
+                        "timestamp": datetime.now().isoformat(),
+                        "tool": f"{MASTER_APP} {MASTER_VERSION}",
+                        "total_targets": len(self.targets)
+                    },
+                    "targets": [
+                        {
+                            "target": target,
+                            "added_date": datetime.now().isoformat(),
+                            "status": "active"
+                        } for target in sorted(self.targets)
+                    ]
+                }
+                with open(filepath, 'w') as f:
+                    json.dump(export_data, f, indent=2)
+                    
+            elif choice == "4":
+                # XML format
+                filepath = Path(f"{filename}.xml")
+                with open(filepath, 'w') as f:
+                    f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+                    f.write('<targets>\n')
+                    f.write(f'  <export_info>\n')
+                    f.write(f'    <timestamp>{datetime.now().isoformat()}</timestamp>\n')
+                    f.write(f'    <tool>{MASTER_APP} {MASTER_VERSION}</tool>\n')
+                    f.write(f'    <total_targets>{len(self.targets)}</total_targets>\n')
+                    f.write(f'  </export_info>\n')
+                    for target in sorted(self.targets):
+                        f.write(f'  <target>\n')
+                        f.write(f'    <url>{target}</url>\n')
+                        f.write(f'    <status>active</status>\n')
+                        f.write(f'  </target>\n')
+                    f.write('</targets>\n')
+                    
+            elif choice == "5":
+                # Custom format
+                print("\n⚙️ Custom Export Format:")
+                print("Enter format template (use {target} as placeholder)")
+                print("Example: Target: {target} | Status: Active")
+                
+                template = input("Format template: ").strip()
+                if not template:
+                    template = "{target}"
+                    
+                filepath = Path(f"{filename}.txt")
+                with open(filepath, 'w') as f:
+                    for target in sorted(self.targets):
+                        f.write(template.format(target=target) + '\n')
+                        
+            self.show_success(f"Exported {len(self.targets)} targets to {filepath}")
+            print(f"📁 File saved: {filepath.absolute()}")
+            
+        except Exception as e:
+            self.show_error(f"Error exporting targets: {e}")
+            
         self.wait_for_continue()
     
     def bulk_target_operations(self):
-        self.show_info("Bulk target operations functionality will be implemented")
+        """Bulk operations on targets"""
+        if not self.targets:
+            self.show_info("No targets available for bulk operations")
+            self.wait_for_continue()
+            return
+            
+        while True:
+            print("\n📦 \033[1;97mBulk Target Operations:\033[0m")
+            print(f"Current targets: {len(self.targets)}")
+            print("")
+            print("1. 🔍 Validate all targets (connectivity check)")
+            print("2. 🌐 Resolve all domains to IPs")
+            print("3. 📊 Generate target statistics")
+            print("4. 🔄 Deduplicate targets")
+            print("5. 🏷️ Categorize targets by type")
+            print("6. 🚀 Mass reconnaissance")
+            print("7. 📋 Bulk export with metadata")
+            print("0. Return to previous menu")
+            
+            choice = input("\nSelect operation (0-7): ").strip()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                self.validate_all_targets()
+            elif choice == "2":
+                self.resolve_all_targets()
+            elif choice == "3":
+                self.generate_target_statistics()
+            elif choice == "4":
+                self.deduplicate_targets()
+            elif choice == "5":
+                self.categorize_targets()
+            elif choice == "6":
+                asyncio.run(self.mass_reconnaissance())
+            elif choice == "7":
+                self.bulk_export_with_metadata()
+            else:
+                self.show_error("Invalid option")
+                
+    def validate_all_targets(self):
+        """Validate connectivity for all targets"""
+        print(f"\n🔍 \033[1;97mValidating {len(self.targets)} targets...\033[0m")
+        
+        valid_targets = []
+        invalid_targets = []
+        
+        import requests
+        from urllib.parse import urlparse
+        
+        for i, target in enumerate(self.targets, 1):
+            print(f"\r[{i}/{len(self.targets)}] Checking {target[:50]}...", end="", flush=True)
+            
+            try:
+                # Ensure URL format
+                if not target.startswith(('http://', 'https://')):
+                    test_url = f"https://{target}"
+                else:
+                    test_url = target
+                    
+                response = requests.head(test_url, timeout=10, allow_redirects=True)
+                if response.status_code < 500:  # Accept redirects and client errors
+                    valid_targets.append(target)
+                else:
+                    invalid_targets.append((target, f"HTTP {response.status_code}"))
+                    
+            except Exception as e:
+                invalid_targets.append((target, str(e)[:50]))
+                
+        print(f"\n\n📊 \033[1;97mValidation Results:\033[0m")
+        print(f"✅ Valid targets: {len(valid_targets)}")
+        print(f"❌ Invalid targets: {len(invalid_targets)}")
+        
+        if invalid_targets:
+            print(f"\n❌ Invalid targets:")
+            for target, error in invalid_targets[:10]:
+                print(f"  • {target} - {error}")
+            if len(invalid_targets) > 10:
+                print(f"  ... and {len(invalid_targets) - 10} more")
+                
+            remove_invalid = input(f"\n🗑️ Remove {len(invalid_targets)} invalid targets? (y/N): ")
+            if remove_invalid.lower() == 'y':
+                for target, _ in invalid_targets:
+                    self.targets.discard(target)
+                self.save_targets()
+                self.show_success(f"Removed {len(invalid_targets)} invalid targets")
+                
         self.wait_for_continue()
+        
+    def resolve_all_targets(self):
+        """Resolve all domain targets to IP addresses"""
+        print(f"\n🌐 \033[1;97mResolving {len(self.targets)} targets...\033[0m")
+        
+        import socket
+        from urllib.parse import urlparse
+        
+        resolved_data = {}
+        
+        for i, target in enumerate(self.targets, 1):
+            print(f"\r[{i}/{len(self.targets)}] Resolving {target[:50]}...", end="", flush=True)
+            
+            try:
+                # Extract domain from URL if needed
+                if target.startswith(('http://', 'https://')):
+                    domain = urlparse(target).netloc
+                else:
+                    domain = target
+                    
+                # Remove port if present
+                domain = domain.split(':')[0]
+                
+                # Resolve to IP
+                ip = socket.gethostbyname(domain)
+                resolved_data[target] = {
+                    'domain': domain,
+                    'ip': ip,
+                    'status': 'resolved'
+                }
+                
+            except Exception as e:
+                resolved_data[target] = {
+                    'domain': domain if 'domain' in locals() else target,
+                    'ip': None,
+                    'status': f'failed: {str(e)[:30]}'
+                }
+                
+        print(f"\n\n📊 \033[1;97mResolution Results:\033[0m")
+        
+        resolved_count = len([d for d in resolved_data.values() if d['ip']])
+        failed_count = len(resolved_data) - resolved_count
+        
+        print(f"✅ Resolved: {resolved_count}")
+        print(f"❌ Failed: {failed_count}")
+        
+        # Save results
+        output_file = Path(f"target_resolution_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        with open(output_file, 'w') as f:
+            json.dump(resolved_data, f, indent=2)
+            
+        print(f"\n📁 Results saved to: {output_file}")
+        self.wait_for_continue()
+        
+    def generate_target_statistics(self):
+        """Generate comprehensive target statistics"""
+        print(f"\n📊 \033[1;97mTarget Statistics:\033[0m")
+        print("=" * 50)
+        
+        from urllib.parse import urlparse
+        from collections import defaultdict
+        
+        stats = {
+            'total': len(self.targets),
+            'protocols': defaultdict(int),
+            'domains': defaultdict(int),
+            'tlds': defaultdict(int),
+            'ports': defaultdict(int),
+            'subdomains': 0,
+            'ips': 0,
+            'urls': 0
+        }
+        
+        for target in self.targets:
+            # Check if it's an IP address
+            import re
+            ip_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+            
+            if re.match(ip_pattern, target.split(':')[0]):
+                stats['ips'] += 1
+                if ':' in target:
+                    port = target.split(':')[1]
+                    stats['ports'][port] += 1
+            elif target.startswith(('http://', 'https://')):
+                stats['urls'] += 1
+                parsed = urlparse(target)
+                stats['protocols'][parsed.scheme] += 1
+                
+                domain = parsed.netloc.split(':')[0]
+                if '.' in domain:
+                    tld = domain.split('.')[-1]
+                    stats['tlds'][tld] += 1
+                    
+                if domain.count('.') > 1:
+                    stats['subdomains'] += 1
+                    
+                if parsed.port:
+                    stats['ports'][str(parsed.port)] += 1
+                    
+            else:
+                # Assume it's a domain
+                if '.' in target:
+                    tld = target.split('.')[-1]
+                    stats['tlds'][tld] += 1
+                    
+                if target.count('.') > 1:
+                    stats['subdomains'] += 1
+                    
+        print(f"📈 Total Targets: {stats['total']}")
+        print(f"🌐 Domains/URLs: {stats['urls']}")
+        print(f"📱 IP Addresses: {stats['ips']}")
+        print(f"🔗 Subdomains: {stats['subdomains']}")
+        
+        if stats['protocols']:
+            print(f"\n🔒 Protocols:")
+            for protocol, count in sorted(stats['protocols'].items()):
+                print(f"  • {protocol}: {count}")
+                
+        if stats['tlds']:
+            print(f"\n🌍 Top TLDs:")
+            top_tlds = sorted(stats['tlds'].items(), key=lambda x: x[1], reverse=True)[:10]
+            for tld, count in top_tlds:
+                print(f"  • .{tld}: {count}")
+                
+        if stats['ports']:
+            print(f"\n🔌 Ports:")
+            for port, count in sorted(stats['ports'].items()):
+                print(f"  • {port}: {count}")
+                
+        # Save detailed stats
+        output_file = Path(f"target_stats_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        with open(output_file, 'w') as f:
+            # Convert defaultdict to regular dict for JSON serialization
+            stats_dict = {k: dict(v) if isinstance(v, defaultdict) else v for k, v in stats.items()}
+            json.dump(stats_dict, f, indent=2)
+            
+        print(f"\n📁 Detailed stats saved to: {output_file}")
+        self.wait_for_continue()
+        
+    def deduplicate_targets(self):
+        """Remove duplicate targets"""
+        original_count = len(self.targets)
+        
+        # Targets are already in a set, so they're unique
+        # But let's normalize and check for similar entries
+        normalized_targets = set()
+        duplicates_found = []
+        
+        for target in self.targets:
+            # Normalize target
+            normalized = target.lower().strip()
+            
+            # Remove trailing slash
+            if normalized.endswith('/'):
+                normalized = normalized[:-1]
+                
+            # Check for www variants
+            if normalized.startswith('www.'):
+                base_domain = normalized[4:]
+                if base_domain in normalized_targets:
+                    duplicates_found.append((target, f"Duplicate of {base_domain}"))
+                    continue
+                    
+            if f"www.{normalized}" in normalized_targets:
+                duplicates_found.append((target, f"Duplicate with www variant"))
+                continue
+                
+            normalized_targets.add(normalized)
+            
+        if duplicates_found:
+            print(f"\n🔍 \033[1;97mFound {len(duplicates_found)} potential duplicates:\033[0m")
+            for target, reason in duplicates_found[:10]:
+                print(f"  • {target} - {reason}")
+                
+            if len(duplicates_found) > 10:
+                print(f"  ... and {len(duplicates_found) - 10} more")
+                
+            remove_dupes = input(f"\n🗑️ Remove {len(duplicates_found)} duplicates? (y/N): ")
+            if remove_dupes.lower() == 'y':
+                for target, _ in duplicates_found:
+                    self.targets.discard(target)
+                self.save_targets()
+                self.show_success(f"Removed {len(duplicates_found)} duplicates")
+        else:
+            self.show_info("No duplicates found")
+            
+        self.wait_for_continue()
+        
+    def categorize_targets(self):
+        """Categorize targets by type"""
+        from urllib.parse import urlparse
+        import re
+        
+        categories = {
+            'web_applications': [],
+            'api_endpoints': [],
+            'ip_addresses': [],
+            'subdomains': [],
+            'main_domains': [],
+            'unknown': []
+        }
+        
+        ip_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        
+        for target in self.targets:
+            if re.match(ip_pattern, target.split(':')[0]):
+                categories['ip_addresses'].append(target)
+            elif 'api' in target.lower() or '/api/' in target.lower():
+                categories['api_endpoints'].append(target)
+            elif target.startswith(('http://', 'https://')):
+                parsed = urlparse(target)
+                domain = parsed.netloc.split(':')[0]
+                if domain.count('.') > 1:
+                    categories['subdomains'].append(target)
+                else:
+                    categories['web_applications'].append(target)
+            elif '.' in target:
+                if target.count('.') > 1:
+                    categories['subdomains'].append(target)
+                else:
+                    categories['main_domains'].append(target)
+            else:
+                categories['unknown'].append(target)
+                
+        print(f"\n📂 \033[1;97mTarget Categories:\033[0m")
+        print("=" * 40)
+        
+        for category, targets in categories.items():
+            if targets:
+                print(f"\n{category.replace('_', ' ').title()}: {len(targets)}")
+                for target in targets[:5]:
+                    print(f"  • {target}")
+                if len(targets) > 5:
+                    print(f"  ... and {len(targets) - 5} more")
+                    
+        # Save categorized results
+        output_file = Path(f"target_categories_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        with open(output_file, 'w') as f:
+            json.dump(categories, f, indent=2)
+            
+        print(f"\n📁 Categories saved to: {output_file}")
+        self.wait_for_continue()
+        
+    async def mass_reconnaissance(self):
+        """Perform reconnaissance on all targets"""
+        if not self.integrations_available:
+            self.show_error("Moloch integration not available")
+            return
+            
+        print(f"\n🚀 \033[1;97mMass Reconnaissance on {len(self.targets)} targets\033[0m")
+        print("⚠️ This will run reconnaissance on ALL targets!")
+        
+        confirm = input("\nContinue with mass reconnaissance? (y/N): ")
+        if confirm.lower() != 'y':
+            return
+            
+        # Create master run directory
+        run_dir = Path(self.moloch_integration.config['general']['runs_dir'])
+        mass_run_path = run_dir / f"mass_recon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        mass_run_path.mkdir(parents=True, exist_ok=True)
+        
+        results = {}
+        completed = 0
+        failed = 0
+        
+        for i, target in enumerate(self.targets, 1):
+            print(f"\n[{i}/{len(self.targets)}] 🎯 Processing {target}")
+            
+            try:
+                target_dir = mass_run_path / target.replace('.', '_').replace(':', '_').replace('/', '_')
+                target_dir.mkdir(exist_ok=True)
+                
+                # Run reconnaissance
+                recon_results = await self.moloch_integration.run_reconnaissance_suite(
+                    target, target_dir, aggressive=False
+                )
+                
+                results[target] = recon_results
+                completed += 1
+                
+                print(f"  ✅ Completed: {len(recon_results.get('live_hosts', []))} live hosts found")
+                
+            except Exception as e:
+                print(f"  ❌ Failed: {e}")
+                results[target] = {'error': str(e)}
+                failed += 1
+                
+        # Save master results
+        master_results_file = mass_run_path / "mass_reconnaissance_results.json"
+        with open(master_results_file, 'w') as f:
+            json.dump(results, f, indent=2, default=str)
+            
+        print(f"\n📊 \033[1;97mMass Reconnaissance Summary:\033[0m")
+        print(f"✅ Completed: {completed}")
+        print(f"❌ Failed: {failed}")
+        print(f"📁 Results saved to: {mass_run_path}")
+        
+        self.wait_for_continue()
+        
+    def bulk_export_with_metadata(self):
+        """Export targets with comprehensive metadata"""
+        print(f"\n📋 \033[1;97mBulk Export with Metadata\033[0m")
+        
+        # Collect metadata for all targets
+        metadata = {}
+        
+        print("🔍 Collecting metadata...")
+        for target in self.targets:
+            print(f"\rProcessing {target[:50]}...", end="", flush=True)
+            
+            target_data = {
+                'target': target,
+                'added_date': datetime.now().isoformat(),
+                'type': self.classify_target_type(target),
+                'status': 'active'
+            }
+            
+            metadata[target] = target_data
+            
+        print(f"\n\n📊 Export Options:")
+        print("1. Detailed JSON with metadata")
+        print("2. CSV with basic info")
+        print("3. Excel spreadsheet")
+        print("4. Markdown report")
+        
+        choice = input("\nSelect export format (1-4): ").strip()
+        
+        filename = f"targets_bulk_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        try:
+            if choice == "1":
+                # Detailed JSON
+                filepath = Path(f"{filename}.json")
+                export_data = {
+                    'export_info': {
+                        'timestamp': datetime.now().isoformat(),
+                        'tool': f"{MASTER_APP} {MASTER_VERSION}",
+                        'total_targets': len(self.targets),
+                        'categories': self.get_target_category_summary()
+                    },
+                    'targets': metadata
+                }
+                with open(filepath, 'w') as f:
+                    json.dump(export_data, f, indent=2)
+                    
+            elif choice == "2":
+                # CSV format
+                import csv
+                filepath = Path(f"{filename}.csv")
+                with open(filepath, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['Target', 'Type', 'Status', 'Added_Date'])
+                    for target_data in metadata.values():
+                        writer.writerow([
+                            target_data['target'],
+                            target_data['type'],
+                            target_data['status'],
+                            target_data['added_date']
+                        ])
+                        
+            elif choice == "3":
+                # Try to create Excel file (requires openpyxl)
+                try:
+                    import openpyxl
+                    from openpyxl import Workbook
+                    
+                    wb = Workbook()
+                    ws = wb.active
+                    ws.title = "Targets"
+                    
+                    # Headers
+                    headers = ['Target', 'Type', 'Status', 'Added Date']
+                    for col, header in enumerate(headers, 1):
+                        ws.cell(row=1, column=col, value=header)
+                        
+                    # Data
+                    for row, target_data in enumerate(metadata.values(), 2):
+                        ws.cell(row=row, column=1, value=target_data['target'])
+                        ws.cell(row=row, column=2, value=target_data['type'])
+                        ws.cell(row=row, column=3, value=target_data['status'])
+                        ws.cell(row=row, column=4, value=target_data['added_date'])
+                        
+                    filepath = Path(f"{filename}.xlsx")
+                    wb.save(filepath)
+                    
+                except ImportError:
+                    self.show_error("openpyxl not installed. Install with: pip install openpyxl")
+                    return
+                    
+            elif choice == "4":
+                # Markdown report
+                filepath = Path(f"{filename}.md")
+                with open(filepath, 'w') as f:
+                    f.write(f"# Target List Report\n\n")
+                    f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"**Tool:** {MASTER_APP} {MASTER_VERSION}\n")
+                    f.write(f"**Total Targets:** {len(self.targets)}\n\n")
+                    
+                    f.write("## Target Summary\n\n")
+                    f.write("| Target | Type | Status |\n")
+                    f.write("|--------|------|--------|\n")
+                    
+                    for target_data in metadata.values():
+                        f.write(f"| {target_data['target']} | {target_data['type']} | {target_data['status']} |\n")
+                        
+            else:
+                self.show_error("Invalid export format")
+                return
+                
+            self.show_success(f"Bulk export completed: {filepath}")
+            print(f"📁 File saved: {filepath.absolute()}")
+            
+        except Exception as e:
+            self.show_error(f"Error during bulk export: {e}")
+            
+        self.wait_for_continue()
+        
+    def classify_target_type(self, target):
+        """Classify target type"""
+        import re
+        from urllib.parse import urlparse
+        
+        ip_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        
+        if re.match(ip_pattern, target.split(':')[0]):
+            return 'IP Address'
+        elif 'api' in target.lower():
+            return 'API Endpoint'
+        elif target.startswith(('http://', 'https://')):
+            return 'Web Application'
+        elif '.' in target:
+            if target.count('.') > 1:
+                return 'Subdomain'
+            else:
+                return 'Domain'
+        else:
+            return 'Unknown'
+            
+    def get_target_category_summary(self):
+        """Get summary of target categories"""
+        from collections import defaultdict
+        
+        categories = defaultdict(int)
+        for target in self.targets:
+            category = self.classify_target_type(target)
+            categories[category] += 1
+            
+        return dict(categories)
     
     def show_detailed_system_status(self):
         """Show detailed system status"""
