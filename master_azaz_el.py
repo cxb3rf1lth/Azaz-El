@@ -94,7 +94,7 @@ class MasterAzazElFramework:
     Advanced Professional TUI with Complete Integration
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the master unified framework"""
         self.version = MASTER_VERSION
         self.app_name = MASTER_APP
@@ -136,7 +136,7 @@ class MasterAzazElFramework:
         # Initialize master framework
         self.initialize_master_framework()
     
-    def setup_master_logging(self):
+    def setup_master_logging(self) -> None:
         """Setup enhanced logging for master framework"""
         try:
             setup_logging()
@@ -147,7 +147,7 @@ class MasterAzazElFramework:
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
     
-    def initialize_integrations(self):
+    def initialize_integrations(self) -> None:
         """Initialize all framework integrations"""
         self.logger.info("Initializing Master Framework Integrations")
         
@@ -172,7 +172,7 @@ class MasterAzazElFramework:
             self.logger.warning(f"Some integrations failed to initialize: {e}")
             self.integrations_available = False
     
-    def initialize_master_framework(self):
+    def initialize_master_framework(self) -> None:
         """Initialize the master framework environment"""
         self.logger.info("Initializing Master Azaz-El Framework")
         
@@ -192,7 +192,7 @@ class MasterAzazElFramework:
         
         self.logger.info("Master framework initialization complete")
     
-    def update_system_status(self):
+    def update_system_status(self) -> None:
         """Update comprehensive system status"""
         try:
             # Check scanner availability
@@ -247,7 +247,7 @@ class MasterAzazElFramework:
             self.logger.error(f"Error updating system status: {e}")
             self.system_status["health"] = "Error"
     
-    def print_master_banner(self):
+    def print_master_banner(self) -> None:
         """Print the enhanced master banner with comprehensive status"""
         # Clear screen for better presentation
         os.system('clear' if os.name == 'posix' else 'cls')
@@ -275,7 +275,7 @@ class MasterAzazElFramework:
         
         print()  # Add spacing
     
-    def display_master_menu(self):
+    def display_master_menu(self) -> None:
         """Display the comprehensive master menu"""
         while True:
             self.print_master_banner()
@@ -344,7 +344,13 @@ class MasterAzazElFramework:
                     self.exit_framework()
                     break
                 elif choice == "1":
-                    asyncio.run(self.run_full_automation_pipeline())
+                    # Create a new event loop to handle the async pipeline
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(self.run_full_automation_pipeline())
+                    finally:
+                        loop.close()
                 elif choice == "2":
                     self.target_management_menu()
                 elif choice == "3":
@@ -520,20 +526,20 @@ class MasterAzazElFramework:
             else:
                 self.show_error(f"Invalid option: {choice}")
     
-    def show_error(self, message: str):
+    def show_error(self, message: str) -> None:
         """Display error message with formatting"""
         print(f"\n❌ \033[1;91mError:\033[0m {message}")
         self.wait_for_continue()
     
-    def show_success(self, message: str):
+    def show_success(self, message: str) -> None:
         """Display success message with formatting"""
         print(f"\n✅ \033[1;92mSuccess:\033[0m {message}")
     
-    def show_info(self, message: str):
+    def show_info(self, message: str) -> None:
         """Display info message with formatting"""
         print(f"\n💡 \033[1;94mInfo:\033[0m {message}")
     
-    def wait_for_continue(self):
+    def wait_for_continue(self) -> None:
         """Wait for user input to continue"""
         input("\n⏳ Press Enter to continue...")
     
@@ -651,24 +657,193 @@ class MasterAzazElFramework:
         self.wait_for_continue()
     
     # Target management implementations
-    def add_single_target(self):
-        self.show_info("Add single target functionality will be implemented")
+    def add_single_target(self) -> None:
+        """Add a single target to the target list"""
+        self.print_master_banner()
+        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+        print("║\033[1;92m                        📝 ADD SINGLE TARGET 📝\033[0m                        ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+        
+        print("\n💡 \033[1;97mSupported target formats:\033[0m")
+        print("   • Domain: example.com")
+        print("   • Subdomain: sub.example.com")
+        print("   • IP Address: 192.168.1.1")
+        print("   • URL: https://example.com")
+        
+        target = input("\n🎯 \033[1;97mEnter target: \033[0m").strip()
+        
+        if not target:
+            self.show_error("Target cannot be empty")
+            return
+        
+        # Basic validation
+        if ' ' in target:
+            self.show_error("Target cannot contain spaces")
+            return
+        
+        # Load existing targets
+        try:
+            targets_file = Path("targets.txt")
+            if targets_file.exists():
+                existing_targets = targets_file.read_text().strip().split('\n')
+                existing_targets = [t.strip() for t in existing_targets if t.strip()]
+            else:
+                existing_targets = []
+            
+            if target in existing_targets:
+                self.show_error(f"Target '{target}' already exists in target list")
+                return
+            
+            # Add target
+            existing_targets.append(target)
+            targets_file.write_text('\n'.join(existing_targets) + '\n')
+            
+            self.show_success(f"Target '{target}' added successfully!")
+            print(f"   Total targets: {len(existing_targets)}")
+            
+        except Exception as e:
+            self.show_error(f"Failed to add target: {e}")
+        
         self.wait_for_continue()
     
     def import_target_list(self):
         self.show_info("Import target list functionality will be implemented")
         self.wait_for_continue()
     
-    def view_current_targets(self):
-        self.show_info("View current targets functionality will be implemented")
+    def view_current_targets(self) -> None:
+        """View current targets in the target list"""
+        self.print_master_banner()
+        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+        print("║\033[1;94m                        📋 CURRENT TARGETS 📋\033[0m                        ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+        
+        try:
+            targets_file = Path("targets.txt")
+            if not targets_file.exists():
+                print("\n📋 \033[1;93mNo targets file found.\033[0m")
+                print("   Use 'Add Single Target' to create your first target.")
+                self.wait_for_continue()
+                return
+            
+            content = targets_file.read_text().strip()
+            if not content:
+                print("\n📋 \033[1;93mTarget list is empty.\033[0m")
+                print("   Use 'Add Single Target' to add your first target.")
+                self.wait_for_continue()
+                return
+            
+            targets = [t.strip() for t in content.split('\n') if t.strip()]
+            
+            print(f"\n📊 \033[1;97mTotal targets: {len(targets)}\033[0m")
+            print("═" * 60)
+            
+            for i, target in enumerate(targets, 1):
+                # Basic target type detection
+                if target.startswith(('http://', 'https://')):
+                    icon = "🌐"
+                    type_name = "URL"
+                elif target.replace('.', '').replace(':', '').isdigit() or ':' in target:
+                    icon = "🖥️"
+                    type_name = "IP"
+                else:
+                    icon = "🌍"
+                    type_name = "Domain"
+                
+                print(f"{i:3d}. {icon} \033[1;97m{target:<40}\033[0m ({type_name})")
+            
+            print("═" * 60)
+            
+        except Exception as e:
+            self.show_error(f"Failed to load targets: {e}")
+        
         self.wait_for_continue()
     
     def remove_targets(self):
         self.show_info("Remove targets functionality will be implemented")
         self.wait_for_continue()
     
-    def validate_targets(self):
-        self.show_info("Validate targets functionality will be implemented")
+    def validate_targets(self) -> None:
+        """Validate targets in the target list"""
+        self.print_master_banner()
+        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+        print("║\033[1;95m                        ✅ VALIDATE TARGETS ✅\033[0m                        ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════════╝")
+        
+        try:
+            targets_file = Path("targets.txt")
+            if not targets_file.exists():
+                self.show_error("No targets file found")
+                return
+            
+            content = targets_file.read_text().strip()
+            if not content:
+                self.show_error("Target list is empty")
+                return
+            
+            targets = [t.strip() for t in content.split('\n') if t.strip()]
+            
+            print(f"\n🔍 \033[1;97mValidating {len(targets)} targets...\033[0m")
+            print("═" * 60)
+            
+            valid_targets = []
+            invalid_targets = []
+            
+            for i, target in enumerate(targets, 1):
+                print(f"🔍 Validating {i}/{len(targets)}: {target}")
+                
+                # Basic validation logic
+                is_valid = True
+                issues = []
+                
+                # Check for spaces
+                if ' ' in target:
+                    is_valid = False
+                    issues.append("contains spaces")
+                
+                # Check for basic format
+                if target.startswith(('http://', 'https://')):
+                    # URL validation
+                    if not target.count('.') >= 1:
+                        is_valid = False
+                        issues.append("invalid URL format")
+                elif '.' in target:
+                    # Domain validation
+                    if target.startswith('.') or target.endswith('.'):
+                        is_valid = False
+                        issues.append("invalid domain format")
+                elif ':' in target or target.replace('.', '').isdigit():
+                    # IP validation (basic)
+                    pass  # Accept IPs as-is for now
+                else:
+                    is_valid = False
+                    issues.append("unrecognized format")
+                
+                if is_valid:
+                    valid_targets.append(target)
+                    print(f"   ✅ Valid")
+                else:
+                    invalid_targets.append((target, issues))
+                    print(f"   ❌ Invalid: {', '.join(issues)}")
+            
+            print("═" * 60)
+            print(f"📊 \033[1;97mValidation Summary:\033[0m")
+            print(f"   ✅ Valid targets: {len(valid_targets)}")
+            print(f"   ❌ Invalid targets: {len(invalid_targets)}")
+            
+            if invalid_targets:
+                print(f"\n❌ \033[1;91mInvalid targets found:\033[0m")
+                for target, issues in invalid_targets:
+                    print(f"   • {target}: {', '.join(issues)}")
+                
+                if input("\n🗑️  Remove invalid targets? [y/N]: ").strip().lower() == 'y':
+                    targets_file.write_text('\n'.join(valid_targets) + '\n')
+                    self.show_success(f"Removed {len(invalid_targets)} invalid targets")
+            else:
+                self.show_success("All targets are valid!")
+            
+        except Exception as e:
+            self.show_error(f"Validation failed: {e}")
+        
         self.wait_for_continue()
     
     def target_analysis_summary(self):
@@ -757,7 +932,7 @@ class MasterAzazElFramework:
             self.show_error(f"Report generation failed: {e}")
 
 
-def setup_argument_parser():
+def setup_argument_parser() -> argparse.ArgumentParser:
     """Setup comprehensive command line argument parser"""
     parser = argparse.ArgumentParser(
         description=f"{MASTER_APP} {MASTER_VERSION} - Unified Master Security Assessment Framework",

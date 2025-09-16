@@ -33,7 +33,7 @@ from moloch_integration import MolochIntegration, EnhancedScanner
 class AzazElDashboard:
     """Professional Security Assessment Dashboard with Advanced CLI Interface"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the unified dashboard system"""
         self.version = "v5.0.0-UNIFIED"
         self.config_manager = ConfigurationManager("moloch.cfg.json")
@@ -59,7 +59,7 @@ class AzazElDashboard:
         # Initialize dashboard
         self._initialize_dashboard()
     
-    def _initialize_dashboard(self):
+    def _initialize_dashboard(self) -> None:
         """Initialize dashboard components"""
         self.logger.info("Initializing Azaz-El Unified Dashboard")
         
@@ -72,7 +72,7 @@ class AzazElDashboard:
         
         self.logger.info("Dashboard initialization complete")
     
-    def _update_system_status(self):
+    def _update_system_status(self) -> None:
         """Update system status information"""
         # Check scanner availability
         scanners = {
@@ -103,7 +103,7 @@ class AzazElDashboard:
         except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
             return False
     
-    def print_banner(self):
+    def print_banner(self) -> None:
         """Print the enhanced professional dashboard banner with ASCII art"""
         # Clear screen for better presentation
         os.system('clear' if os.name == 'posix' else 'cls')
@@ -152,7 +152,7 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
               f"{available_tools}/{total_tools} Tools Ready | "
               f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\033[0m\n")
     
-    def main_dashboard(self):
+    def main_dashboard(self) -> None:
         """Display the main professional dashboard"""
         while True:
             os.system('clear' if os.name == 'posix' else 'cls')
@@ -239,7 +239,13 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
         
         confirm = input("\n\033[1;97m▶️  Start pipeline execution? [Y/n]: \033[0m").strip().lower()
         if confirm in ['', 'y', 'yes']:
-            self._execute_full_pipeline(target, aggressive_mode, include_cloud)
+            # Create a new event loop to handle the async pipeline
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(self._execute_full_pipeline(target, aggressive_mode, include_cloud))
+            finally:
+                loop.close()
         
         self._wait_for_continue()
     
