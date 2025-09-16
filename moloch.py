@@ -107,11 +107,11 @@ logger = setup_logging()
 # --- Default Configuration ---
 DEFAULT_CONFIG = {
     "tools": {
-        "subfinder": {"enabled": True, "flags": ["-all", "-recursive"], "install_cmd": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"},
-        "amass": {"enabled": True, "flags": ["enum", "-passive"], "install_cmd": "go install -v github.com/owasp-amass/amass/v4/...@master"},
+        "subfinder": {"enabled": True, "flags": ["-all", "-recursive", "-d"], "install_cmd": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"},
+        "amass": {"enabled": True, "flags": ["enum", "-passive", "-d"], "install_cmd": "go install -v github.com/owasp-amass/amass/v4/...@master"},
         "assetfinder": {"enabled": True, "flags": ["--subs-only"], "install_cmd": "go install github.com/tomnomnom/assetfinder@latest"},
-        "findomain": {"enabled": True, "flags": [], "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O findomain && chmod +x findomain && sudo mv findomain /usr/local/bin/"},
-        "chaos": {"enabled": False, "flags": [], "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"}, # Requires API key
+        "findomain": {"enabled": True, "flags": ["-t"], "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O findomain && chmod +x findomain && sudo mv findomain /usr/local/bin/"},
+        "chaos": {"enabled": False, "flags": ["-d"], "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"}, # Requires API key
         "shuffledns": {"enabled": False, "flags": [], "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"}, # Requires massdns and wordlist
         "httpx": {"enabled": True, "flags": ["-silent", "-title", "-web-server", "-tech-detect", "-status-code", "-follow-redirects", "-random-agent", "-probe"], "install_cmd": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"},
         "nuclei": {
@@ -992,12 +992,12 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
 
     # Add Amass if configured
     amass_flags = config.get("tools", {}).get("amass", {}).get("flags", [])
-    tools_to_run.append(("amass", amass_flags + ["-d", target], output_dir / "amass.txt"))
+    tools_to_run.append(("amass", amass_flags + [target], output_dir / "amass.txt"))
 
     # Add Chaos if API key is present and tool is enabled
     chaos_key = config.get("auth", {}).get("chaos_api_key")
     if chaos_key and config.get("tools", {}).get("chaos", {}).get("enabled", False):
-        tools_to_run.append(("chaos", ["-d", target], output_dir / "chaos.txt"))
+        tools_to_run.append(("chaos", [target], output_dir / "chaos.txt"))
 
     max_workers = min(config.get("performance", {}).get("max_workers", 5), len(tools_to_run))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -1479,7 +1479,7 @@ def run_full_pipeline():
             # Resolve subdomains
             subdomain_file = subdomain_dir / f"subdomains_{target_safe}.txt"
             resolved_file = run_dir / "hosts" / f"resolved_{target_safe}.txt"
-            run_dir / "hosts".mkdir(exist_ok=True)
+            (run_dir / "hosts").mkdir(exist_ok=True)
             dns_success = run_dns_resolution(subdomain_file, resolved_file, config)
 
             if dns_success and resolved_file.exists():
