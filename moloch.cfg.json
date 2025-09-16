@@ -4,7 +4,8 @@
             "enabled": true,
             "flags": [
                 "-all",
-                "-recursive"
+                "-recursive",
+                "-d"
             ],
             "install_cmd": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
         },
@@ -12,7 +13,8 @@
             "enabled": true,
             "flags": [
                 "enum",
-                "-passive"
+                "-passive",
+                "-d"
             ],
             "install_cmd": "go install -v github.com/owasp-amass/amass/v4/...@master"
         },
@@ -25,12 +27,16 @@
         },
         "findomain": {
             "enabled": true,
-            "flags": [],
+            "flags": [
+                "-t"
+            ],
             "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O findomain && chmod +x findomain && sudo mv findomain /usr/local/bin/"
         },
         "chaos": {
             "enabled": false,
-            "flags": [],
+            "flags": [
+                "-d"
+            ],
             "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
         },
         "shuffledns": {
