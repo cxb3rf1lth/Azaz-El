@@ -3185,9 +3185,14 @@ def target_management_menu():
             input("\nPress Enter to continue...")
             
         elif choice == '3':
-            # Import from file
+            # Import from file with enhanced validation
             print("\n\033[1;97m📝 IMPORT TARGETS FROM FILE\033[0m")
             print("─" * 50)
+            print("\033[1;96mSupported formats:\033[0m")
+            print("  • One domain per line (e.g., example.com)")
+            print("  • Comments starting with # are ignored")
+            print("  • Empty lines are ignored")
+            print()
             file_path = input("\033[1;93mEnter file path (or 'targets.txt' for default): \033[0m").strip()
             if not file_path:
                 file_path = "targets.txt"
@@ -3197,15 +3202,27 @@ def target_management_menu():
                     new_targets = read_lines(Path(file_path))
                     current_targets = read_lines(TARGETS_FILE)
                     added_count = 0
+                    skipped_count = 0
                     
                     for target in new_targets:
                         target = target.strip()
-                        if target and target not in current_targets:
-                            current_targets.append(target)
-                            added_count += 1
+                        # Skip comments and empty lines
+                        if target and not target.startswith('#'):
+                            # Basic validation
+                            if "." in target and " " not in target and not target.startswith(("http://", "https://")):
+                                if target not in current_targets:
+                                    current_targets.append(target)
+                                    added_count += 1
+                                else:
+                                    skipped_count += 1
+                            else:
+                                logger.warning(f"Skipping invalid target format: {target}")
+                                skipped_count += 1
                     
                     write_lines(TARGETS_FILE, current_targets)
                     print(f"\n\033[1;32m✅ {added_count} new targets imported successfully!\033[0m")
+                    if skipped_count > 0:
+                        print(f"\033[1;93m⚠️  {skipped_count} targets were skipped (duplicates or invalid format)\033[0m")
                 else:
                     print(f"\n\033[1;91m❌ File '{file_path}' not found.\033[0m")
             except Exception as e:
