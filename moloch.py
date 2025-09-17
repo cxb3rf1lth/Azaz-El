@@ -36,10 +36,13 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Tuple, Set
 import hashlib # For hashing results
+import asyncio
+import aiohttp
+import ssl
 
 # --- Configuration ---
 APP = "Azaz-El"
-VERSION = "v5.0.0-ENHANCED"
+VERSION = "v6.0.0-ENHANCED-SECURITY"
 AUTHOR = "Advanced Security Research Team"
 BANNER = r"""
  .S_SSSs     sdSSSSSSSbs   .S_SSSs     sdSSSSSSSbs    sSSs  S.      
@@ -108,9 +111,9 @@ logger = setup_logging()
 DEFAULT_CONFIG = {
     "tools": {
         "subfinder": {"enabled": True, "flags": ["-all", "-recursive", "-d"], "install_cmd": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"},
-        "amass": {"enabled": True, "flags": ["enum", "-passive", "-d"], "install_cmd": "go install -v github.com/owasp-amass/amass/v4/...@master"},
+        "amass": {"enabled": True, "flags": ["enum", "-passive", "-d"], "install_cmd": "go install -v github.com/owasp-amass/amass/v4/...@latest"},
         "assetfinder": {"enabled": True, "flags": ["--subs-only"], "install_cmd": "go install github.com/tomnomnom/assetfinder@latest"},
-        "findomain": {"enabled": True, "flags": ["-t"], "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O findomain && chmod +x findomain && sudo mv findomain /usr/local/bin/"},
+        "findomain": {"enabled": True, "flags": ["-t"], "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O /tmp/findomain && chmod +x /tmp/findomain && sudo mv /tmp/findomain /usr/local/bin/"},
         "chaos": {"enabled": False, "flags": ["-d"], "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"}, # Requires API key
         "shuffledns": {"enabled": False, "flags": [], "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"}, # Requires massdns and wordlist
         "httpx": {"enabled": True, "flags": ["-silent", "-title", "-web-server", "-tech-detect", "-status-code", "-follow-redirects", "-random-agent", "-probe"], "install_cmd": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"},
@@ -134,6 +137,16 @@ DEFAULT_CONFIG = {
         "nmap": {"enabled": True, "flags": ["-sV", "-sC", "-Pn", "-T4"], "install_cmd": "sudo apt install nmap -y || brew install nmap || echo 'Install nmap manually'"}, # Port Scanning
         "dnsx": {"enabled": True, "flags": ["-silent", "-resp-only"], "install_cmd": "go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest"}, # DNS Resolution
         "naabu": {"enabled": True, "flags": ["-silent", "-top-ports", "1000"], "install_cmd": "go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest"}, # Port Scanning Alternative
+        "tlsx": {"enabled": True, "flags": ["-silent", "-json"], "install_cmd": "go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest"}, # TLS data extractor
+        "cdncheck": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest"}, # CDN detection
+        "asnmap": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install github.com/projectdiscovery/asnmap/cmd/asnmap@latest"}, # ASN mapping
+        "mapcidr": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest"}, # CIDR manipulation
+        "gf": {"enabled": True, "flags": [], "install_cmd": "go install github.com/tomnomnom/gf@latest"}, # Grep patterns
+        "unfurl": {"enabled": True, "flags": [], "install_cmd": "go install github.com/tomnomnom/unfurl@latest"}, # URL extraction
+        "anew": {"enabled": True, "flags": [], "install_cmd": "go install github.com/tomnomnom/anew@latest"}, # Append new lines
+        "notify": {"enabled": False, "flags": [], "install_cmd": "go install github.com/projectdiscovery/notify/cmd/notify@latest"}, # Alerting
+        "interactsh-client": {"enabled": False, "flags": [], "install_cmd": "go install github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest"}, # OOB testing
+        "alterx": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install github.com/projectdiscovery/alterx/cmd/alterx@latest"}, # Fast subdomain discovery
     },
     "wordlists": {
         "subdomains": "subdomains-top1million-5000.txt", # Default relative to WORDLISTS_DIR or full path
@@ -421,6 +434,7 @@ def check_and_install_dependencies(config: Dict[str, Any], auto_install: bool = 
             for tool in missing_essential:
                 install_system_tool(tool, package_manager)
         else:
+            logger.warning(f"Missing essential tools: {', '.join(missing_essential)}")
             print(f"\n⚠️  Missing essential tools: {', '.join(missing_essential)}")
             install_choice = input("Install missing essential tools? (yes/no/auto): ").strip().lower()
             if install_choice in ['yes', 'y', 'auto']:
@@ -457,6 +471,7 @@ def check_and_install_dependencies(config: Dict[str, Any], auto_install: bool = 
             install_all = True
             selective = False
         else:
+            logger.info(f"Tool Status Summary - Available: {len(available_tools)}, Missing: {len(missing_tools)}")
             print(f"\n📊 Tool Status Summary:")
             print(f"   ✅ Available: {len(available_tools)} tools")
             print(f"   ❌ Missing: {len(missing_tools)} tools")
@@ -1032,12 +1047,27 @@ def load_config() -> Dict[str, Any]:
                         merged_config[key].update(value)
                     else:
                         merged_config[key] = value
+                
+                # Validate and apply security defaults
+                is_valid, errors = validate_config(merged_config)
+                if not is_valid:
+                    logger.warning(f"Configuration validation errors: {'; '.join(errors)}")
+                    logger.info("Applying security defaults to fix configuration issues")
+                
+                merged_config = apply_security_defaults(merged_config)
+                
+                # Save corrected configuration
+                if not is_valid:
+                    save_config(merged_config)
+                    logger.info("Configuration auto-corrected and saved")
+                
                 return merged_config
         except Exception as e:
             logger.error(f"Error loading config: {e}. Using defaults.")
     # Create default config if not found or error
-    save_config(DEFAULT_CONFIG)
-    return DEFAULT_CONFIG
+    default_config = apply_security_defaults(DEFAULT_CONFIG.copy())
+    save_config(default_config)
+    return default_config
 
 def save_config(config: Dict[str, Any]):
     """Save configuration to file."""
@@ -1048,10 +1078,167 @@ def save_config(config: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Error saving config: {e}")
 
+def validate_config(config: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """Validate configuration structure and values."""
+    errors = []
+    
+    # Check required top-level keys
+    required_keys = ['tools', 'wordlists', 'output', 'performance', 'modules']
+    for key in required_keys:
+        if key not in config:
+            errors.append(f"Missing required configuration section: {key}")
+    
+    # Validate tools configuration
+    if 'tools' in config:
+        for tool_name, tool_config in config['tools'].items():
+            if not isinstance(tool_config, dict):
+                errors.append(f"Tool configuration for {tool_name} must be a dictionary")
+                continue
+            
+            # Check for enabled field
+            if 'enabled' not in tool_config:
+                errors.append(f"Tool {tool_name} missing 'enabled' field")
+    
+    # Validate performance settings
+    if 'performance' in config:
+        perf = config['performance']
+        if 'max_workers' in perf:
+            try:
+                max_workers = int(perf['max_workers'])
+                if max_workers < 1 or max_workers > 50:
+                    errors.append("max_workers must be between 1 and 50")
+            except (ValueError, TypeError):
+                errors.append("max_workers must be a valid integer")
+        
+        if 'tool_timeout' in perf:
+            try:
+                timeout = int(perf['tool_timeout'])
+                if timeout < 30 or timeout > 3600:
+                    errors.append("tool_timeout must be between 30 and 3600 seconds")
+            except (ValueError, TypeError):
+                errors.append("tool_timeout must be a valid integer")
+    
+    # Validate output settings
+    if 'output' in config:
+        output = config['output']
+        if 'report_format' in output:
+            valid_formats = ['html', 'json', 'markdown', 'xml']
+            if output['report_format'] not in valid_formats:
+                errors.append(f"report_format must be one of: {', '.join(valid_formats)}")
+    
+    return len(errors) == 0, errors
+
+def apply_security_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply security-focused default configurations."""
+    # Ensure conservative timeouts
+    if 'performance' not in config:
+        config['performance'] = {}
+    
+    performance = config['performance']
+    
+    # Set conservative defaults
+    if 'max_workers' not in performance or performance['max_workers'] > 20:
+        performance['max_workers'] = 10
+        logger.info("Applied conservative max_workers limit: 10")
+    
+    if 'tool_timeout' not in performance or performance['tool_timeout'] > 1800:
+        performance['tool_timeout'] = 600
+        logger.info("Applied conservative tool timeout: 600 seconds")
+    
+    # Ensure rate limiting is enabled
+    if 'rate_limit' not in performance:
+        performance['rate_limit'] = 1000
+        logger.info("Applied default rate limit: 1000")
+    
+    # Ensure secure output settings
+    if 'output' not in config:
+        config['output'] = {}
+    
+    output = config['output']
+    if 'auto_open_html' not in output:
+        output['auto_open_html'] = False  # More secure default
+        logger.info("Disabled auto-open HTML for security")
+    
+    return config
+
 # --- Utility Functions ---
 def sanitize_filename(name: str) -> str:
     """Sanitize string for use as a filename."""
     return re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', name)
+
+def validate_target(target: str) -> Tuple[bool, str]:
+    """Validate a target string for security and format."""
+    if not target or not isinstance(target, str):
+        return False, "Target must be a non-empty string"
+    
+    target = target.strip()
+    
+    # Check for malicious characters
+    malicious_chars = ['&', '|', ';', '`', '$', '(', ')', '{', '}', '[', ']', '<', '>']
+    if any(char in target for char in malicious_chars):
+        return False, "Target contains potentially dangerous characters"
+    
+    # Check for basic IP address pattern
+    ip_pattern = re.compile(r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:/[0-9]{1,2})?$')
+    
+    # Check for basic domain pattern
+    domain_pattern = re.compile(r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$')
+    
+    # Check for URL pattern
+    url_pattern = re.compile(r'^https?://[^\s/$.?#].[^\s]*$', re.IGNORECASE)
+    
+    if ip_pattern.match(target) or domain_pattern.match(target) or url_pattern.match(target):
+        return True, "Valid target format"
+    
+    return False, "Invalid target format (must be IP, domain, or URL)"
+
+def validate_port(port: str) -> Tuple[bool, str]:
+    """Validate a port number."""
+    try:
+        port_num = int(port)
+        if 1 <= port_num <= 65535:
+            return True, "Valid port"
+        else:
+            return False, "Port must be between 1 and 65535"
+    except ValueError:
+        return False, "Port must be a valid number"
+
+def sanitize_input(user_input: str, max_length: int = 1000) -> str:
+    """Sanitize user input for security."""
+    if not user_input:
+        return ""
+    
+    # Limit length
+    sanitized = user_input[:max_length]
+    
+    # Remove or escape dangerous characters
+    sanitized = re.sub(r'[&|;`$(){}[\]<>]', '', sanitized)
+    
+    # Remove null bytes and control characters
+    sanitized = re.sub(r'[\x00-\x1F\x7F]', '', sanitized)
+    
+    return sanitized.strip()
+
+def validate_file_path(file_path: str, allowed_extensions: Optional[List[str]] = None) -> Tuple[bool, str]:
+    """Validate a file path for security."""
+    if not file_path:
+        return False, "File path cannot be empty"
+    
+    # Check for path traversal attempts
+    if '..' in file_path or file_path.startswith('/'):
+        return False, "Path traversal detected"
+    
+    # Check for absolute paths on Windows
+    if len(file_path) > 1 and file_path[1] == ':':
+        return False, "Absolute paths not allowed"
+    
+    # Check file extension if specified
+    if allowed_extensions:
+        file_ext = Path(file_path).suffix.lower()
+        if file_ext not in allowed_extensions:
+            return False, f"File extension must be one of: {', '.join(allowed_extensions)}"
+    
+    return True, "Valid file path"
 
 def new_run() -> Path:
     """Create a new run directory."""
@@ -1096,6 +1283,128 @@ def safe_execute(func, *args, default=None, error_msg="Operation failed", **kwar
     except Exception as e:
         logger.error(f"{error_msg}: {e}")
         return default
+
+# --- HTTP Client with Connection Pooling ---
+class SecureHTTPClient:
+    """Secure HTTP client with connection pooling and rate limiting."""
+    
+    def __init__(self, max_connections: int = 20, timeout: int = 30, rate_limit: int = 10):
+        self.max_connections = max_connections
+        self.timeout = timeout
+        self.rate_limit = rate_limit
+        self.session = None
+        self._rate_limiter = asyncio.Semaphore(rate_limit)
+    
+    async def __aenter__(self):
+        """Async context manager entry."""
+        # Create SSL context with security settings
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = True
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        
+        # Create connector with connection pooling
+        connector = aiohttp.TCPConnector(
+            limit=self.max_connections,
+            limit_per_host=5,
+            ssl=ssl_context,
+            enable_cleanup_closed=True,
+            keepalive_timeout=60
+        )
+        
+        # Create session with timeout
+        timeout_config = aiohttp.ClientTimeout(total=self.timeout)
+        self.session = aiohttp.ClientSession(
+            connector=connector,
+            timeout=timeout_config,
+            headers={
+                'User-Agent': f'Azaz-El-Security-Scanner/{VERSION}',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            }
+        )
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        if self.session:
+            await self.session.close()
+    
+    async def get(self, url: str, **kwargs) -> Optional[aiohttp.ClientResponse]:
+        """Make a rate-limited GET request."""
+        async with self._rate_limiter:
+            try:
+                async with self.session.get(url, **kwargs) as response:
+                    return response
+            except asyncio.TimeoutError:
+                logger.warning(f"Request timeout for URL: {url}")
+                return None
+            except aiohttp.ClientError as e:
+                logger.warning(f"HTTP client error for URL {url}: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Unexpected error for URL {url}: {e}")
+                return None
+    
+    async def head(self, url: str, **kwargs) -> Optional[aiohttp.ClientResponse]:
+        """Make a rate-limited HEAD request."""
+        async with self._rate_limiter:
+            try:
+                async with self.session.head(url, **kwargs) as response:
+                    return response
+            except asyncio.TimeoutError:
+                logger.warning(f"HEAD request timeout for URL: {url}")
+                return None
+            except aiohttp.ClientError as e:
+                logger.warning(f"HEAD request error for URL {url}: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Unexpected HEAD error for URL {url}: {e}")
+                return None
+
+async def check_urls_async(urls: List[str], max_concurrent: int = 10) -> Dict[str, Dict[str, Any]]:
+    """Asynchronously check multiple URLs for availability and basic info."""
+    results = {}
+    
+    async with SecureHTTPClient(max_connections=max_concurrent) as client:
+        semaphore = asyncio.Semaphore(max_concurrent)
+        
+        async def check_single_url(url: str) -> Tuple[str, Dict[str, Any]]:
+            async with semaphore:
+                try:
+                    response = await client.head(url)
+                    if response:
+                        return url, {
+                            'status': response.status,
+                            'accessible': response.status < 400,
+                            'headers': dict(response.headers),
+                            'content_type': response.headers.get('content-type', ''),
+                            'server': response.headers.get('server', ''),
+                            'error': None
+                        }
+                    else:
+                        return url, {
+                            'status': None,
+                            'accessible': False,
+                            'error': 'Request failed'
+                        }
+                except Exception as e:
+                    return url, {
+                        'status': None,
+                        'accessible': False,
+                        'error': str(e)
+                    }
+        
+        # Execute all URL checks concurrently
+        tasks = [check_single_url(url) for url in urls]
+        results_list = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results_list:
+            if isinstance(result, tuple):
+                url, data = result
+                results[url] = data
+            else:
+                logger.error(f"Error in URL check: {result}")
+    
+    return results
 
 # --- Core Tool Execution Logic ---
 def execute_tool_with_retry(tool_name: str, args: List[str], output_file: Optional[Path] = None, 
@@ -2415,6 +2724,7 @@ if __name__ == "__main__":
             logger.error(f"Invalid target format provided via CLI: {args.target}")
 
     if args.init:
+        logger.info(f"{APP} environment initialized.")
         print(f"{APP} environment initialized.")
         sys.exit(0)
 
