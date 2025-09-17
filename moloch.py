@@ -181,6 +181,12 @@ DEFAULT_CONFIG = {
         "web": True,
         "fuzzing": True,
         "reporting": True
+    },
+    "security": {
+        "allow_auto_install": False,  # Disable auto-install by default for security
+        "validate_inputs": True,
+        "sandbox_mode": False,
+        "log_commands": True
     }
 }
 
@@ -1420,16 +1426,25 @@ def execute_tool_with_retry(tool_name: str, args: List[str], output_file: Option
         return False
     
     if not which(tool_name):
-        logger.error(f"Tool {tool_name} not found in PATH")
-        # Attempt auto-installation if configured
-        if "install_cmd" in tool_config:
+        logger.warning(f"Tool {tool_name} not found in PATH")
+        
+        # Check if tool installation should be attempted
+        allow_install = config.get("security", {}).get("allow_auto_install", False)
+        
+        if allow_install and "install_cmd" in tool_config:
             logger.info(f"Attempting to install {tool_name}...")
+            # Set a reasonable timeout for installation attempts  
             if install_tool_with_fallback(tool_name, config):
                 logger.info(f"Successfully installed {tool_name}")
+                # Re-check if tool is now available
+                if not which(tool_name):
+                    logger.warning(f"Tool {tool_name} installed but still not found in PATH")
+                    return False
             else:
-                logger.error(f"Failed to install {tool_name}")
+                logger.warning(f"Failed to install {tool_name} - continuing without it")
                 return False
         else:
+            logger.info(f"Skipping {tool_name} - tool not available and auto-install disabled")
             return False
 
     # Construct command with enhanced flags
@@ -1532,44 +1547,110 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
     logger.info(f"[RECON] Starting subdomain discovery for {target}")
     subdomains: Set[str] = set()
 
-    tools_to_run = [
-        ("subfinder", [target], output_dir / "subfinder.txt"),
-        ("assetfinder", [target], output_dir / "assetfinder.txt"),
-        ("findomain", [target], output_dir / "findomain.txt"),
+    # Define available tools and their configurations
+    available_tools = []
+    tool_configs = [
+        ("subfinder", [target], "subfinder.txt"),
+        ("assetfinder", [target], "assetfinder.txt"),
+        ("findomain", [target], "findomain.txt"),
     ]
-
+    
     # Add Amass if configured
     amass_flags = config.get("tools", {}).get("amass", {}).get("flags", [])
-    tools_to_run.append(("amass", amass_flags + [target], output_dir / "amass.txt"))
+    tool_configs.append(("amass", amass_flags + [target], "amass.txt"))
 
     # Add Chaos if API key is present and tool is enabled
     chaos_key = config.get("auth", {}).get("chaos_api_key")
     if chaos_key and config.get("tools", {}).get("chaos", {}).get("enabled", False):
-        tools_to_run.append(("chaos", [target], output_dir / "chaos.txt"))
+        tool_configs.append(("chaos", [target], "chaos.txt"))
 
-    max_workers = min(config.get("performance", {}).get("max_workers", 5), len(tools_to_run))
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_tool = {executor.submit(execute_tool, tool, args, output, output_dir): (tool, output) for tool, args, output in tools_to_run}
-        for future in as_completed(future_to_tool):
-            tool, output_file = future_to_tool[future]
-            try:
-                success = future.result()
-                if success and output_file.exists():
-                    lines = read_lines(output_file)
-                    initial_count = len(subdomains)
-                    subdomains.update(line.strip().lower() for line in lines if line.strip())
-                    logger.debug(f"[RECON] {tool} added {len(subdomains) - initial_count} unique subdomains.")
-                else:
-                    logger.warning(f"[RECON] {tool} did not produce results or failed.")
-            except Exception as e:
-                logger.error(f"[RECON] Error running {tool}: {e}")
+    # Check which tools are actually available
+    for tool_name, args, output_filename in tool_configs:
+        tool_config = config.get("tools", {}).get(tool_name, {})
+        if tool_config.get("enabled", True) and which(tool_name):
+            available_tools.append((tool_name, args, output_dir / output_filename))
+        else:
+            logger.info(f"[RECON] Skipping {tool_name} - not available or disabled")
+
+    if not available_tools:
+        logger.warning("[RECON] No subdomain discovery tools available - using basic DNS approach")
+        # Fallback to basic enumeration using built-in methods
+        basic_subdomains = _basic_subdomain_enumeration(target, output_dir)
+        subdomains.update(basic_subdomains)
+    else:
+        logger.info(f"[RECON] Using {len(available_tools)} available tools for subdomain discovery")
+        
+        # Execute available tools
+        max_workers = min(config.get("performance", {}).get("max_workers", 5), len(available_tools))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_tool = {
+                executor.submit(execute_tool, tool, args, output, output_dir): (tool, output) 
+                for tool, args, output in available_tools
+            }
+            
+            for future in as_completed(future_to_tool):
+                tool, output_file = future_to_tool[future]
+                try:
+                    success = future.result()
+                    if success and output_file.exists():
+                        lines = read_lines(output_file)
+                        initial_count = len(subdomains)
+                        subdomains.update(line.strip().lower() for line in lines if line.strip())
+                        added_count = len(subdomains) - initial_count
+                        logger.info(f"[RECON] {tool} added {added_count} unique subdomains")
+                    else:
+                        logger.warning(f"[RECON] {tool} did not produce results or failed")
+                except Exception as e:
+                    logger.error(f"[RECON] Error running {tool}: {e}")
 
     # Deduplication and saving
     unique_subdomains = sorted(list(subdomains))
     final_subdomain_file = output_dir / f"subdomains_{sanitize_filename(target)}.txt"
     write_lines(final_subdomain_file, unique_subdomains)
-    logger.info(f"[RECON] Subdomain discovery complete. Total unique subdomains: {len(unique_subdomains)}")
+    
+    result_count = len(unique_subdomains)
+    if result_count > 0:
+        logger.info(f"[RECON] Subdomain discovery complete. Total unique subdomains: {result_count}")
+    else:
+        logger.warning("[RECON] No subdomains discovered - adding target domain itself")
+        unique_subdomains = [target]
+        write_lines(final_subdomain_file, unique_subdomains)
+    
     return unique_subdomains
+
+def _basic_subdomain_enumeration(target: str, output_dir: Path) -> List[str]:
+    """Basic subdomain enumeration when tools are not available."""
+    logger.info("[RECON] Performing basic subdomain enumeration")
+    
+    # Common subdomain prefixes to try
+    common_subdomains = [
+        "www", "mail", "ftp", "admin", "api", "blog", "dev", "staging", 
+        "test", "m", "mobile", "support", "portal", "store", "shop",
+        "secure", "vpn", "remote", "gateway", "ns1", "ns2", "mx"
+    ]
+    
+    discovered_subdomains = set()
+    discovered_subdomains.add(target)  # Add the main domain
+    
+    # Only try common subdomains if the target is a valid domain
+    if '.' in target and not target.replace('.', '').replace('-', '').isdigit():
+        try:
+            import socket
+            logger.info(f"[RECON] Testing {len(common_subdomains)} common subdomains for {target}")
+            for subdomain in common_subdomains:
+                try:
+                    hostname = f"{subdomain}.{target}"
+                    socket.gethostbyname(hostname)
+                    discovered_subdomains.add(hostname)
+                    logger.debug(f"[RECON] Basic enumeration found: {hostname}")
+                except socket.gaierror:
+                    continue
+        except Exception as e:
+            logger.error(f"[RECON] Basic enumeration failed: {e}")
+    else:
+        logger.info(f"[RECON] Target {target} appears to be an IP address, skipping subdomain enumeration")
+    
+    return list(discovered_subdomains)
 
 def run_dns_resolution(subdomain_file: Path, output_file: Path, config: Dict[str, Any]):
     """Resolve subdomains to IPs."""
@@ -1578,13 +1659,48 @@ def run_dns_resolution(subdomain_file: Path, output_file: Path, config: Dict[str
         logger.warning(f"Subdomain file {subdomain_file} does not exist.")
         return False
 
-    # Using dnsx for resolution
-    success = execute_tool("dnsx", ["-l", str(subdomain_file), "-o", str(output_file)], output_file=output_file)
-    if success:
-        logger.info(f"[RECON] DNS resolution complete. Results in {output_file}")
-        return True
+    # Try dnsx first, fallback to built-in resolution
+    if which("dnsx"):
+        success = execute_tool("dnsx", ["-l", str(subdomain_file), "-o", str(output_file)], output_file=output_file)
+        if success:
+            logger.info(f"[RECON] DNS resolution complete. Results in {output_file}")
+            return True
+        else:
+            logger.warning("[RECON] dnsx failed, falling back to built-in resolution")
     else:
-        logger.error("[RECON] DNS resolution failed.")
+        logger.info("[RECON] dnsx not available, using built-in DNS resolution")
+    
+    # Fallback to built-in DNS resolution
+    return _builtin_dns_resolution(subdomain_file, output_file)
+
+def _builtin_dns_resolution(subdomain_file: Path, output_file: Path) -> bool:
+    """Built-in DNS resolution when dnsx is not available."""
+    try:
+        import socket
+        subdomains = read_lines(subdomain_file)
+        resolved_hosts = []
+        
+        logger.info(f"[RECON] Resolving {len(subdomains)} subdomains using built-in resolver")
+        
+        for subdomain in subdomains:
+            subdomain = subdomain.strip()
+            if not subdomain:
+                continue
+                
+            try:
+                ip = socket.gethostbyname(subdomain)
+                resolved_hosts.append(f"{subdomain}:{ip}")
+                logger.debug(f"[RECON] Resolved {subdomain} -> {ip}")
+            except socket.gaierror:
+                logger.debug(f"[RECON] Failed to resolve {subdomain}")
+                continue
+        
+        write_lines(output_file, resolved_hosts)
+        logger.info(f"[RECON] Built-in DNS resolution complete. Resolved {len(resolved_hosts)} hosts")
+        return len(resolved_hosts) > 0
+        
+    except Exception as e:
+        logger.error(f"[RECON] Built-in DNS resolution failed: {e}")
         return False
 
 def run_http_probing(resolved_file: Path, output_file: Path, config: Dict[str, Any]):
@@ -1594,42 +1710,162 @@ def run_http_probing(resolved_file: Path, output_file: Path, config: Dict[str, A
         logger.warning(f"Resolved host file {resolved_file} does not exist.")
         return False
 
-    success = execute_tool("httpx", ["-l", str(resolved_file), "-o", str(output_file)], output_file=output_file)
-    if success:
-        logger.info(f"[RECON] HTTP probing complete. Results in {output_file}")
-        return True
+    # Try httpx first, fallback to built-in probing
+    if which("httpx"):
+        success = execute_tool("httpx", ["-l", str(resolved_file), "-o", str(output_file)], output_file=output_file)
+        if success:
+            logger.info(f"[RECON] HTTP probing complete. Results in {output_file}")
+            return True
+        else:
+            logger.warning("[RECON] httpx failed, falling back to built-in probing")
+    else:
+        logger.info("[RECON] httpx not available, using built-in HTTP probing")
+    
+    # Fallback to built-in HTTP probing
+    return _builtin_http_probing(resolved_file, output_file)
+
+def _builtin_http_probing(resolved_file: Path, output_file: Path) -> bool:
+    """Built-in HTTP probing when httpx is not available."""
+    try:
+        import requests
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        resolved_hosts = read_lines(resolved_file)
+        live_hosts = []
+        
+        logger.info(f"[RECON] Probing {len(resolved_hosts)} hosts using built-in HTTP client")
+        
+        session = requests.Session()
+        session.timeout = 10
+        session.verify = False
+        
+        for host_line in resolved_hosts:
+            host = host_line.strip().split(':')[0] if ':' in host_line else host_line.strip()
+            if not host:
+                continue
+                
+            # Try both HTTP and HTTPS
+            for protocol in ['https', 'http']:
+                try:
+                    url = f"{protocol}://{host}"
+                    response = session.head(url, timeout=5)
+                    if response.status_code < 500:  # Accept any non-server error
+                        live_hosts.append(url)
+                        logger.debug(f"[RECON] Found live host: {url} (Status: {response.status_code})")
+                        break  # Found working protocol, no need to try the other
+                except Exception:
+                    continue
+        
+        write_lines(output_file, live_hosts)
+        logger.info(f"[RECON] Built-in HTTP probing complete. Found {len(live_hosts)} live hosts")
+        return len(live_hosts) > 0
+        
+    except ImportError:
+        logger.error("[RECON] requests library not available for built-in HTTP probing")
+        return False
+    except Exception as e:
+        logger.error(f"[RECON] Built-in HTTP probing failed: {e}")
+        return False
     else:
         logger.error("[RECON] HTTP probing failed.")
         return False
 
 # --- Scanning Modules ---
 def run_vulnerability_scan(host_file: Path, output_dir: Path, config: Dict[str, Any]):
-    """Run vulnerability scan using Nuclei."""
-    logger.info("[SCAN] Starting vulnerability scan with Nuclei...")
+    """Run vulnerability scan using Nuclei or fallback methods."""
+    logger.info("[SCAN] Starting vulnerability scan...")
     if not host_file.exists():
         logger.warning(f"Host file {host_file} does not exist.")
         return False
 
     nuclei_output = output_dir / "nuclei_results.json"
-    # Basic nuclei scan
-    success = execute_tool("nuclei", ["-l", str(host_file), "-json", "-o", str(nuclei_output)], output_file=nuclei_output, run_dir=output_dir)
-
-    if success:
-        logger.info(f"[SCAN] Nuclei scan complete. Results in {nuclei_output}")
-        return True
+    
+    # Try nuclei first
+    if which("nuclei"):
+        logger.info("[SCAN] Using Nuclei for vulnerability scanning")
+        success = execute_tool("nuclei", ["-l", str(host_file), "-json", "-o", str(nuclei_output)], 
+                             output_file=nuclei_output, run_dir=output_dir)
+        if success:
+            logger.info(f"[SCAN] Nuclei scan complete. Results in {nuclei_output}")
+            return True
+        else:
+            logger.warning("[SCAN] Nuclei scan failed, falling back to basic checks")
     else:
-        logger.error("[SCAN] Nuclei scan failed.")
+        logger.info("[SCAN] Nuclei not available, using basic vulnerability checks")
+    
+    # Fallback to basic vulnerability checks
+    return _basic_vulnerability_scan(host_file, output_dir)
+
+def _basic_vulnerability_scan(host_file: Path, output_dir: Path) -> bool:
+    """Basic vulnerability scanning when Nuclei is not available."""
+    try:
+        import requests
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        hosts = read_lines(host_file)
+        vulnerabilities = []
+        
+        logger.info(f"[SCAN] Performing basic vulnerability checks on {len(hosts)} hosts")
+        
+        session = requests.Session()
+        session.verify = False
+        session.timeout = 10
+        
+        # Basic checks for common misconfigurations
+        common_paths = [
+            "/admin", "/.env", "/backup", "/config", "/debug", 
+            "/robots.txt", "/sitemap.xml", "/.git/config", 
+            "/wp-admin", "/phpmyadmin", "/administrator"
+        ]
+        
+        for host in hosts:
+            host = host.strip()
+            if not host:
+                continue
+                
+            for path in common_paths:
+                try:
+                    if not host.startswith(('http://', 'https://')):
+                        url = f"https://{host}{path}"
+                    else:
+                        url = f"{host}{path}"
+                        
+                    response = session.head(url, timeout=5)
+                    if response.status_code in [200, 301, 302, 403]:
+                        vulnerability = {
+                            "url": url,
+                            "status_code": response.status_code,
+                            "type": "Information Disclosure",
+                            "severity": "info" if response.status_code == 403 else "medium"
+                        }
+                        vulnerabilities.append(vulnerability)
+                        logger.debug(f"[SCAN] Found accessible path: {url} (Status: {response.status_code})")
+                        
+                except Exception:
+                    continue
+        
+        # Save results
+        results_file = output_dir / "basic_vulnerability_scan.json"
+        import json
+        with open(results_file, 'w') as f:
+            json.dump(vulnerabilities, f, indent=2)
+        
+        logger.info(f"[SCAN] Basic vulnerability scan complete. Found {len(vulnerabilities)} potential issues")
+        return len(vulnerabilities) >= 0  # Always return True if scan completed
+        
+    except Exception as e:
+        logger.error(f"[SCAN] Basic vulnerability scan failed: {e}")
         return False
 
 def run_port_scan(target: str, output_file: Path, config: Dict[str, Any]):
-    """Run port scan using Nmap or Naabu."""
+    """Run port scan using Nmap, Naabu, or fallback methods."""
     logger.info(f"[SCAN] Starting port scan for {target}...")
 
-    # Prefer Nmap, fallback to Naabu
-    nmap_flags = config.get("tools", {}).get("nmap", {}).get("flags", [])
-    naabu_flags = config.get("tools", {}).get("naabu", {}).get("flags", [])
-
+    # Try Nmap first
     if which("nmap"):
+        nmap_flags = config.get("tools", {}).get("nmap", {}).get("flags", [])
         # Nmap outputs to multiple files, so we specify a prefix
         output_prefix = str(output_file).replace('.txt', '')
         success = execute_tool("nmap", nmap_flags + ["-oA", output_prefix, target])
@@ -1637,61 +1873,191 @@ def run_port_scan(target: str, output_file: Path, config: Dict[str, Any]):
             logger.info(f"[SCAN] Nmap scan complete. Results in {output_prefix}.{{nmap,xml,gnmap}}")
             return True
         else:
-            logger.error("[SCAN] Nmap scan failed.")
-            return False
-    elif which("naabu"):
+            logger.warning("[SCAN] Nmap scan failed, trying naabu")
+    
+    # Try Naabu as second option
+    if which("naabu"):
+        naabu_flags = config.get("tools", {}).get("naabu", {}).get("flags", [])
         success = execute_tool("naabu", naabu_flags + ["-host", target, "-o", str(output_file)], output_file=output_file)
         if success:
             logger.info(f"[SCAN] Naabu scan complete. Results in {output_file}")
             return True
         else:
-            logger.error("[SCAN] Naabu scan failed.")
-            return False
-    else:
-        logger.error("[SCAN] Neither Nmap nor Naabu found for port scanning.")
+            logger.warning("[SCAN] Naabu scan failed, using basic port scan")
+    
+    # Fallback to basic port scanning
+    logger.info("[SCAN] Using basic port scanning")
+    return _basic_port_scan(target, output_file)
+
+def _basic_port_scan(target: str, output_file: Path) -> bool:
+    """Basic port scanning when nmap and naabu are not available."""
+    try:
+        import socket
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        # Common ports to scan
+        common_ports = [
+            21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 993, 995, 
+            1723, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 9090, 27017
+        ]
+        
+        open_ports = []
+        logger.info(f"[SCAN] Scanning {len(common_ports)} common ports on {target}")
+        
+        def scan_port(port):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(3)
+                result = sock.connect_ex((target, port))
+                sock.close()
+                if result == 0:
+                    return port
+            except Exception:
+                pass
+            return None
+        
+        # Scan ports in parallel
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            future_to_port = {executor.submit(scan_port, port): port for port in common_ports}
+            for future in as_completed(future_to_port):
+                port = future.result()
+                if port:
+                    open_ports.append(f"{target}:{port}")
+                    logger.debug(f"[SCAN] Found open port: {target}:{port}")
+        
+        # Save results
+        write_lines(output_file, open_ports)
+        logger.info(f"[SCAN] Basic port scan complete. Found {len(open_ports)} open ports")
+        return True
+        
+    except Exception as e:
+        logger.error(f"[SCAN] Basic port scan failed: {e}")
         return False
 
 def run_ssl_scan(target: str, output_file: Path, config: Dict[str, Any]):
-    """Run SSL/TLS scan using testssl.sh."""
+    """Run SSL/TLS scan using testssl.sh or fallback methods."""
     logger.info(f"[SCAN] Starting SSL/TLS scan for {target}...")
     if not target.startswith(("http://", "https://")):
         https_target = f"https://{target}"
     else:
         https_target = target
 
-    # testssl.sh typically outputs to a file directly using --file, but we use -o
-    success = execute_tool("testssl.sh", config.get("tools", {}).get("testssl", {}).get("flags", []) + ["-o", str(output_file), https_target]) # Assuming testssl.sh is in PATH after install
-    if success:
-        logger.info(f"[SCAN] SSL/TLS scan initiated. Results will be in {output_file}")
-        return True
+    # Try testssl.sh first
+    if which("testssl.sh"):
+        testssl_flags = config.get("tools", {}).get("testssl", {}).get("flags", [])
+        success = execute_tool("testssl.sh", testssl_flags + ["-o", str(output_file), https_target])
+        if success:
+            logger.info(f"[SCAN] SSL/TLS scan complete. Results in {output_file}")
+            return True
+        else:
+            logger.warning("[SCAN] testssl.sh scan failed, using basic SSL checks")
     else:
-        logger.error("[SCAN] SSL/TLS scan failed to start.")
+        logger.info("[SCAN] testssl.sh not available, using basic SSL checks")
+    
+    # Fallback to basic SSL checks
+    return _basic_ssl_scan(https_target, output_file)
+
+def _basic_ssl_scan(target: str, output_file: Path) -> bool:
+    """Basic SSL/TLS checking when testssl.sh is not available."""
+    try:
+        import ssl
+        import socket
+        from urllib.parse import urlparse
+        
+        parsed = urlparse(target)
+        hostname = parsed.hostname or target.replace('https://', '').split('/')[0]
+        port = parsed.port or 443
+        
+        logger.info(f"[SCAN] Performing basic SSL check on {hostname}:{port}")
+        
+        ssl_info = {}
+        
+        try:
+            # Create SSL context
+            context = ssl.create_default_context()
+            
+            # Connect and get certificate info
+            with socket.create_connection((hostname, port), timeout=10) as sock:
+                with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                    cert = ssock.getpeercert()
+                    ssl_info = {
+                        "hostname": hostname,
+                        "port": port,
+                        "version": ssock.version(),
+                        "cipher": ssock.cipher(),
+                        "certificate": {
+                            "subject": dict(x[0] for x in cert.get('subject', [])),
+                            "issuer": dict(x[0] for x in cert.get('issuer', [])),
+                            "notBefore": cert.get('notBefore'),
+                            "notAfter": cert.get('notAfter'),
+                            "serialNumber": cert.get('serialNumber'),
+                            "version": cert.get('version')
+                        }
+                    }
+                    
+            logger.info(f"[SCAN] SSL connection successful to {hostname}:{port}")
+            
+        except Exception as e:
+            ssl_info = {
+                "hostname": hostname,
+                "port": port,
+                "error": str(e),
+                "status": "failed"
+            }
+            logger.warning(f"[SCAN] SSL connection failed to {hostname}:{port}: {e}")
+        
+        # Save results
+        import json
+        with open(output_file, 'w') as f:
+            json.dump(ssl_info, f, indent=2)
+        
+        logger.info(f"[SCAN] Basic SSL scan complete. Results in {output_file}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"[SCAN] Basic SSL scan failed: {e}")
         return False
 
 # --- Web Application Testing Modules ---
 def run_crawling(target: str, output_file: Path, config: Dict[str, Any]):
-    """Crawl a target using Katana, Gau, Waybackurls."""
+    """Crawl a target using Katana, Gau, Waybackurls or fallback methods."""
     if not target.startswith(("http://", "https://")):
         target = f"http://{target}"
     logger.info(f"[WEB] Starting crawling for {target}...")
 
     combined_urls: Set[str] = set()
-    tools_to_run = []
+    available_tools = []
 
-    if config.get("tools", {}).get("katana", {}).get("enabled"):
-        katana_out = output_file.with_name(f"{output_file.stem}_katana.txt")
-        tools_to_run.append(("katana", ["-u", target, "-o", str(katana_out)], katana_out))
-    if config.get("tools", {}).get("gau", {}).get("enabled"):
-        gau_out = output_file.with_name(f"{output_file.stem}_gau.txt")
-        tools_to_run.append(("gau", [target], gau_out)) # gau writes to stdout, we capture it
-    if config.get("tools", {}).get("waybackurls", {}).get("enabled"):
-        wayback_out = output_file.with_name(f"{output_file.stem}_wayback.txt")
-        tools_to_run.append(("waybackurls", [target], wayback_out)) # waybackurls writes to stdout
+    # Check which crawling tools are available
+    tool_configs = [
+        ("katana", ["-u", target], "katana"),
+        ("gau", [target], "gau"),
+        ("waybackurls", [target], "wayback")
+    ]
 
-    # Limit concurrent crawling to avoid overwhelming
-    max_workers = min(3, len(tools_to_run))
+    for tool_name, args, output_suffix in tool_configs:
+        if config.get("tools", {}).get(tool_name, {}).get("enabled", True) and which(tool_name):
+            output_tool_file = output_file.with_name(f"{output_file.stem}_{output_suffix}.txt")
+            if tool_name == "katana":
+                args.extend(["-o", str(output_tool_file)])
+            available_tools.append((tool_name, args, output_tool_file))
+        else:
+            logger.info(f"[WEB] Skipping {tool_name} - not available or disabled")
+
+    if not available_tools:
+        logger.info("[WEB] No crawling tools available, using basic web crawling")
+        return _basic_web_crawling(target, output_file)
+
+    logger.info(f"[WEB] Using {len(available_tools)} available crawling tools")
+
+    # Execute available tools
+    max_workers = min(3, len(available_tools))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_tool = {executor.submit(execute_tool, tool, args, output): (tool, output) for tool, args, output in tools_to_run}
+        future_to_tool = {
+            executor.submit(execute_tool, tool, args, output): (tool, output) 
+            for tool, args, output in available_tools
+        }
+        
         for future in as_completed(future_to_tool):
             tool, output_file_tool = future_to_tool[future]
             try:
@@ -1700,43 +2066,184 @@ def run_crawling(target: str, output_file: Path, config: Dict[str, Any]):
                     lines = read_lines(output_file_tool)
                     initial_count = len(combined_urls)
                     combined_urls.update(line.strip() for line in lines if line.strip())
-                    logger.debug(f"[WEB] {tool} added {len(combined_urls) - initial_count} unique URLs.")
-                elif success: # Tool ran, but output was to stdout (gau, waybackurls)
-                     # For tools that write to stdout, we should have captured it via execute_tool
-                     # If the output file doesn't exist, check if execute_tool handled stdout redirection
-                     if tool in ['gau', 'waybackurls']:
-                         logger.info(f"[WEB] {tool} completed successfully, but output file not found. "
-                                   f"Tool may have written to stdout - check execute_tool implementation.")
-                     else:
-                         logger.warning(f"[WEB] {tool} succeeded but no output file created")
+                    added_count = len(combined_urls) - initial_count
+                    logger.info(f"[WEB] {tool} added {added_count} unique URLs")
                 else:
-                    logger.warning(f"[WEB] {tool} did not produce results or failed.")
+                    logger.warning(f"[WEB] {tool} did not produce results or failed")
             except Exception as e:
                 logger.error(f"[WEB] Error running {tool}: {e}")
 
+    # Save combined results
     sorted_urls = sorted(list(combined_urls))
     write_lines(output_file, sorted_urls)
-    logger.info(f"[WEB] Crawling complete. Combined results in {output_file}. Total URLs: {len(sorted_urls)}")
+    
+    result_count = len(sorted_urls)
+    if result_count > 0:
+        logger.info(f"[WEB] Crawling complete. Total URLs: {result_count}")
+    else:
+        logger.warning("[WEB] No URLs discovered through crawling")
+        # Add the target URL itself as fallback
+        sorted_urls = [target]
+        write_lines(output_file, sorted_urls)
+    
     return sorted_urls
 
+def _basic_web_crawling(target: str, output_file: Path) -> List[str]:
+    """Basic web crawling when tools are not available."""
+    try:
+        import requests
+        from urllib.parse import urljoin, urlparse
+        import re
+        
+        logger.info(f"[WEB] Performing basic web crawling on {target}")
+        
+        discovered_urls = set()
+        discovered_urls.add(target)
+        
+        session = requests.Session()
+        session.timeout = 10
+        session.verify = False
+        
+        try:
+            response = session.get(target, timeout=10)
+            if response.status_code == 200:
+                # Extract links from HTML
+                html_content = response.text
+                
+                # Find all href links
+                href_pattern = r'href=["\']([^"\']+)["\']'
+                hrefs = re.findall(href_pattern, html_content, re.IGNORECASE)
+                
+                # Find all src links
+                src_pattern = r'src=["\']([^"\']+)["\']'
+                srcs = re.findall(src_pattern, html_content, re.IGNORECASE)
+                
+                # Combine and process links
+                all_links = hrefs + srcs
+                for link in all_links:
+                    if link.startswith(('http://', 'https://')):
+                        discovered_urls.add(link)
+                    elif link.startswith('/'):
+                        full_url = urljoin(target, link)
+                        discovered_urls.add(full_url)
+                        
+                logger.info(f"[WEB] Basic crawling found {len(discovered_urls)} URLs")
+                
+        except Exception as e:
+            logger.warning(f"[WEB] Basic crawling failed: {e}")
+        
+        # Save results
+        sorted_urls = sorted(list(discovered_urls))
+        write_lines(output_file, sorted_urls)
+        
+        return sorted_urls
+        
+    except ImportError:
+        logger.error("[WEB] requests library not available for basic crawling")
+        return [target]
+    except Exception as e:
+        logger.error(f"[WEB] Basic crawling failed: {e}")
+        return [target]
+
 def run_xss_scan(url_file: Path, output_file: Path, config: Dict[str, Any]):
-    """Scan for XSS using Dalfox."""
-    logger.info("[WEB] Starting XSS scan with Dalfox...")
+    """Scan for XSS using Dalfox or fallback methods."""
+    logger.info("[WEB] Starting XSS scan...")
     if not url_file.exists():
         logger.warning(f"URL file {url_file} does not exist.")
         return False
 
-    success = execute_tool("dalfox", ["file", str(url_file), "-o", str(output_file)], output_file=output_file)
-    if success:
-        logger.info(f"[WEB] XSS scan complete. Results in {output_file}")
-        return True
+    # Try dalfox first
+    if which("dalfox"):
+        success = execute_tool("dalfox", ["file", str(url_file), "-o", str(output_file)], output_file=output_file)
+        if success:
+            logger.info(f"[WEB] XSS scan complete. Results in {output_file}")
+            return True
+        else:
+            logger.warning("[WEB] Dalfox scan failed, using basic XSS checks")
     else:
-        logger.error("[WEB] XSS scan failed.")
+        logger.info("[WEB] Dalfox not available, using basic XSS checks")
+    
+    # Fallback to basic XSS checks
+    return _basic_xss_scan(url_file, output_file)
+
+def _basic_xss_scan(url_file: Path, output_file: Path) -> bool:
+    """Basic XSS scanning when Dalfox is not available."""
+    try:
+        import requests
+        from urllib.parse import urljoin, urlparse, parse_qs, urlencode
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        urls = read_lines(url_file)
+        xss_findings = []
+        
+        logger.info(f"[WEB] Performing basic XSS checks on {len(urls)} URLs")
+        
+        # Basic XSS payloads
+        xss_payloads = [
+            "<script>alert('XSS')</script>",
+            "javascript:alert('XSS')",
+            "<img src=x onerror=alert('XSS')>",
+            "'\"><script>alert('XSS')</script>",
+            "<svg onload=alert('XSS')>"
+        ]
+        
+        session = requests.Session()
+        session.verify = False
+        session.timeout = 10
+        
+        for url in urls:
+            url = url.strip()
+            if not url or not url.startswith(('http://', 'https://')):
+                continue
+                
+            try:
+                parsed = urlparse(url)
+                if parsed.query:
+                    # Test each parameter with XSS payloads
+                    params = parse_qs(parsed.query)
+                    for param_name in params.keys():
+                        for payload in xss_payloads:
+                            test_params = params.copy()
+                            test_params[param_name] = [payload]
+                            test_query = urlencode(test_params, doseq=True)
+                            test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{test_query}"
+                            
+                            try:
+                                response = session.get(test_url, timeout=5)
+                                if payload in response.text:
+                                    finding = {
+                                        "url": test_url,
+                                        "parameter": param_name,
+                                        "payload": payload,
+                                        "type": "Reflected XSS",
+                                        "severity": "medium"
+                                    }
+                                    xss_findings.append(finding)
+                                    logger.debug(f"[WEB] Potential XSS found: {param_name} in {url}")
+                                    break  # Found XSS, no need to test more payloads for this param
+                            except Exception:
+                                continue
+                                
+            except Exception as e:
+                logger.debug(f"[WEB] Error testing {url}: {e}")
+                continue
+        
+        # Save results
+        import json
+        with open(output_file, 'w') as f:
+            json.dump(xss_findings, f, indent=2)
+        
+        logger.info(f"[WEB] Basic XSS scan complete. Found {len(xss_findings)} potential issues")
+        return True
+        
+    except Exception as e:
+        logger.error(f"[WEB] Basic XSS scan failed: {e}")
         return False
 
 # --- Fuzzing Modules ---
 def run_directory_fuzzing(target: str, output_dir: Path, config: Dict[str, Any]):
-    """Run directory fuzzing using FFuF or Gobuster."""
+    """Run directory fuzzing using FFuF, Gobuster, or fallback methods."""
     if not target.startswith(("http://", "https://")):
         target = f"http://{target}"
     logger.info(f"[FUZZ] Starting directory fuzzing for {target}...")
@@ -1745,32 +2252,88 @@ def run_directory_fuzzing(target: str, output_dir: Path, config: Dict[str, Any])
     wordlist_path = WORDLISTS_DIR / wordlist_name if not Path(wordlist_name).is_absolute() else Path(wordlist_name)
 
     if not wordlist_path.exists():
-        logger.error(f"[FUZZ] Wordlist {wordlist_path} not found.")
-        return False
+        logger.warning(f"[FUZZ] Wordlist {wordlist_path} not found, using built-in wordlist")
+        return _basic_directory_fuzzing(target, output_dir)
 
-    # Prefer FFuF
-    if which("ffuf") and config.get("tools", {}).get("ffuf", {}).get("enabled"):
-        ffuf_out = output_dir / f"ffuf_{sanitize_filename(target)}.json" # Use JSON for structured output
+    # Try FFuF first
+    if which("ffuf") and config.get("tools", {}).get("ffuf", {}).get("enabled", True):
+        ffuf_out = output_dir / f"ffuf_{sanitize_filename(target)}.json"
         ffuf_cmd = ["-u", f"{target}/FUZZ", "-w", str(wordlist_path), "-of", "json", "-o", str(ffuf_out)]
         success = execute_tool("ffuf", ffuf_cmd, run_dir=output_dir)
         if success:
             logger.info(f"[FUZZ] FFuF fuzzing complete. Results in {ffuf_out}")
             return True
         else:
-            logger.error("[FUZZ] FFuF fuzzing failed.")
-            return False
-    elif which("gobuster") and config.get("tools", {}).get("gobuster", {}).get("enabled"):
+            logger.warning("[FUZZ] FFuF fuzzing failed, trying Gobuster")
+    
+    # Try Gobuster as second option
+    if which("gobuster") and config.get("tools", {}).get("gobuster", {}).get("enabled", True):
         gobuster_out = output_dir / f"gobuster_{sanitize_filename(target)}.txt"
-        gobuster_cmd = config.get("tools", {}).get("gobuster", {}).get("flags", []) + ["-u", target, "-w", str(wordlist_path), "-o", str(gobuster_out)]
+        gobuster_flags = config.get("tools", {}).get("gobuster", {}).get("flags", ["dir", "-q"])
+        gobuster_cmd = gobuster_flags + ["-u", target, "-w", str(wordlist_path), "-o", str(gobuster_out)]
         success = execute_tool("gobuster", gobuster_cmd, output_file=gobuster_out)
         if success:
             logger.info(f"[FUZZ] Gobuster fuzzing complete. Results in {gobuster_out}")
             return True
         else:
-            logger.error("[FUZZ] Gobuster fuzzing failed.")
-            return False
-    else:
-        logger.error("[FUZZ] No fuzzing tool (FFuF or Gobuster) available or enabled.")
+            logger.warning("[FUZZ] Gobuster fuzzing failed, using basic directory fuzzing")
+    
+    # Fallback to basic directory fuzzing
+    logger.info("[FUZZ] No fuzzing tools available, using basic directory checks")
+    return _basic_directory_fuzzing(target, output_dir)
+
+def _basic_directory_fuzzing(target: str, output_dir: Path) -> bool:
+    """Basic directory fuzzing when FFuF and Gobuster are not available."""
+    try:
+        import requests
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        # Common directories to check
+        common_directories = [
+            "admin", "administrator", "api", "app", "apps", "backup", "backups",
+            "config", "configs", "data", "database", "db", "debug", "dev",
+            "docs", "downloads", "files", "images", "img", "includes", "logs",
+            "login", "panel", "private", "public", "scripts", "server", "static",
+            "temp", "test", "tmp", "upload", "uploads", "user", "users", "www"
+        ]
+        
+        discovered_dirs = []
+        logger.info(f"[FUZZ] Checking {len(common_directories)} common directories on {target}")
+        
+        session = requests.Session()
+        session.verify = False
+        session.timeout = 10
+        
+        for directory in common_directories:
+            try:
+                test_url = f"{target.rstrip('/')}/{directory}/"
+                response = session.head(test_url, timeout=5)
+                
+                # Consider these status codes as interesting
+                if response.status_code in [200, 301, 302, 403, 401]:
+                    discovered_dirs.append({
+                        "url": test_url,
+                        "status_code": response.status_code,
+                        "content_length": response.headers.get("content-length", ""),
+                        "content_type": response.headers.get("content-type", "")
+                    })
+                    logger.debug(f"[FUZZ] Found directory: {test_url} (Status: {response.status_code})")
+                    
+            except Exception:
+                continue
+        
+        # Save results
+        results_file = output_dir / f"basic_directory_fuzz_{sanitize_filename(target)}.json"
+        import json
+        with open(results_file, 'w') as f:
+            json.dump(discovered_dirs, f, indent=2)
+        
+        logger.info(f"[FUZZ] Basic directory fuzzing complete. Found {len(discovered_dirs)} accessible directories")
+        return True
+        
+    except Exception as e:
+        logger.error(f"[FUZZ] Basic directory fuzzing failed: {e}")
         return False
 
 # --- Reporting ---
@@ -1878,6 +2441,8 @@ def filter_and_save_positive_results(run_dir: Path, config: Dict[str, Any]):
     # --- Save Consolidated Findings ---
     consolidated_file = run_dir / "report" / config.get("output", {}).get("consolidated_findings_file", "moloch_findings.json")
     try:
+        # Ensure report directory exists
+        consolidated_file.parent.mkdir(parents=True, exist_ok=True)
         with open(consolidated_file, 'w') as f:
             json.dump(findings, f, indent=4)
         logger.info(f"[REPORT] Consolidated findings saved to {consolidated_file}")
@@ -1893,6 +2458,9 @@ def generate_simple_report(run_dir: Path, config: Dict[str, Any]):
     findings = filter_and_save_positive_results(run_dir, config) # Get filtered results
     report_dir = run_dir / "report"
     report_file = report_dir / "report.html"
+    
+    # Ensure report directory exists
+    report_dir.mkdir(parents=True, exist_ok=True)
 
     html_content = f"""
     <!DOCTYPE html>

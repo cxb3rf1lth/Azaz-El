@@ -99,3 +99,20 @@ reports/
 # Any personal configuration overrides
 moloch.cfg.json.local
 targets.txt.local
+
+# Tool binaries that may be downloaded during installation attempts
+findomain
+subfinder  
+amass
+assetfinder
+nuclei
+httpx
+nmap
+naabu
+katana
+gau
+waybackurls
+dalfox
+ffuf
+gobuster
+testssl.sh
