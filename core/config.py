@@ -502,7 +502,7 @@ class ConfigurationManager:
     
     def get_tool_statistics(self) -> Dict[str, Any]:
         """Get statistics about configured tools"""
-        config = self.get_config()
+        config = self.load_config()
         tools = config.get('tools', {})
         
         stats = {
