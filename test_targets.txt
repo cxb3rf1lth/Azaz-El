@@ -1,2 +1,6 @@
-httpbin.org
+# Test targets file for bulk import
 example.com
+test.example.org
+# This is a comment and should be ignored
+httpbin.org
+demo.example.net
