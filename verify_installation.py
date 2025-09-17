@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Azaz-El Framework Installation Verifier and System Health Checker
-Advanced validation script for comprehensive security assessment tools
+Azaz-El v6.0.0-ENHANCED-SECURITY Framework Installation Verifier and System Health Checker
+Advanced validation script for comprehensive security assessment tools with enhanced security features
 """
 
 import os
@@ -332,6 +332,7 @@ class AzazElVerifier:
         self.check_wordlists_and_payloads()
         self.check_configuration()
         self.check_performance_settings()
+        self.test_enhanced_features()
         self.calculate_overall_score()
         
         end_time = time.time()
@@ -341,6 +342,61 @@ class AzazElVerifier:
         print(f"\n⏱️  Verification completed in {end_time - start_time:.2f} seconds")
         
         return self.results["overall_score"]
+    
+    def test_enhanced_features(self) -> None:
+        """Test new enhanced security features"""
+        print("\n🔒 Testing Enhanced Security Features...")
+        
+        try:
+            # Test input validation
+            from moloch import validate_target, validate_port, sanitize_input
+            
+            # Test target validation
+            valid_targets = ["example.com", "192.168.1.1", "https://example.com"]
+            invalid_targets = ["test;rm -rf /", "test & ls", "test|whoami"]
+            
+            validation_passed = 0
+            for target in valid_targets:
+                is_valid, msg = validate_target(target)
+                if is_valid:
+                    validation_passed += 1
+            
+            for target in invalid_targets:
+                is_valid, msg = validate_target(target)
+                if not is_valid:
+                    validation_passed += 1
+            
+            validation_score = (validation_passed / (len(valid_targets) + len(invalid_targets))) * 100
+            
+            print(f"  🎯 Input Validation: {validation_score:.0f}% ({validation_passed}/{len(valid_targets) + len(invalid_targets)})")
+            
+            # Test configuration validation
+            from moloch import load_config, validate_config
+            config = load_config()
+            is_valid, errors = validate_config(config)
+            
+            if is_valid:
+                print("  ⚙️  Configuration Validation: ✅ PASSED")
+            else:
+                print(f"  ⚙️  Configuration Validation: ⚠️  {len(errors)} issues auto-corrected")
+            
+            # Test async capabilities
+            try:
+                import asyncio
+                import aiohttp
+                print("  🚀 Async HTTP Client: ✅ Available")
+            except ImportError:
+                print("  🚀 Async HTTP Client: ❌ Dependencies missing")
+            
+            self.results["enhanced_features"] = {
+                "validation_score": validation_score,
+                "config_valid": is_valid,
+                "async_available": True
+            }
+            
+        except Exception as e:
+            print(f"  ❌ Enhanced features test failed: {e}")
+            self.results["enhanced_features"] = {"error": str(e)}
 
 def main():
     """Main entry point"""

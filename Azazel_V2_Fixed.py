@@ -21,7 +21,7 @@ import hashlib
 
 # --- Configuration ---
 APP = "Azazel"
-VERSION = "v2.0.0-FIXED"
+VERSION = "v6.0.0-ENHANCED-SECURITY"
 AUTHOR = "Security Research Team"
 
 # Setup logging
