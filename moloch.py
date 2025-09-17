@@ -114,8 +114,8 @@ DEFAULT_CONFIG = {
         "amass": {"enabled": True, "flags": ["enum", "-passive", "-d"], "install_cmd": "go install -v github.com/owasp-amass/amass/v4/...@latest"},
         "assetfinder": {"enabled": True, "flags": ["--subs-only"], "install_cmd": "go install github.com/tomnomnom/assetfinder@latest"},
         "findomain": {"enabled": True, "flags": ["-t"], "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O /tmp/findomain && chmod +x /tmp/findomain && sudo mv /tmp/findomain /usr/local/bin/"},
-        "chaos": {"enabled": False, "flags": ["-d"], "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"}, # Requires API key
-        "shuffledns": {"enabled": False, "flags": [], "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"}, # Requires massdns and wordlist
+        "chaos": {"enabled": True, "flags": ["-d", "-silent"], "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"}, # Requires API key
+        "shuffledns": {"enabled": True, "flags": ["-silent", "-r", "8.8.8.8,1.1.1.1"], "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"}, # Requires massdns and wordlist
         "httpx": {"enabled": True, "flags": ["-silent", "-title", "-web-server", "-tech-detect", "-status-code", "-follow-redirects", "-random-agent", "-probe"], "install_cmd": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"},
         "nuclei": {
             "enabled": True,
@@ -144,8 +144,8 @@ DEFAULT_CONFIG = {
         "gf": {"enabled": True, "flags": [], "install_cmd": "go install github.com/tomnomnom/gf@latest"}, # Grep patterns
         "unfurl": {"enabled": True, "flags": [], "install_cmd": "go install github.com/tomnomnom/unfurl@latest"}, # URL extraction
         "anew": {"enabled": True, "flags": [], "install_cmd": "go install github.com/tomnomnom/anew@latest"}, # Append new lines
-        "notify": {"enabled": False, "flags": [], "install_cmd": "go install github.com/projectdiscovery/notify/cmd/notify@latest"}, # Alerting
-        "interactsh-client": {"enabled": False, "flags": [], "install_cmd": "go install github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest"}, # OOB testing
+        "notify": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install github.com/projectdiscovery/notify/cmd/notify@latest"}, # Alerting
+        "interactsh-client": {"enabled": True, "flags": ["-o", "interactsh.log"], "install_cmd": "go install github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest"}, # OOB testing
         "alterx": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install github.com/projectdiscovery/alterx/cmd/alterx@latest"}, # Fast subdomain discovery
     },
     "wordlists": {
@@ -1547,12 +1547,13 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
     logger.info(f"[RECON] Starting subdomain discovery for {target}")
     subdomains: Set[str] = set()
 
-    # Define available tools and their configurations
+    # Define available tools and their configurations - Enhanced with all subdomain discovery tools
     available_tools = []
     tool_configs = [
         ("subfinder", [target], "subfinder.txt"),
         ("assetfinder", [target], "assetfinder.txt"),
         ("findomain", [target], "findomain.txt"),
+        ("alterx", ["-d", target], "alterx.txt"),  # Fast subdomain discovery
     ]
     
     # Add Amass if configured
@@ -1562,7 +1563,14 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
     # Add Chaos if API key is present and tool is enabled
     chaos_key = config.get("auth", {}).get("chaos_api_key")
     if chaos_key and config.get("tools", {}).get("chaos", {}).get("enabled", False):
-        tool_configs.append(("chaos", [target], "chaos.txt"))
+        tool_configs.append(("chaos", ["-d", target], "chaos.txt"))
+    
+    # Add shuffledns if configured with wordlist
+    shuffledns_flags = config.get("tools", {}).get("shuffledns", {}).get("flags", [])
+    wordlists_dir = HERE / "wordlists"
+    subdomain_wordlist = wordlists_dir / config.get("wordlists", {}).get("subdomains", "subdomains-top1million-5000.txt")
+    if subdomain_wordlist.exists():
+        tool_configs.append(("shuffledns", ["-d", target, "-w", str(subdomain_wordlist)] + shuffledns_flags, "shuffledns.txt"))
 
     # Check which tools are actually available
     for tool_name, args, output_filename in tool_configs:
@@ -1653,25 +1661,64 @@ def _basic_subdomain_enumeration(target: str, output_dir: Path) -> List[str]:
     return list(discovered_subdomains)
 
 def run_dns_resolution(subdomain_file: Path, output_file: Path, config: Dict[str, Any]):
-    """Resolve subdomains to IPs."""
-    logger.info("[RECON] Resolving subdomains to IPs...")
+    """Enhanced DNS resolution using multiple tools for comprehensive results."""
+    logger.info("[RECON] Starting enhanced DNS resolution with multiple tools...")
     if not subdomain_file.exists():
         logger.warning(f"Subdomain file {subdomain_file} does not exist.")
         return False
 
-    # Try dnsx first, fallback to built-in resolution
-    if which("dnsx"):
-        success = execute_tool("dnsx", ["-l", str(subdomain_file), "-o", str(output_file)], output_file=output_file)
-        if success:
-            logger.info(f"[RECON] DNS resolution complete. Results in {output_file}")
-            return True
-        else:
-            logger.warning("[RECON] dnsx failed, falling back to built-in resolution")
-    else:
-        logger.info("[RECON] dnsx not available, using built-in DNS resolution")
+    resolved_hosts = set()
+    output_dir = output_file.parent
     
-    # Fallback to built-in DNS resolution
-    return _builtin_dns_resolution(subdomain_file, output_file)
+    # Tool configurations for DNS resolution
+    dns_tools = []
+    
+    # Primary: dnsx for fast DNS resolution
+    if which("dnsx") and config.get("tools", {}).get("dnsx", {}).get("enabled", True):
+        dnsx_flags = config.get("tools", {}).get("dnsx", {}).get("flags", ["-silent", "-resp-only"])
+        dns_tools.append(("dnsx", dnsx_flags + ["-l", str(subdomain_file)], "dnsx_results.txt"))
+    
+    # Secondary: naabu for port-based host discovery
+    if which("naabu") and config.get("tools", {}).get("naabu", {}).get("enabled", True):
+        naabu_flags = config.get("tools", {}).get("naabu", {}).get("flags", ["-silent", "-top-ports", "100"])
+        dns_tools.append(("naabu", naabu_flags + ["-l", str(subdomain_file)], "naabu_results.txt"))
+    
+    # Additional: Use built-in resolver as fallback
+    if not dns_tools:
+        logger.info("[RECON] No DNS tools available, using built-in DNS resolution")
+        return _builtin_dns_resolution(subdomain_file, output_file)
+    
+    # Execute DNS tools
+    logger.info(f"[RECON] Using {len(dns_tools)} DNS resolution tools")
+    for tool_name, args, output_filename in dns_tools:
+        tool_output = output_dir / output_filename
+        logger.info(f"[RECON] Running {tool_name} for DNS resolution...")
+        
+        success = execute_tool(tool_name, args, output_file=tool_output)
+        if success and tool_output.exists():
+            lines = read_lines(tool_output)
+            initial_count = len(resolved_hosts)
+            
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    resolved_hosts.add(line)
+            
+            added_count = len(resolved_hosts) - initial_count
+            logger.info(f"[RECON] {tool_name} added {added_count} unique resolved hosts")
+        else:
+            logger.warning(f"[RECON] {tool_name} failed or produced no results")
+    
+    # Write consolidated results
+    if resolved_hosts:
+        with open(output_file, 'w') as f:
+            for host in sorted(resolved_hosts):
+                f.write(f"{host}\n")
+        logger.info(f"[RECON] DNS resolution complete. {len(resolved_hosts)} hosts resolved in {output_file}")
+        return True
+    else:
+        logger.warning("[RECON] No hosts were resolved, falling back to built-in resolution")
+        return _builtin_dns_resolution(subdomain_file, output_file)
 
 def _builtin_dns_resolution(subdomain_file: Path, output_file: Path) -> bool:
     """Built-in DNS resolution when dnsx is not available."""
@@ -1704,25 +1751,79 @@ def _builtin_dns_resolution(subdomain_file: Path, output_file: Path) -> bool:
         return False
 
 def run_http_probing(resolved_file: Path, output_file: Path, config: Dict[str, Any]):
-    """Probe hosts for HTTP/HTTPS."""
-    logger.info("[RECON] Probing hosts for HTTP/HTTPS...")
+    """Enhanced HTTP probing using multiple tools for comprehensive discovery."""
+    logger.info("[RECON] Starting enhanced HTTP probing with multiple tools...")
     if not resolved_file.exists():
         logger.warning(f"Resolved host file {resolved_file} does not exist.")
         return False
 
-    # Try httpx first, fallback to built-in probing
-    if which("httpx"):
-        success = execute_tool("httpx", ["-l", str(resolved_file), "-o", str(output_file)], output_file=output_file)
-        if success:
-            logger.info(f"[RECON] HTTP probing complete. Results in {output_file}")
-            return True
-        else:
-            logger.warning("[RECON] httpx failed, falling back to built-in probing")
-    else:
-        logger.info("[RECON] httpx not available, using built-in HTTP probing")
+    live_hosts = set()
+    output_dir = output_file.parent
     
-    # Fallback to built-in HTTP probing
-    return _builtin_http_probing(resolved_file, output_file)
+    # Tool configurations for HTTP probing
+    http_tools = []
+    
+    # Primary: httpx for comprehensive HTTP probing
+    if which("httpx") and config.get("tools", {}).get("httpx", {}).get("enabled", True):
+        httpx_flags = config.get("tools", {}).get("httpx", {}).get("flags", ["-silent", "-title", "-tech-detect"])
+        http_tools.append(("httpx", httpx_flags + ["-l", str(resolved_file)], "httpx_results.txt"))
+    
+    # Secondary: tlsx for TLS information gathering
+    if which("tlsx") and config.get("tools", {}).get("tlsx", {}).get("enabled", True):
+        tlsx_flags = config.get("tools", {}).get("tlsx", {}).get("flags", ["-silent", "-json"])
+        http_tools.append(("tlsx", tlsx_flags + ["-l", str(resolved_file)], "tlsx_results.txt"))
+    
+    # Additional: CDN detection
+    if which("cdncheck") and config.get("tools", {}).get("cdncheck", {}).get("enabled", True):
+        cdncheck_flags = config.get("tools", {}).get("cdncheck", {}).get("flags", ["-silent"])
+        http_tools.append(("cdncheck", cdncheck_flags + ["-l", str(resolved_file)], "cdncheck_results.txt"))
+    
+    if not http_tools:
+        logger.info("[RECON] No HTTP probing tools available, using built-in HTTP probing")
+        return _builtin_http_probing(resolved_file, output_file)
+    
+    # Execute HTTP probing tools
+    logger.info(f"[RECON] Using {len(http_tools)} HTTP probing tools")
+    for tool_name, args, output_filename in http_tools:
+        tool_output = output_dir / output_filename
+        logger.info(f"[RECON] Running {tool_name} for HTTP probing...")
+        
+        success = execute_tool(tool_name, args, output_file=tool_output)
+        if success and tool_output.exists():
+            lines = read_lines(tool_output)
+            initial_count = len(live_hosts)
+            
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    # Extract URLs/hosts from different tool outputs
+                    if tool_name == "httpx":
+                        live_hosts.add(line)
+                    elif tool_name == "tlsx":
+                        # Extract host from JSON or simple format
+                        if line.startswith('http'):
+                            live_hosts.add(line)
+                    elif tool_name == "cdncheck":
+                        # cdncheck output format handling
+                        if ':' in line:
+                            host = line.split(':')[0]
+                            live_hosts.add(f"http://{host}")
+            
+            added_count = len(live_hosts) - initial_count
+            logger.info(f"[RECON] {tool_name} added {added_count} unique live hosts")
+        else:
+            logger.warning(f"[RECON] {tool_name} failed or produced no results")
+    
+    # Write consolidated results
+    if live_hosts:
+        with open(output_file, 'w') as f:
+            for host in sorted(live_hosts):
+                f.write(f"{host}\n")
+        logger.info(f"[RECON] HTTP probing complete. {len(live_hosts)} live hosts found in {output_file}")
+        return True
+    else:
+        logger.warning("[RECON] No live hosts found, falling back to built-in probing")
+        return _builtin_http_probing(resolved_file, output_file)
 
 def _builtin_http_probing(resolved_file: Path, output_file: Path) -> bool:
     """Built-in HTTP probing when httpx is not available."""
@@ -1773,29 +1874,81 @@ def _builtin_http_probing(resolved_file: Path, output_file: Path) -> bool:
 
 # --- Scanning Modules ---
 def run_vulnerability_scan(host_file: Path, output_dir: Path, config: Dict[str, Any]):
-    """Run vulnerability scan using Nuclei or fallback methods."""
-    logger.info("[SCAN] Starting vulnerability scan...")
+    """Enhanced vulnerability scanning using multiple tools for comprehensive coverage."""
+    logger.info("[SCAN] Starting enhanced vulnerability scan with multiple tools...")
     if not host_file.exists():
         logger.warning(f"Host file {host_file} does not exist.")
         return False
 
-    nuclei_output = output_dir / "nuclei_results.json"
+    vulnerability_results = []
     
-    # Try nuclei first
-    if which("nuclei"):
-        logger.info("[SCAN] Using Nuclei for vulnerability scanning")
-        success = execute_tool("nuclei", ["-l", str(host_file), "-json", "-o", str(nuclei_output)], 
-                             output_file=nuclei_output, run_dir=output_dir)
-        if success:
-            logger.info(f"[SCAN] Nuclei scan complete. Results in {nuclei_output}")
-            return True
-        else:
-            logger.warning("[SCAN] Nuclei scan failed, falling back to basic checks")
+    # Tool configurations for vulnerability scanning
+    vuln_tools = []
+    
+    # Primary: Nuclei for comprehensive vulnerability scanning
+    if which("nuclei") and config.get("tools", {}).get("nuclei", {}).get("enabled", True):
+        nuclei_flags = config.get("tools", {}).get("nuclei", {}).get("flags", ["-silent", "-json"])
+        nuclei_output = output_dir / "nuclei_results.json"
+        vuln_tools.append(("nuclei", nuclei_flags + ["-l", str(host_file), "-o", str(nuclei_output)], nuclei_output))
+    
+    # Secondary: Nikto for web server scanning
+    if which("nikto") and config.get("tools", {}).get("nikto", {}).get("enabled", True):
+        nikto_flags = config.get("tools", {}).get("nikto", {}).get("flags", ["-Format", "json"])
+        nikto_output = output_dir / "nikto_results.json"
+        vuln_tools.append(("nikto", nikto_flags + ["-host", "@" + str(host_file), "-output", str(nikto_output)], nikto_output))
+    
+    # Additional: Nmap for service detection and script scanning
+    if which("nmap") and config.get("tools", {}).get("nmap", {}).get("enabled", True):
+        nmap_flags = config.get("tools", {}).get("nmap", {}).get("flags", ["-sV", "-sC", "-Pn"])
+        nmap_output = output_dir / "nmap_vuln_scan.txt"
+        vuln_tools.append(("nmap", nmap_flags + ["--script=vuln", "-iL", str(host_file), "-oN", str(nmap_output)], nmap_output))
+    
+    # Additional: testssl.sh for SSL/TLS testing (on live hosts)
+    if which("testssl.sh") and config.get("tools", {}).get("testssl", {}).get("enabled", True):
+        testssl_flags = config.get("tools", {}).get("testssl", {}).get("flags", ["--quiet", "--jsonfile-pretty"])
+        testssl_output = output_dir / "testssl_results.json"
+        vuln_tools.append(("testssl.sh", testssl_flags + [str(testssl_output), "--file", str(host_file)], testssl_output))
+    
+    if not vuln_tools:
+        logger.info("[SCAN] No vulnerability scanning tools available, using basic checks")
+        return _basic_vulnerability_scan(host_file, output_dir)
+    
+    # Execute vulnerability scanning tools
+    logger.info(f"[SCAN] Using {len(vuln_tools)} vulnerability scanning tools")
+    success_count = 0
+    
+    for tool_name, args, output_file in vuln_tools:
+        logger.info(f"[SCAN] Running {tool_name} for vulnerability scanning...")
+        
+        try:
+            success = execute_tool(tool_name, args, output_file=output_file, run_dir=output_dir)
+            if success and output_file.exists():
+                logger.info(f"[SCAN] {tool_name} scan completed successfully")
+                success_count += 1
+                vulnerability_results.append(str(output_file))
+            else:
+                logger.warning(f"[SCAN] {tool_name} scan failed or produced no results")
+        except Exception as e:
+            logger.error(f"[SCAN] Error running {tool_name}: {e}")
+    
+    # Create summary report
+    summary_file = output_dir / "vulnerability_summary.txt"
+    with open(summary_file, 'w') as f:
+        f.write(f"Vulnerability Scan Summary\n")
+        f.write(f"========================\n")
+        f.write(f"Target file: {host_file}\n")
+        f.write(f"Tools executed: {len(vuln_tools)}\n")
+        f.write(f"Successful scans: {success_count}\n")
+        f.write(f"Result files:\n")
+        for result_file in vulnerability_results:
+            f.write(f"  - {result_file}\n")
+    
+    if success_count > 0:
+        logger.info(f"[SCAN] Vulnerability scanning complete. {success_count}/{len(vuln_tools)} tools succeeded")
+        return True
     else:
-        logger.info("[SCAN] Nuclei not available, using basic vulnerability checks")
-    
-    # Fallback to basic vulnerability checks
-    return _basic_vulnerability_scan(host_file, output_dir)
+        logger.warning("[SCAN] All vulnerability scanning tools failed, falling back to basic checks")
+        return _basic_vulnerability_scan(host_file, output_dir)
 
 def _basic_vulnerability_scan(host_file: Path, output_dir: Path) -> bool:
     """Basic vulnerability scanning when Nuclei is not available."""
@@ -2145,7 +2298,226 @@ def _basic_web_crawling(target: str, output_file: Path) -> List[str]:
         logger.error(f"[WEB] Basic crawling failed: {e}")
         return [target]
 
-def run_xss_scan(url_file: Path, output_file: Path, config: Dict[str, Any]):
+def run_url_processing_pipeline(urls_file: Path, output_dir: Path, config: Dict[str, Any]):
+    """Advanced URL processing pipeline using gf, unfurl, anew and other processing tools."""
+    logger.info("[PROCESS] Starting URL processing pipeline...")
+    if not urls_file.exists():
+        logger.warning(f"URLs file {urls_file} does not exist.")
+        return False
+
+    processed_urls = set()
+    output_files = {}
+    
+    # Tool configurations for URL processing
+    processing_tools = []
+    
+    # Process URLs with unfurl for URL analysis
+    if which("unfurl") and config.get("tools", {}).get("unfurl", {}).get("enabled", True):
+        unfurl_output = output_dir / "unfurl_domains.txt"
+        unfurl_flags = config.get("tools", {}).get("unfurl", {}).get("flags", [])
+        processing_tools.append(("unfurl", ["domains"] + unfurl_flags, unfurl_output, "domain_extraction"))
+        
+        # Also extract paths
+        unfurl_paths_output = output_dir / "unfurl_paths.txt"
+        processing_tools.append(("unfurl", ["paths"] + unfurl_flags, unfurl_paths_output, "path_extraction"))
+    
+    # Use gf for pattern matching on URLs
+    if which("gf") and config.get("tools", {}).get("gf", {}).get("enabled", True):
+        gf_output = output_dir / "gf_patterns.txt"
+        gf_flags = config.get("tools", {}).get("gf", {}).get("flags", [])
+        # Common useful patterns: xss, sqli, ssrf, redirect, etc.
+        gf_patterns = ["xss", "sqli", "ssrf", "redirect", "lfi", "rce"]
+        for pattern in gf_patterns:
+            pattern_output = output_dir / f"gf_{pattern}.txt"
+            processing_tools.append(("gf", [pattern] + gf_flags, pattern_output, f"pattern_{pattern}"))
+    
+    # Use anew for deduplication and new line filtering
+    if which("anew") and config.get("tools", {}).get("anew", {}).get("enabled", True):
+        anew_output = output_dir / "anew_unique_urls.txt"
+        anew_flags = config.get("tools", {}).get("anew", {}).get("flags", [])
+        processing_tools.append(("anew", anew_flags, anew_output, "deduplication"))
+    
+    if not processing_tools:
+        logger.warning("[PROCESS] No URL processing tools available, copying original file")
+        import shutil
+        shutil.copy(urls_file, output_dir / "processed_urls.txt")
+        return True
+    
+    # Execute URL processing tools
+    logger.info(f"[PROCESS] Using {len(processing_tools)} URL processing operations")
+    
+    for tool_name, args, output_file, operation_type in processing_tools:
+        logger.info(f"[PROCESS] Running {tool_name} for {operation_type}...")
+        
+        try:
+            # Build command based on operation type
+            if operation_type.startswith("domain_extraction") or operation_type.startswith("path_extraction"):
+                # unfurl reads from stdin
+                cmd_args = args + ["-o", str(output_file)]
+                with open(urls_file, 'r') as f:
+                    success = execute_tool_with_input(tool_name, cmd_args, f.read(), output_file)
+            elif operation_type.startswith("pattern_"):
+                # gf reads from stdin
+                with open(urls_file, 'r') as f:
+                    success = execute_tool_with_input(tool_name, args, f.read(), output_file)
+            elif operation_type == "deduplication":
+                # anew typically used to filter existing results
+                cmd_args = args + [str(output_dir / "all_urls.txt")]
+                with open(urls_file, 'r') as f:
+                    success = execute_tool_with_input(tool_name, cmd_args, f.read(), output_file)
+            else:
+                success = execute_tool(tool_name, args + [str(urls_file)], output_file=output_file)
+            
+            if success and output_file.exists():
+                lines = read_lines(output_file)
+                output_files[operation_type] = {
+                    "file": str(output_file),
+                    "count": len(lines)
+                }
+                logger.info(f"[PROCESS] {tool_name} {operation_type} completed: {len(lines)} results")
+            else:
+                logger.warning(f"[PROCESS] {tool_name} {operation_type} failed or produced no results")
+                
+        except Exception as e:
+            logger.error(f"[PROCESS] Error running {tool_name} for {operation_type}: {e}")
+    
+    # Create processing summary
+    summary_file = output_dir / "url_processing_summary.txt"
+    with open(summary_file, 'w') as f:
+        f.write(f"URL Processing Pipeline Summary\n")
+        f.write(f"==============================\n")
+        f.write(f"Input file: {urls_file}\n")
+        f.write(f"Operations completed: {len(output_files)}\n\n")
+        for operation, details in output_files.items():
+            f.write(f"{operation}: {details['count']} results -> {details['file']}\n")
+    
+    logger.info(f"[PROCESS] URL processing pipeline complete. {len(output_files)} operations completed")
+    return len(output_files) > 0
+
+def run_infrastructure_analysis(target: str, output_dir: Path, config: Dict[str, Any]):
+    """Advanced infrastructure analysis using asnmap, mapcidr, and other tools."""
+    logger.info(f"[INFRA] Starting infrastructure analysis for {target}...")
+    
+    infra_results = {}
+    
+    # ASN mapping and CIDR discovery
+    if which("asnmap") and config.get("tools", {}).get("asnmap", {}).get("enabled", True):
+        logger.info("[INFRA] Running ASN mapping...")
+        asnmap_flags = config.get("tools", {}).get("asnmap", {}).get("flags", ["-silent"])
+        asnmap_output = output_dir / "asnmap_results.txt"
+        
+        success = execute_tool("asnmap", asnmap_flags + ["-d", target, "-o", str(asnmap_output)], output_file=asnmap_output)
+        if success and asnmap_output.exists():
+            lines = read_lines(asnmap_output)
+            infra_results["asn_mapping"] = {
+                "file": str(asnmap_output),
+                "count": len(lines)
+            }
+            logger.info(f"[INFRA] ASN mapping completed: {len(lines)} ASN entries found")
+            
+            # Use ASN results for CIDR mapping if mapcidr is available
+            if which("mapcidr") and config.get("tools", {}).get("mapcidr", {}).get("enabled", True):
+                logger.info("[INFRA] Running CIDR mapping on ASN results...")
+                mapcidr_flags = config.get("tools", {}).get("mapcidr", {}).get("flags", ["-silent"])
+                mapcidr_output = output_dir / "mapcidr_results.txt"
+                
+                # Extract CIDR blocks from ASN results and expand them
+                with open(asnmap_output, 'r') as f:
+                    asn_data = f.read()
+                
+                cidr_success = execute_tool_with_input("mapcidr", mapcidr_flags + ["-o", str(mapcidr_output)], asn_data, mapcidr_output)
+                if cidr_success and mapcidr_output.exists():
+                    cidr_lines = read_lines(mapcidr_output)
+                    infra_results["cidr_mapping"] = {
+                        "file": str(mapcidr_output),
+                        "count": len(cidr_lines)
+                    }
+                    logger.info(f"[INFRA] CIDR mapping completed: {len(cidr_lines)} IP ranges found")
+        else:
+            logger.warning("[INFRA] ASN mapping failed")
+    
+    # CDN and infrastructure detection
+    if which("cdncheck") and config.get("tools", {}).get("cdncheck", {}).get("enabled", True):
+        logger.info("[INFRA] Running CDN detection...")
+        cdncheck_flags = config.get("tools", {}).get("cdncheck", {}).get("flags", ["-silent"])
+        cdncheck_output = output_dir / "cdncheck_results.txt"
+        
+        success = execute_tool("cdncheck", cdncheck_flags + ["-i", target, "-o", str(cdncheck_output)], output_file=cdncheck_output)
+        if success and cdncheck_output.exists():
+            lines = read_lines(cdncheck_output)
+            infra_results["cdn_detection"] = {
+                "file": str(cdncheck_output),
+                "count": len(lines)
+            }
+            logger.info(f"[INFRA] CDN detection completed: {len(lines)} results found")
+        else:
+            logger.warning("[INFRA] CDN detection failed")
+    
+    # TLS certificate analysis
+    if which("tlsx") and config.get("tools", {}).get("tlsx", {}).get("enabled", True):
+        logger.info("[INFRA] Running TLS certificate analysis...")
+        tlsx_flags = config.get("tools", {}).get("tlsx", {}).get("flags", ["-silent", "-json"])
+        tlsx_output = output_dir / "tlsx_results.json"
+        
+        success = execute_tool("tlsx", tlsx_flags + ["-i", target, "-o", str(tlsx_output)], output_file=tlsx_output)
+        if success and tlsx_output.exists():
+            try:
+                with open(tlsx_output, 'r') as f:
+                    tls_data = f.read().strip()
+                    tls_lines = len(tls_data.split('\n')) if tls_data else 0
+                infra_results["tls_analysis"] = {
+                    "file": str(tlsx_output),
+                    "count": tls_lines
+                }
+                logger.info(f"[INFRA] TLS analysis completed: {tls_lines} certificate entries found")
+            except Exception as e:
+                logger.warning(f"[INFRA] Error processing TLS results: {e}")
+        else:
+            logger.warning("[INFRA] TLS analysis failed")
+    
+    # Create infrastructure summary
+    summary_file = output_dir / "infrastructure_summary.txt"
+    with open(summary_file, 'w') as f:
+        f.write(f"Infrastructure Analysis Summary\n")
+        f.write(f"==============================\n")
+        f.write(f"Target: {target}\n")
+        f.write(f"Analysis modules completed: {len(infra_results)}\n\n")
+        for analysis_type, details in infra_results.items():
+            f.write(f"{analysis_type}: {details['count']} results -> {details['file']}\n")
+    
+    logger.info(f"[INFRA] Infrastructure analysis complete. {len(infra_results)} modules completed")
+    return len(infra_results) > 0
+
+def execute_tool_with_input(tool_name: str, args: List[str], input_data: str, output_file: Path) -> bool:
+    """Execute a tool with stdin input data."""
+    try:
+        cmd = [tool_name] + args
+        logger.debug(f"Executing with input: {' '.join(cmd)}")
+        
+        result = subprocess.run(
+            cmd,
+            input=input_data,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=600
+        )
+        
+        if result.returncode == 0:
+            if result.stdout.strip():
+                with open(output_file, 'w') as f:
+                    f.write(result.stdout)
+            return True
+        else:
+            logger.warning(f"Tool {tool_name} exited with code {result.returncode}: {result.stderr}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        logger.error(f"Tool {tool_name} timed out after 600 seconds")
+        return False
+    except Exception as e:
+        logger.error(f"Error executing {tool_name}: {e}")
+        return False
     """Scan for XSS using Dalfox or fallback methods."""
     logger.info("[WEB] Starting XSS scan...")
     if not url_file.exists():
@@ -2155,6 +2527,49 @@ def run_xss_scan(url_file: Path, output_file: Path, config: Dict[str, Any]):
     # Try dalfox first
     if which("dalfox"):
         success = execute_tool("dalfox", ["file", str(url_file), "-o", str(output_file)], output_file=output_file)
+        if success:
+            logger.info(f"[WEB] XSS scan complete. Results in {output_file}")
+            return True
+        else:
+            logger.warning("[WEB] Dalfox scan failed, using basic XSS checks")
+    else:
+        logger.info("[WEB] Dalfox not available, using basic XSS checks")
+    
+def run_xss_scan(url_file: Path, output_file: Path, config: Dict[str, Any]):
+    """Enhanced XSS scanning using Dalfox and parameter discovery with Arjun."""
+    logger.info("[WEB] Starting enhanced XSS scanning...")
+    if not url_file.exists():
+        logger.warning(f"URL file {url_file} does not exist.")
+        return False
+
+    # First, run parameter discovery if Arjun is available
+    if which("arjun") and config.get("tools", {}).get("arjun", {}).get("enabled", True):
+        logger.info("[WEB] Running parameter discovery with Arjun...")
+        arjun_output = output_file.parent / "arjun_params.txt"
+        arjun_flags = config.get("tools", {}).get("arjun", {}).get("flags", ["-w", "default"])
+        
+        # Run Arjun on the URLs to find parameters
+        arjun_success = execute_tool("arjun", arjun_flags + ["-i", str(url_file), "-o", str(arjun_output)])
+        if arjun_success and arjun_output.exists():
+            logger.info("[WEB] Parameter discovery completed, using results for XSS testing")
+            # Use Arjun results for more targeted XSS testing
+            url_file = arjun_output
+        else:
+            logger.warning("[WEB] Parameter discovery failed, using original URLs")
+
+    # Try Dalfox for XSS scanning
+    if which("dalfox") and config.get("tools", {}).get("dalfox", {}).get("enabled", True):
+        logger.info("[WEB] Using Dalfox for XSS scanning")
+        dalfox_flags = config.get("tools", {}).get("dalfox", {}).get("flags", [])
+        
+        # Remove default blind XSS domain if present and not configured
+        blind_xss_server = config.get("auth", {}).get("dalfox_blind_xss", "")
+        if blind_xss_server:
+            dalfox_flags = [flag if flag != "your.xss.hunter.domain" else blind_xss_server for flag in dalfox_flags]
+        else:
+            dalfox_flags = [flag for flag in dalfox_flags if flag != "your.xss.hunter.domain"]
+        
+        success = execute_tool("dalfox", ["file", str(url_file), "-o", str(output_file)] + dalfox_flags, output_file=output_file)
         if success:
             logger.info(f"[WEB] XSS scan complete. Results in {output_file}")
             return True
@@ -2605,11 +3020,18 @@ def run_full_pipeline():
                 live_file = run_dir / "hosts" / f"live_{target_safe}.txt"
                 http_success = run_http_probing(resolved_file, live_file, config)
 
-                # --- Phase 2: Scanning ---
+                # --- Phase 2: Infrastructure Analysis ---
+                if config.get("modules", {}).get("infrastructure", True):
+                    logger.info("Phase 2: Infrastructure Analysis")
+                    infra_dir = run_dir / "infrastructure"
+                    infra_dir.mkdir(exist_ok=True)
+                    run_infrastructure_analysis(target, infra_dir, config)
+
+                # --- Phase 3: Scanning ---
                 if not config.get("modules", {}).get("scanning", True):
                     logger.info("Scanning module disabled, skipping...")
                 else:
-                    logger.info("Phase 2: Scanning")
+                    logger.info("Phase 3: Scanning")
                     vuln_dir = run_dir / "vulns"
                     vuln_dir.mkdir(exist_ok=True)
 
@@ -2627,28 +3049,33 @@ def run_full_pipeline():
                     else:
                         logger.warning("HTTP probing failed or produced no live hosts, skipping scanning phases.")
 
-                # --- Phase 3: Web App Testing ---
+                # --- Phase 4: Web App Testing ---
                 if not config.get("modules", {}).get("web", True):
                     logger.info("Web Application Testing module disabled, skipping...")
                 else:
-                    logger.info("Phase 3: Web Application Testing")
+                    logger.info("Phase 4: Web Application Testing")
                     crawl_dir = run_dir / "crawling"
                     crawl_dir.mkdir(exist_ok=True)
                     urls_file = crawl_dir / f"urls_{target_safe}.txt"
                     crawled_urls = run_crawling(target, urls_file, config) # Crawl main target
 
                     if crawled_urls: # Check if list is not empty
+                        # URL Processing Pipeline
+                        processing_dir = run_dir / "url_processing"
+                        processing_dir.mkdir(exist_ok=True)
+                        run_url_processing_pipeline(urls_file, processing_dir, config)
+                        
                         # XSS Scan
                         xss_file = crawl_dir / f"xss_{target_safe}.txt"
                         run_xss_scan(urls_file, xss_file, config)
                     else:
-                        logger.warning("Crawling produced no URLs, skipping XSS scan.")
+                        logger.warning("Crawling produced no URLs, skipping web testing phases.")
 
-                # --- Phase 4: Fuzzing ---
+                # --- Phase 5: Fuzzing ---
                 if not config.get("modules", {}).get("fuzzing", True):
                     logger.info("Fuzzing module disabled, skipping...")
                 else:
-                    logger.info("Phase 4: Fuzzing")
+                    logger.info("Phase 5: Fuzzing")
                     fuzz_dir = run_dir / "fuzzing"
                     fuzz_dir.mkdir(exist_ok=True)
                     run_directory_fuzzing(target, fuzz_dir, config) # Fuzz main target
@@ -2658,7 +3085,7 @@ def run_full_pipeline():
         else:
             logger.warning("No subdomains found, skipping further phases.")
 
-    # --- Phase 5: Reporting ---
+    # --- Phase 6: Reporting ---
     if not config.get("modules", {}).get("reporting", True):
         logger.info("Reporting module disabled, skipping...")
         logger.info(f"🎉 Full pipeline complete for run: {run_dir.name} (Report Skipped)")

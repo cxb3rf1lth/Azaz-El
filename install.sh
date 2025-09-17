@@ -66,7 +66,7 @@ install_python_deps() {
         $INSTALL_PREFIX apt-get update && $INSTALL_PREFIX apt-get install -y python3-pip
     fi
     
-    pip3 install --user -r requirements.txt
+    pip3 install -r requirements.txt
     echo -e "${GREEN}✅ Python dependencies installed successfully${NC}"
 }
 
