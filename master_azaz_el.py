@@ -837,7 +837,8 @@ class MasterAzazElFramework:
             elif choice == "3":
                 self.handle_http_probing()
             elif choice == "4":
-                asyncio.run(self.handle_full_reconnaissance())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_full_reconnaissance())
             elif choice == "5":
                 self.view_reconnaissance_results()
             elif choice == "6":
@@ -1107,7 +1108,8 @@ class MasterAzazElFramework:
             elif choice == "3":
                 self.handle_ssl_scan()
             elif choice == "4":
-                asyncio.run(self.handle_full_vulnerability_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_full_vulnerability_assessment())
             elif choice == "5":
                 self.view_vulnerability_results()
             elif choice == "6":
@@ -1394,7 +1396,8 @@ class MasterAzazElFramework:
             elif choice == "4":
                 self.handle_parameter_discovery()
             elif choice == "5":
-                asyncio.run(self.handle_full_web_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_full_web_assessment())
             elif choice == "6":
                 self.view_web_testing_results()
             elif choice == "7":
@@ -1710,15 +1713,20 @@ class MasterAzazElFramework:
             if choice == "0":
                 break
             elif choice == "1":
-                asyncio.run(self.handle_aws_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_aws_assessment())
             elif choice == "2":
-                asyncio.run(self.handle_azure_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_azure_assessment())
             elif choice == "3":
-                asyncio.run(self.handle_gcp_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_gcp_assessment())
             elif choice == "4":
-                asyncio.run(self.handle_s3_bucket_enum())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_s3_bucket_enum())
             elif choice == "5":
-                asyncio.run(self.handle_iam_analysis())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_iam_analysis())
             elif choice == "6":
                 self.view_cloud_security_results()
             elif choice == "7":
@@ -2060,17 +2068,23 @@ class MasterAzazElFramework:
             if choice == "0":
                 break
             elif choice == "1":
-                asyncio.run(self.handle_rest_api_testing())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_rest_api_testing())
             elif choice == "2":
-                asyncio.run(self.handle_graphql_testing())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_graphql_testing())
             elif choice == "3":
-                asyncio.run(self.handle_soap_testing())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_soap_testing())
             elif choice == "4":
-                asyncio.run(self.handle_api_auth_testing())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_api_auth_testing())
             elif choice == "5":
-                asyncio.run(self.handle_api_documentation_analysis())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_api_documentation_analysis())
             elif choice == "6":
-                asyncio.run(self.handle_full_api_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_full_api_assessment())
             elif choice == "7":
                 self.view_api_testing_results()
             elif choice == "8":
@@ -2494,17 +2508,23 @@ class MasterAzazElFramework:
             if choice == "0":
                 break
             elif choice == "1":
-                asyncio.run(self.handle_network_discovery())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_network_discovery())
             elif choice == "2":
-                asyncio.run(self.handle_service_detection())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_service_detection())
             elif choice == "3":
-                asyncio.run(self.handle_os_fingerprinting())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_os_fingerprinting())
             elif choice == "4":
-                asyncio.run(self.handle_protocol_analysis())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_protocol_analysis())
             elif choice == "5":
-                asyncio.run(self.handle_asset_discovery())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_asset_discovery())
             elif choice == "6":
-                asyncio.run(self.handle_full_infrastructure_assessment())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_full_infrastructure_assessment())
             elif choice == "7":
                 self.view_infrastructure_results()
             elif choice == "8":
@@ -2939,7 +2959,8 @@ class MasterAzazElFramework:
             elif choice == "5":
                 self.handle_vhost_discovery()
             elif choice == "6":
-                asyncio.run(self.handle_full_fuzzing_suite())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.handle_full_fuzzing_suite())
             elif choice == "7":
                 self.view_fuzzing_results()
             elif choice == "8":
@@ -6184,7 +6205,8 @@ class MasterAzazElFramework:
             elif choice == "5":
                 self.categorize_targets()
             elif choice == "6":
-                asyncio.run(self.mass_reconnaissance())
+                # Create task for async operation to avoid event loop error
+                asyncio.create_task(self.mass_reconnaissance())
             elif choice == "7":
                 self.bulk_export_with_metadata()
             else:
