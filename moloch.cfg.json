@@ -254,6 +254,72 @@
                 "1000"
             ],
             "install_cmd": "go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest"
+        },
+        "tlsx": {
+            "enabled": true,
+            "flags": [
+                "-silent",
+                "-json"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest"
+        },
+        "cdncheck": {
+            "enabled": true,
+            "flags": [
+                "-silent"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest"
+        },
+        "asnmap": {
+            "enabled": true,
+            "flags": [
+                "-silent"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/asnmap/cmd/asnmap@latest"
+        },
+        "mapcidr": {
+            "enabled": true,
+            "flags": [
+                "-silent"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest"
+        },
+        "gf": {
+            "enabled": true,
+            "flags": [],
+            "install_cmd": "go install github.com/tomnomnom/gf@latest"
+        },
+        "unfurl": {
+            "enabled": true,
+            "flags": [],
+            "install_cmd": "go install github.com/tomnomnom/unfurl@latest"
+        },
+        "anew": {
+            "enabled": true,
+            "flags": [],
+            "install_cmd": "go install github.com/tomnomnom/anew@latest"
+        },
+        "notify": {
+            "enabled": true,
+            "flags": [
+                "-silent"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/notify/cmd/notify@latest"
+        },
+        "interactsh-client": {
+            "enabled": true,
+            "flags": [
+                "-o",
+                "interactsh.log"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest"
+        },
+        "alterx": {
+            "enabled": true,
+            "flags": [
+                "-silent"
+            ],
+            "install_cmd": "go install github.com/projectdiscovery/alterx/cmd/alterx@latest"
         }
     },
     "wordlists": {

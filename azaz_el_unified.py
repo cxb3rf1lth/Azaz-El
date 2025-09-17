@@ -231,11 +231,27 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
         include_cloud = input("☁️  Include cloud security assessment? [y/N]: ").strip().lower() == 'y'
         
         # Show pipeline overview
-        print(f"\n\033[1;36m📋 PIPELINE OVERVIEW\033[0m")
-        print("═" * 50)
+        print(f"\n\033[1;36m📋 ENHANCED PIPELINE OVERVIEW\033[0m")
+        print("═" * 70)
         print(f"🎯 Target: {target}")
         print(f"🔥 Aggressive Mode: {'✅ Enabled' if aggressive_mode else '❌ Disabled'}")
         print(f"☁️  Cloud Assessment: {'✅ Enabled' if include_cloud else '❌ Disabled'}")
+        print("\n\033[1;97m🔧 PIPELINE PHASES:\033[0m")
+        print("   Phase 1: 🔍 Comprehensive Subdomain Discovery (7 tools)")
+        print("           subfinder, amass, assetfinder, findomain, chaos, shuffledns, alterx")
+        print("   Phase 2: 🏗️  Infrastructure Analysis (4 tools)")
+        print("           asnmap, mapcidr, cdncheck, tlsx")
+        print("   Phase 3: 🛡️  Multi-Tool Vulnerability Scanning (4 tools)")
+        print("           nuclei, nmap, nikto, testssl")
+        print("   Phase 4: 🌐 Advanced Web Application Testing (5 tools)")
+        print("           katana, gau, waybackurls, arjun, dalfox")
+        print("   Phase 5: 💥 Content & Directory Discovery (2 tools)")
+        print("           ffuf, gobuster")
+        print("   Phase 6: 🔄 URL Processing & Analysis (3 tools)")
+        print("           gf, unfurl, anew")
+        print("   Phase 7: 📊 Comprehensive Reporting & Notifications")
+        print("           notify, report generation")
+        print(f"\n\033[1;32m📈 TOTAL TOOLS: 29 security tools integrated\033[0m")
         
         confirm = input("\n\033[1;97m▶️  Start pipeline execution? [Y/n]: \033[0m").strip().lower()
         if confirm in ['', 'y', 'yes']:
