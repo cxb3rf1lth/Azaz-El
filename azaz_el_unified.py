@@ -218,11 +218,61 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
         print("\033[1;32m🚀 FULL AUTOMATED PIPELINE CONFIGURATION\033[0m")
         print("═" * 80)
         
-        # Get target information
-        target = input("\033[1;97m🎯 Enter target domain/IP: \033[0m").strip()
-        if not target:
-            self._show_error("Target is required")
-            return
+        # Import moloch functions for target management
+        from moloch import TARGETS_FILE, read_lines
+        
+        # Check for existing targets
+        existing_targets = read_lines(TARGETS_FILE)
+        target_sources = []
+        
+        if existing_targets:
+            print(f"\033[1;33m📋 Found {len(existing_targets)} targets in target management system:\033[0m")
+            for i, target in enumerate(existing_targets[:5], 1):  # Show first 5
+                print(f"   {i}. {target}")
+            if len(existing_targets) > 5:
+                print(f"   ... and {len(existing_targets) - 5} more")
+            
+            print("\n\033[1;97m🎯 Target Selection Options:\033[0m")
+            print("  \033[1;32m1.\033[0m Use all targets from target management system")
+            print("  \033[1;33m2.\033[0m Enter single target manually")
+            print("  \033[1;34m3.\033[0m Select specific targets from the list")
+            
+            choice = input("\n\033[1;96mSelect option [1-3]: \033[0m").strip()
+            
+            if choice == '1':
+                target_sources = existing_targets
+                print(f"\033[1;32m✅ Using all {len(target_sources)} targets from target management\033[0m")
+            elif choice == '3':
+                print(f"\n\033[1;97m📋 Available targets:\033[0m")
+                for i, target in enumerate(existing_targets, 1):
+                    print(f"  \033[1;96m{i}.\033[0m {target}")
+                
+                selected_indices = input("\n\033[1;97mEnter target numbers (comma-separated, e.g., 1,3,5): \033[0m").strip()
+                try:
+                    indices = [int(x.strip()) - 1 for x in selected_indices.split(',') if x.strip()]
+                    target_sources = [existing_targets[i] for i in indices if 0 <= i < len(existing_targets)]
+                    if target_sources:
+                        print(f"\033[1;32m✅ Selected {len(target_sources)} targets\033[0m")
+                    else:
+                        self._show_error("No valid targets selected")
+                        return
+                except (ValueError, IndexError):
+                    self._show_error("Invalid selection format")
+                    return
+            else:  # choice == '2' or default
+                target = input("\033[1;97m🎯 Enter target domain/IP: \033[0m").strip()
+                if not target:
+                    self._show_error("Target is required")
+                    return
+                target_sources = [target]
+        else:
+            # No existing targets, fallback to manual input
+            print("\033[1;33m📭 No targets found in target management system\033[0m")
+            target = input("\033[1;97m🎯 Enter target domain/IP: \033[0m").strip()
+            if not target:
+                self._show_error("Target is required")
+                return
+            target_sources = [target]
         
         # Configuration options
         print("\n\033[1;97m🔧 Pipeline Configuration:\033[0m")
@@ -233,7 +283,14 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
         # Show pipeline overview
         print(f"\n\033[1;36m📋 ENHANCED PIPELINE OVERVIEW\033[0m")
         print("═" * 70)
-        print(f"🎯 Target: {target}")
+        if len(target_sources) == 1:
+            print(f"🎯 Target: {target_sources[0]}")
+        else:
+            print(f"🎯 Targets: {len(target_sources)} targets selected")
+            for i, target in enumerate(target_sources[:3], 1):  # Show first 3
+                print(f"   {i}. {target}")
+            if len(target_sources) > 3:
+                print(f"   ... and {len(target_sources) - 3} more")
         print(f"🔥 Aggressive Mode: {'✅ Enabled' if aggressive_mode else '❌ Disabled'}")
         print(f"☁️  Cloud Assessment: {'✅ Enabled' if include_cloud else '❌ Disabled'}")
         print("\n\033[1;97m🔧 PIPELINE PHASES:\033[0m")
@@ -259,7 +316,7 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                loop.run_until_complete(self._execute_full_pipeline(target, aggressive_mode, include_cloud))
+                loop.run_until_complete(self._execute_full_pipeline_multi(target_sources, aggressive_mode, include_cloud))
             finally:
                 loop.close()
         
@@ -302,6 +359,82 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
             self.active_scans[scan_id]["status"] = "failed"
             self.active_scans[scan_id]["error"] = str(e)
             print(f"\n\033[1;31m❌ Pipeline execution failed: {e}\033[0m")
+        
+        # Move to history
+        self.scan_history.append(self.active_scans.pop(scan_id))
+    
+    async def _execute_full_pipeline_multi(self, targets: List[str], aggressive: bool, include_cloud: bool):
+        """Execute the full security assessment pipeline for multiple targets"""
+        scan_id = f"multi_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        self.active_scans[scan_id] = {
+            "targets": targets,
+            "start_time": datetime.now(),
+            "status": "running",
+            "phase": "initialization",
+            "total_targets": len(targets),
+            "completed_targets": 0,
+            "failed_targets": 0
+        }
+        
+        try:
+            print(f"\n\033[1;32m🚀 Starting pipeline execution for {len(targets)} target(s)\033[0m")
+            
+            all_results = []
+            for i, target in enumerate(targets, 1):
+                print(f"\n\033[1;33m📋 Processing target {i}/{len(targets)}: {target}\033[0m")
+                
+                try:
+                    # Execute pipeline using moloch integration
+                    pipeline_results = await self.moloch_integration.execute_full_pipeline(
+                        target, aggressive, include_cloud
+                    )
+                    
+                    all_results.append({
+                        "target": target,
+                        "status": pipeline_results["status"],
+                        "results": pipeline_results
+                    })
+                    
+                    if pipeline_results["status"] == "completed":
+                        self.active_scans[scan_id]["completed_targets"] += 1
+                        print(f"\033[1;32m✅ Target {target} completed successfully!\033[0m")
+                    else:
+                        self.active_scans[scan_id]["failed_targets"] += 1
+                        print(f"\033[1;31m❌ Target {target} failed\033[0m")
+                        
+                except Exception as e:
+                    self.active_scans[scan_id]["failed_targets"] += 1
+                    all_results.append({
+                        "target": target,
+                        "status": "failed",
+                        "error": str(e)
+                    })
+                    print(f"\033[1;31m❌ Target {target} failed: {e}\033[0m")
+            
+            # Update scan status
+            completed = self.active_scans[scan_id]["completed_targets"]
+            failed = self.active_scans[scan_id]["failed_targets"]
+            
+            self.active_scans[scan_id]["status"] = "completed" if failed == 0 else "partial"
+            self.active_scans[scan_id]["end_time"] = datetime.now()
+            self.active_scans[scan_id]["all_results"] = all_results
+            
+            # Summary
+            print(f"\n\033[1;36m📊 PIPELINE EXECUTION SUMMARY\033[0m")
+            print("═" * 50)
+            print(f"🎯 Total targets: {len(targets)}")
+            print(f"✅ Successful: {completed}")
+            print(f"❌ Failed: {failed}")
+            
+            if completed > 0:
+                print(f"\n\033[1;32m🎉 Multi-target pipeline execution completed!\033[0m")
+                print(f"📁 Results available in individual run directories")
+            
+        except Exception as e:
+            self.active_scans[scan_id]["status"] = "failed"
+            self.active_scans[scan_id]["error"] = str(e)
+            print(f"\n\033[1;31m❌ Multi-target pipeline execution failed: {e}\033[0m")
         
         # Move to history
         self.scan_history.append(self.active_scans.pop(scan_id))
@@ -633,53 +766,137 @@ SSS    S*S  sY*SSSSSSSSP  SSS    S*S  sY*SSSSSSSSP    YSSP    YSSP
     # Helper methods for target management
     def _add_new_target(self):
         """Add a new target"""
+        from moloch import TARGETS_FILE, read_lines, write_lines
+        
         target = input("\n\033[1;97m🎯 Enter target (domain/IP): \033[0m").strip()
         if target:
-            print(f"\033[1;32m✅ Target '{target}' added successfully\033[0m")
+            try:
+                # Read current targets
+                targets = read_lines(TARGETS_FILE)
+                
+                if target not in targets:
+                    targets.append(target)
+                    write_lines(TARGETS_FILE, targets)
+                    print(f"\033[1;32m✅ Target '{target}' added successfully\033[0m")
+                else:
+                    print(f"\033[1;33m⚠️  Target '{target}' already exists in the list\033[0m")
+            except Exception as e:
+                self._show_error(f"Failed to add target: {e}")
         else:
             self._show_error("Target cannot be empty")
         self._wait_for_continue()
     
     def _import_target_list(self):
         """Import targets from file"""
+        from moloch import TARGETS_FILE, read_lines, write_lines
+        
         filename = input("\n\033[1;97m📁 Enter filename: \033[0m").strip()
         if filename:
-            print(f"\033[1;32m✅ Targets imported from '{filename}'\033[0m")
+            try:
+                import_path = Path(filename)
+                if import_path.exists():
+                    new_targets = read_lines(import_path)
+                    current_targets = read_lines(TARGETS_FILE)
+                    added_count = 0
+                    
+                    for target in new_targets:
+                        target = target.strip()
+                        if target and not target.startswith('#') and target not in current_targets:
+                            current_targets.append(target)
+                            added_count += 1
+                    
+                    write_lines(TARGETS_FILE, current_targets)
+                    print(f"\033[1;32m✅ {added_count} new targets imported from '{filename}'\033[0m")
+                else:
+                    self._show_error(f"File '{filename}' not found")
+            except Exception as e:
+                self._show_error(f"Failed to import targets: {e}")
         else:
             self._show_error("Filename cannot be empty")
         self._wait_for_continue()
     
     def _view_current_targets(self):
         """View current targets"""
-        print("\n\033[1;97m👁️  CURRENT TARGETS:\033[0m")
-        print("  • example.com")
-        print("  • test.target.net")
-        print("  • 192.168.1.100")
+        from moloch import TARGETS_FILE, read_lines
+        
+        try:
+            targets = read_lines(TARGETS_FILE)
+            print("\n\033[1;97m👁️  CURRENT TARGETS:\033[0m")
+            print("═" * 50)
+            
+            if targets:
+                for i, target in enumerate(targets, 1):
+                    print(f"  \033[1;96m{i:2d}.\033[0m {target}")
+                print(f"\n\033[1;32m📊 Total targets: {len(targets)}\033[0m")
+            else:
+                print("  \033[1;91m📭 No targets found. Add some targets to begin scanning.\033[0m")
+        except Exception as e:
+            self._show_error(f"Failed to read targets: {e}")
+        
         self._wait_for_continue()
     
     def _remove_targets(self):
         """Remove specific targets"""
-        target = input("\n\033[1;97m❌ Enter target to remove: \033[0m").strip()
-        if target:
-            print(f"\033[1;32m✅ Target '{target}' removed successfully\033[0m")
-        else:
-            self._show_error("Target cannot be empty")
+        from moloch import TARGETS_FILE, read_lines, write_lines
+        
+        try:
+            targets = read_lines(TARGETS_FILE)
+            if not targets:
+                print("\n\033[1;91m📭 No targets found to remove.\033[0m")
+                self._wait_for_continue()
+                return
+            
+            print("\n\033[1;97m👁️  CURRENT TARGETS:\033[0m")
+            for i, target in enumerate(targets, 1):
+                print(f"  \033[1;96m{i:2d}.\033[0m {target}")
+            
+            target_to_remove = input("\n\033[1;97m❌ Enter target to remove (exact match): \033[0m").strip()
+            if target_to_remove:
+                if target_to_remove in targets:
+                    targets.remove(target_to_remove)
+                    write_lines(TARGETS_FILE, targets)
+                    print(f"\033[1;32m✅ Target '{target_to_remove}' removed successfully\033[0m")
+                else:
+                    print(f"\033[1;91m❌ Target '{target_to_remove}' not found in the list\033[0m")
+            else:
+                self._show_error("Target cannot be empty")
+        except Exception as e:
+            self._show_error(f"Failed to remove target: {e}")
+        
         self._wait_for_continue()
     
     def _clear_all_targets(self):
         """Clear all targets"""
+        from moloch import TARGETS_FILE, write_lines
+        
         confirm = input("\n\033[1;91m⚠️  Clear ALL targets? [y/N]: \033[0m").strip().lower()
         if confirm == 'y':
-            print("\033[1;32m✅ All targets cleared\033[0m")
+            try:
+                write_lines(TARGETS_FILE, [])
+                print("\033[1;32m✅ All targets cleared\033[0m")
+            except Exception as e:
+                self._show_error(f"Failed to clear targets: {e}")
         else:
             print("\033[1;33m❌ Operation cancelled\033[0m")
         self._wait_for_continue()
     
     def _export_targets(self):
         """Export targets to file"""
+        from moloch import TARGETS_FILE, read_lines
+        
         filename = input("\n\033[1;97m💾 Enter export filename: \033[0m").strip()
         if filename:
-            print(f"\033[1;32m✅ Targets exported to '{filename}'\033[0m")
+            try:
+                targets = read_lines(TARGETS_FILE)
+                export_path = Path(filename)
+                
+                with open(export_path, 'w') as f:
+                    for target in targets:
+                        f.write(f"{target}\n")
+                
+                print(f"\033[1;32m✅ {len(targets)} targets exported to '{filename}'\033[0m")
+            except Exception as e:
+                self._show_error(f"Failed to export targets: {e}")
         else:
             self._show_error("Filename cannot be empty")
         self._wait_for_continue()
