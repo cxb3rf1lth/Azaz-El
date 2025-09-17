@@ -286,3 +286,62 @@ def get_logger(name: str = "azaz-el", log_dir: Path = None, log_level: str = "IN
 def setup_logging(log_dir: Path, log_level: str = "INFO") -> AdvancedLogger:
     """Setup and return configured logger"""
     return get_logger("azaz-el", log_dir, log_level)
+
+def log_security_event(event_type: str, details: Dict[str, Any], severity: str = "INFO"):
+    """Log security-related events with special handling"""
+    logger = get_logger()
+    
+    security_data = {
+        "event_type": event_type,
+        "details": details,
+        "severity": severity,
+        "category": "security_event",
+        "timestamp": time.time()
+    }
+    
+    level = getattr(logging, severity.upper(), logging.INFO)
+    message = f"Security Event: {event_type}"
+    logger._log_with_extra(level, message, security_data)
+
+def log_system_resource_usage():
+    """Log current system resource usage"""
+    try:
+        import psutil
+        logger = get_logger()
+        
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        resource_data = {
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory.percent,
+            "memory_available_mb": memory.available // (1024 * 1024),
+            "disk_percent": disk.percent,
+            "disk_free_gb": disk.free // (1024 * 1024 * 1024),
+            "category": "system_resources"
+        }
+        
+        message = f"System Resources: CPU {cpu_percent:.1f}%, Memory {memory.percent:.1f}%, Disk {disk.percent:.1f}%"
+        logger._log_with_extra(logging.DEBUG, message, resource_data)
+        
+    except ImportError:
+        pass  # psutil not available
+    except Exception as e:
+        logger = get_logger()
+        logger.error(f"Failed to log system resources: {e}")
+
+def log_configuration_change(config_section: str, old_value: Any, new_value: Any, user: str = "system"):
+    """Log configuration changes for audit trail"""
+    logger = get_logger()
+    
+    change_data = {
+        "config_section": config_section,
+        "old_value": str(old_value) if not isinstance(old_value, str) else old_value,
+        "new_value": str(new_value) if not isinstance(new_value, str) else new_value,
+        "user": user,
+        "category": "configuration_change"
+    }
+    
+    message = f"Configuration changed: {config_section} by {user}"
+    logger._log_with_extra(logging.INFO, message, change_data)

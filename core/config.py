@@ -402,3 +402,116 @@ class ConfigurationManager:
         
         del decrypted_config['encrypted_sections']
         return decrypted_config
+    
+    def validate_tool_configuration(self, tool_name: str, tool_config: Dict[str, Any]) -> bool:
+        """Validate individual tool configuration"""
+        try:
+            # Check required fields
+            if 'enabled' not in tool_config:
+                tool_config['enabled'] = True
+            
+            if 'timeout' in tool_config:
+                timeout = tool_config['timeout']
+                if not isinstance(timeout, int) or timeout < 10 or timeout > 3600:
+                    raise ValidationError(f"Tool {tool_name} timeout must be between 10 and 3600 seconds")
+            
+            if 'priority' in tool_config:
+                priority = tool_config['priority']
+                if not isinstance(priority, int) or priority < 1 or priority > 10:
+                    raise ValidationError(f"Tool {tool_name} priority must be between 1 and 10")
+            
+            if 'flags' in tool_config:
+                flags = tool_config['flags']
+                if not isinstance(flags, list):
+                    raise ValidationError(f"Tool {tool_name} flags must be a list")
+                
+                # Validate individual flags for security
+                InputValidator.validate_command_args(flags)
+            
+            return True
+        except Exception as e:
+            raise ConfigurationError(f"Invalid configuration for tool {tool_name}: {e}")
+    
+    def optimize_performance_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Optimize performance configuration based on system resources"""
+        try:
+            import psutil
+            
+            performance = config.get('performance', {})
+            
+            # Auto-adjust max_workers based on CPU cores
+            cpu_count = psutil.cpu_count()
+            if 'max_workers' not in performance or performance['max_workers'] > cpu_count * 2:
+                performance['max_workers'] = min(cpu_count * 2, 20)
+            
+            # Adjust memory limit based on available RAM
+            memory = psutil.virtual_memory()
+            available_mb = memory.available // (1024 * 1024)
+            if 'memory_limit_mb' not in performance or performance['memory_limit_mb'] > available_mb * 0.5:
+                performance['memory_limit_mb'] = int(available_mb * 0.3)  # Use 30% of available memory
+            
+            config['performance'] = performance
+            return config
+        except ImportError:
+            # If psutil not available, use conservative defaults
+            return config
+        except Exception as e:
+            raise ConfigurationError(f"Failed to optimize performance configuration: {e}")
+    
+    def backup_configuration(self, backup_path: Optional[Path] = None) -> Path:
+        """Create a backup of current configuration"""
+        if backup_path is None:
+            backup_path = self.config_path.with_suffix('.backup.json')
+        
+        try:
+            if self.config_path.exists():
+                import shutil
+                shutil.copy2(self.config_path, backup_path)
+                return backup_path
+            else:
+                raise ConfigurationError("No configuration file exists to backup")
+        except Exception as e:
+            raise ConfigurationError(f"Failed to backup configuration: {e}")
+    
+    def restore_configuration(self, backup_path: Path) -> bool:
+        """Restore configuration from backup"""
+        try:
+            if not backup_path.exists():
+                raise ConfigurationError(f"Backup file does not exist: {backup_path}")
+            
+            # Validate backup before restoring
+            with open(backup_path, 'r') as f:
+                backup_config = json.load(f)
+            
+            validated_config = InputValidator.validate_config_schema(backup_config)
+            
+            # Save current config as emergency backup
+            if self.config_path.exists():
+                emergency_backup = self.config_path.with_suffix('.emergency.json')
+                self.backup_configuration(emergency_backup)
+            
+            # Restore from backup
+            import shutil
+            shutil.copy2(backup_path, self.config_path)
+            
+            # Reload configuration
+            self.load_config()
+            return True
+        except Exception as e:
+            raise ConfigurationError(f"Failed to restore configuration: {e}")
+    
+    def get_tool_statistics(self) -> Dict[str, Any]:
+        """Get statistics about configured tools"""
+        config = self.get_config()
+        tools = config.get('tools', {})
+        
+        stats = {
+            'total_tools': len(tools),
+            'enabled_tools': sum(1 for tool in tools.values() if tool.get('enabled', True)),
+            'disabled_tools': sum(1 for tool in tools.values() if not tool.get('enabled', True)),
+            'tools_with_install_cmd': sum(1 for tool in tools.values() if tool.get('install_cmd')),
+            'high_priority_tools': sum(1 for tool in tools.values() if tool.get('priority', 1) <= 2),
+            'tools_requiring_auth': sum(1 for tool in tools.values() if tool.get('requires_auth', False))
+        }
+        
+        return stats
