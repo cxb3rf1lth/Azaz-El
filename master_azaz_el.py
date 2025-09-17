@@ -190,9 +190,9 @@ class MasterAzazElFramework:
         # Initialize environment if needed (skip tool installation for now)
         try:
             # Skip automatic tool installation to prevent prompts
-            pass
-        except:
-            self.logger.warning("Environment initialization had issues, continuing...")
+            self.logger.info("Skipping automatic tool installation to prevent interactive prompts")
+        except Exception as e:
+            self.logger.warning(f"Environment initialization had issues: {e}, continuing...")
         
         self.logger.info("Master framework initialization complete")
         
@@ -800,9 +800,10 @@ class MasterAzazElFramework:
         # Graceful shutdown
         try:
             # Clean up any background processes
-            pass
-        except:
-            pass
+            self.logger.info("Performing graceful shutdown cleanup")
+            # Could add specific cleanup tasks here if needed
+        except Exception as e:
+            self.logger.warning(f"Cleanup during shutdown had issues: {e}")
         
         print("\n👋 \033[1;92mGoodbye!\033[0m")
         sys.exit(0)
@@ -3496,8 +3497,9 @@ class MasterAzazElFramework:
                 result = subprocess.run(['which', tool], capture_output=True)
                 if result.returncode == 0:
                     available_tools.append(tool)
-            except:
-                pass
+            except Exception as e:
+                self.logger.debug(f"Tool availability check failed for {tool}: {e}")
+                continue
                 
         if not available_tools:
             self.show_info("No tools available for removal")
@@ -3741,8 +3743,9 @@ class MasterAzazElFramework:
                         if '=' in line and not line.startswith('#'):
                             key, value = line.strip().split('=', 1)
                             current_keys[key] = value
-            except:
-                pass
+            except Exception as e:
+                self.logger.debug(f"Error reading API key file: {e}")
+                current_keys = {}
                 
         for key, description in api_keys.items():
             status = "✅ Set" if key in current_keys else "❌ Not set"
@@ -4395,20 +4398,20 @@ class MasterAzazElFramework:
                 print(f"  ❌ {name} - Error: {e}")
 
     def proxy_network_settings(self):
-        """Proxy and network settings - already implemented above"""
-        pass
+        """Proxy and network settings - redirect to implemented method"""
+        self.network_proxy_settings()
         
     def performance_tuning(self):
-        """Performance tuning - already implemented above"""
-        pass
+        """Performance tuning - redirect to implemented method"""
+        self.performance_optimization_settings()
         
     def directory_path_configuration(self):
-        """Directory path configuration - already implemented above"""
-        pass
+        """Directory path configuration - redirect to implemented method"""
+        self.path_directory_settings()
         
     def backup_restore_settings(self):
-        """Backup and restore settings - already implemented above"""
-        pass
+        """Backup and restore settings - redirect to implemented method"""
+        self.backup_restore_management()
     
     def reporting_analytics_menu(self):
         """Reporting and analytics interface"""
@@ -4580,8 +4583,9 @@ class MasterAzazElFramework:
                             run_data['findings'].extend(data)
                         elif isinstance(data, dict) and 'findings' in data:
                             run_data['findings'].extend(data['findings'])
-                except:
-                    pass
+                except Exception as e:
+                    self.logger.debug(f"Error processing JSON file {json_file}: {e}")
+                    continue
                     
             report_data['runs'].append(run_data)
             report_data['summary']['scan_types'].add(run_data['type'])
@@ -4754,7 +4758,16 @@ class MasterAzazElFramework:
             
         # Calculate statistics
         total_runs = len(all_runs)
-        total_size = sum(sum(f.stat().st_size for f in run_dir.rglob('*') if f.is_file()) for run_dir in all_runs)
+        
+        # Calculate total size more efficiently
+        total_size = 0
+        for run_dir in all_runs:
+            try:
+                dir_size = sum(f.stat().st_size for f in run_dir.rglob('*') if f.is_file())
+                total_size += dir_size
+            except (OSError, PermissionError):
+                # Skip directories that can't be read
+                continue
         
         # Group by scan type
         scan_types = {}
@@ -4827,8 +4840,9 @@ class MasterAzazElFramework:
                         content = f.read()
                         if search_term.lower() in content.lower():
                             matching_results.append(('Content', f"{run_dir.name}/{json_file.name}", json_file))
-                except:
-                    pass
+                except Exception as e:
+                    self.logger.debug(f"Error searching in file {json_file}: {e}")
+                    continue
                     
         if matching_results:
             print(f"\n🔍 Found {len(matching_results)} matches for '{search_term}':")
@@ -4921,8 +4935,9 @@ class MasterAzazElFramework:
                             data = json.load(jf)
                             if isinstance(data, list):
                                 findings_count += len(data)
-                    except:
-                        pass
+                    except Exception as e:
+                        self.logger.debug(f"Error counting findings in {json_file}: {e}")
+                        continue
                         
                 writer.writerow([
                     run_dir.name,
@@ -5056,8 +5071,9 @@ class MasterAzazElFramework:
                     net_io = psutil.net_io_counters()
                     print(f"   Network Sent: {net_io.bytes_sent // (1024*1024):6d} MB")
                     print(f"   Network Recv: {net_io.bytes_recv // (1024*1024):6d} MB")
-                except:
-                    pass
+                except Exception as e:
+                    self.logger.debug(f"Network statistics unavailable: {e}")
+                    print("   Network Info: Unavailable")
                 
                 # Active scans
                 print(f"\n🚀 Active Scans:")

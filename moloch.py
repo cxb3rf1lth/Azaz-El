@@ -1393,11 +1393,13 @@ def run_crawling(target: str, output_file: Path, config: Dict[str, Any]):
                     combined_urls.update(line.strip() for line in lines if line.strip())
                     logger.debug(f"[WEB] {tool} added {len(combined_urls) - initial_count} unique URLs.")
                 elif success: # Tool ran, but output was to stdout (gau, waybackurls)
-                     # This is tricky as execute_tool doesn't capture stdout if no output_file is given for these tools.
-                     # A better approach would be to modify execute_tool or capture stdout directly here.
-                     # For now, we assume tools like gau/waybackurls write to the specified file if -o is used.
-                     # If they write to stdout by default, this needs adjustment.
-                     pass # Placeholder, logic needs refinement for stdout tools without -o
+                     # For tools that write to stdout, we should have captured it via execute_tool
+                     # If the output file doesn't exist, check if execute_tool handled stdout redirection
+                     if tool in ['gau', 'waybackurls']:
+                         logger.info(f"[WEB] {tool} completed successfully, but output file not found. "
+                                   f"Tool may have written to stdout - check execute_tool implementation.")
+                     else:
+                         logger.warning(f"[WEB] {tool} succeeded but no output file created")
                 else:
                     logger.warning(f"[WEB] {tool} did not produce results or failed.")
             except Exception as e:
