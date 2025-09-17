@@ -115,7 +115,7 @@ DEFAULT_CONFIG = {
         "assetfinder": {"enabled": True, "flags": ["--subs-only"], "install_cmd": "go install github.com/tomnomnom/assetfinder@latest"},
         "findomain": {"enabled": True, "flags": ["-t"], "install_cmd": "wget https://github.com/findomain/findomain/releases/latest/download/findomain-linux -O /tmp/findomain && chmod +x /tmp/findomain && sudo mv /tmp/findomain /usr/local/bin/"},
         "chaos": {"enabled": True, "flags": ["-d", "-silent"], "install_cmd": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"}, # Requires API key
-        "shuffledns": {"enabled": True, "flags": ["-silent", "-r", "8.8.8.8,1.1.1.1"], "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"}, # Requires massdns and wordlist
+        "shuffledns": {"enabled": True, "flags": ["-silent"], "install_cmd": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"}, # Requires massdns and wordlist
         "httpx": {"enabled": True, "flags": ["-silent", "-title", "-web-server", "-tech-detect", "-status-code", "-follow-redirects", "-random-agent", "-probe"], "install_cmd": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"},
         "nuclei": {
             "enabled": True,
@@ -1570,7 +1570,12 @@ def run_subdomain_discovery(target: str, output_dir: Path, config: Dict[str, Any
     wordlists_dir = HERE / "wordlists"
     subdomain_wordlist = wordlists_dir / config.get("wordlists", {}).get("subdomains", "subdomains-top1million-5000.txt")
     if subdomain_wordlist.exists():
-        tool_configs.append(("shuffledns", ["-d", target, "-w", str(subdomain_wordlist)] + shuffledns_flags, "shuffledns.txt"))
+        # Create resolver file for shuffledns
+        resolver_file = output_dir / "resolvers.txt"
+        resolvers = ["8.8.8.8", "1.1.1.1", "8.8.4.4", "1.0.0.1"]
+        resolver_file.parent.mkdir(parents=True, exist_ok=True)
+        write_lines(resolver_file, resolvers)
+        tool_configs.append(("shuffledns", ["-d", target, "-w", str(subdomain_wordlist), "-r", str(resolver_file)] + shuffledns_flags, "shuffledns.txt"))
 
     # Check which tools are actually available
     for tool_name, args, output_filename in tool_configs:
@@ -3180,9 +3185,14 @@ def target_management_menu():
             input("\nPress Enter to continue...")
             
         elif choice == '3':
-            # Import from file
+            # Import from file with enhanced validation
             print("\n\033[1;97m📝 IMPORT TARGETS FROM FILE\033[0m")
             print("─" * 50)
+            print("\033[1;96mSupported formats:\033[0m")
+            print("  • One domain per line (e.g., example.com)")
+            print("  • Comments starting with # are ignored")
+            print("  • Empty lines are ignored")
+            print()
             file_path = input("\033[1;93mEnter file path (or 'targets.txt' for default): \033[0m").strip()
             if not file_path:
                 file_path = "targets.txt"
@@ -3192,15 +3202,27 @@ def target_management_menu():
                     new_targets = read_lines(Path(file_path))
                     current_targets = read_lines(TARGETS_FILE)
                     added_count = 0
+                    skipped_count = 0
                     
                     for target in new_targets:
                         target = target.strip()
-                        if target and target not in current_targets:
-                            current_targets.append(target)
-                            added_count += 1
+                        # Skip comments and empty lines
+                        if target and not target.startswith('#'):
+                            # Basic validation
+                            if "." in target and " " not in target and not target.startswith(("http://", "https://")):
+                                if target not in current_targets:
+                                    current_targets.append(target)
+                                    added_count += 1
+                                else:
+                                    skipped_count += 1
+                            else:
+                                logger.warning(f"Skipping invalid target format: {target}")
+                                skipped_count += 1
                     
                     write_lines(TARGETS_FILE, current_targets)
                     print(f"\n\033[1;32m✅ {added_count} new targets imported successfully!\033[0m")
+                    if skipped_count > 0:
+                        print(f"\033[1;93m⚠️  {skipped_count} targets were skipped (duplicates or invalid format)\033[0m")
                 else:
                     print(f"\n\033[1;91m❌ File '{file_path}' not found.\033[0m")
             except Exception as e:
@@ -3681,10 +3703,12 @@ Examples:
   python3 {Path(__file__).name}                    # Run interactive menu
   python3 {Path(__file__).name} -t example.com     # Add target and run interactive menu
   python3 {Path(__file__).name} -t example.com --run-full # Add target and run full pipeline
+  python3 {Path(__file__).name} --targets-file targets.txt --run-full # Import targets and run pipeline
   python3 {Path(__file__).name} --init             # Initialize environment only
         """
     )
     parser.add_argument("--target", "-t", help="Add a single target to targets.txt")
+    parser.add_argument("--targets-file", "-tf", help="Path to custom targets file to import and use for scanning")
     parser.add_argument("--config", "-c", help="Path to configuration file (default: moloch.cfg.json)")
     parser.add_argument("--run-full", "-f", action="store_true", help="Run the full automation pipeline immediately")
     parser.add_argument("--init", action="store_true", help="Initialize environment (directories, wordlists, dependencies) and exit")
@@ -3717,6 +3741,36 @@ if __name__ == "__main__":
                 logger.info(f"Target {args.target} already exists in targets.txt.")
         else:
             logger.error(f"Invalid target format provided via CLI: {args.target}")
+
+    if args.targets_file:
+        # Import targets from specified file
+        targets_file_path = Path(args.targets_file)
+        if not targets_file_path.exists():
+            logger.error(f"Targets file not found: {targets_file_path}")
+            sys.exit(1)
+        
+        try:
+            new_targets = read_lines(targets_file_path)
+            current_targets = read_lines(TARGETS_FILE)
+            added_count = 0
+            
+            for target in new_targets:
+                target = target.strip()
+                if target and not target.startswith('#') and target not in current_targets:
+                    # Basic validation
+                    if "." in target and " " not in target and not target.startswith(("http://", "https://")):
+                        current_targets.append(target)
+                        added_count += 1
+                    else:
+                        logger.warning(f"Skipping invalid target format: {target}")
+            
+            write_lines(TARGETS_FILE, current_targets)
+            logger.info(f"Imported {added_count} new targets from {targets_file_path}")
+            print(f"✅ Imported {added_count} new targets from {targets_file_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to import targets from {targets_file_path}: {e}")
+            sys.exit(1)
 
     if args.init:
         logger.info(f"{APP} environment initialized.")

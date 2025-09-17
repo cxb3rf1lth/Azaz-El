@@ -1,3 +1,9 @@
 test.example.com
 example.org
-demo.target.net
+example.com
+test.example.org
+httpbin.org
+demo.example.net
+testsite.example.com
+newtest.example.com
+another.test.org
