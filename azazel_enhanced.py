@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Azaz-El v5.0.0-ENHANCED - Advanced Security Assessment CLI
-Enhanced command-line interface with comprehensive scanning capabilities
+Azaz-El v6.0.0-ENHANCED-SECURITY - Advanced Security Assessment CLI
+Enhanced command-line interface with comprehensive scanning capabilities and security features
 """
 
 import os
@@ -34,7 +34,7 @@ class AzazelEnhancedCLI:
     def create_argument_parser(self):
         """Create enhanced argument parser"""
         parser = argparse.ArgumentParser(
-            description="Azaz-El v5.0.0-ENHANCED - Advanced Security Assessment Framework",
+            description="Azaz-El v6.0.0-ENHANCED-SECURITY - Advanced Security Assessment Framework",
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 Examples:
