@@ -295,11 +295,11 @@ class MasterAzazElFramework:
         
         print()  # Add spacing
     
-    def display_master_menu(self) -> None:
+    async def display_master_menu(self) -> None:
         """Display the modern TUI interface"""
-        self.create_modern_tui_interface()
+        await self.create_modern_tui_interface()
     
-    def create_modern_tui_interface(self) -> None:
+    async def create_modern_tui_interface(self) -> None:
         """Create the modern, sophisticated TUI interface"""
         while True:
             try:
@@ -309,7 +309,7 @@ class MasterAzazElFramework:
                 self.display_navigation_menu()
                 
                 choice = self.get_user_input()
-                if not self.handle_navigation_choice(choice):
+                if not await self.handle_navigation_choice(choice):
                     break
                     
             except KeyboardInterrupt:
@@ -416,12 +416,12 @@ class MasterAzazElFramework:
         except (EOFError, KeyboardInterrupt):
             return "Q"
     
-    def handle_navigation_choice(self, choice: str) -> bool:
+    async def handle_navigation_choice(self, choice: str) -> bool:
         """Handle navigation choices with comprehensive routing"""
         if choice in ['Q', 'QUIT', 'EXIT']:
             return False
         elif choice == '1':
-            asyncio.run(self.run_full_automation_pipeline())
+            await self.run_full_automation_pipeline()
         elif choice == '2':
             self.target_management_hub()
         elif choice == '3':
@@ -6911,7 +6911,7 @@ async def main():
         
         # If no CLI operations were handled, launch interactive dashboard
         if not cli_handled:
-            framework.display_master_menu()
+            await framework.display_master_menu()
             
     except KeyboardInterrupt:
         print("\n\n🔄 \033[1;93mMaster framework interrupted by user\033[0m")
