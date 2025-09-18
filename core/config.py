@@ -176,7 +176,7 @@ class ConfigurationManager:
     def _create_default_config(self) -> Dict[str, Any]:
         """Create default configuration"""
         return {
-            "version": "5.0.0",
+            "version": "7.0.0-ULTIMATE",
             "tools": {
                 "subfinder": {
                     "enabled": True,

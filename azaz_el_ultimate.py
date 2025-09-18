@@ -73,8 +73,6 @@ try:
     from scanners.api_scanner import AdvancedAPIScanner
     from scanners.cloud_scanner import CloudSecurityScanner
     from scanners.infrastructure_scanner import InfrastructureScanner
-    from moloch_integration import MolochIntegration, EnhancedScanner
-    from moloch import *
     MODULES_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Warning: Some modules unavailable: {e}")
@@ -509,7 +507,7 @@ class AzazElUltimate:
     def _initialize_core_systems(self):
         """Initialize core framework systems"""
         # Configuration management
-        self.config_manager = ConfigurationManager(Path("moloch.cfg.json"))
+        self.config_manager = ConfigurationManager(Path("config/azaz-el-ultimate.json"))
         self.config = self.config_manager.load_config()
         
         # Advanced logging
@@ -520,15 +518,12 @@ class AzazElUltimate:
         
         # Core integrations
         if MODULES_AVAILABLE:
-            self.moloch_integration = MolochIntegration(self.config_manager)
-            self.enhanced_scanner = EnhancedScanner(self.config_manager)
-            self.report_generator = AdvancedReportGenerator(self.config)
-            
-            # Advanced scanners
-            self.web_scanner = AdvancedWebScanner(self.config)
-            self.api_scanner = AdvancedAPIScanner(self.config)
-            self.cloud_scanner = CloudSecurityScanner(self.config)
-            self.infrastructure_scanner = InfrastructureScanner(self.config)
+            # Initialize v7 framework components
+            self.web_scanner = AdvancedWebScanner(self.config) if MODULES_AVAILABLE else None
+            self.api_scanner = AdvancedAPIScanner(self.config) if MODULES_AVAILABLE else None
+            self.cloud_scanner = CloudSecurityScanner(self.config) if MODULES_AVAILABLE else None
+            self.infrastructure_scanner = InfrastructureScanner(self.config) if MODULES_AVAILABLE else None
+            self.report_generator = AdvancedReportGenerator(self.config) if MODULES_AVAILABLE else None
         else:
             self.logger.warning("⚠️  Some modules unavailable, running with limited functionality")
     
@@ -762,8 +757,8 @@ class AzazElUltimate:
         
         for target in targets:
             if MODULES_AVAILABLE:
-                # Use moloch integration for subdomain discovery
-                results = await self.moloch_integration.run_reconnaissance_suite(
+                # Use v7 framework components for reconnaissance
+                results = await self._run_reconnaissance_phase(
                     target.target, 
                     Path(f"runs/{scan_result.scan_id}"),
                     aggressive=target.scan_config.get('aggressive', False)

@@ -1,0 +1,29 @@
+{
+    "version": "7.0.0-ULTIMATE",
+    "framework": {
+        "name": "Azaz-El Ultimate",
+        "concurrent_scans": 50,
+        "max_memory_usage": 0.8,
+        "max_cpu_usage": 0.9,
+        "default_timeout": 300
+    },
+    "scanning": {
+        "enable_exploitation": false,
+        "enable_bruteforce": false,
+        "enable_fuzzing": true,
+        "aggressive_mode": false
+    },
+    "tools": {
+        "subfinder": {"enabled": true, "timeout": 600, "priority": 1},
+        "amass": {"enabled": true, "timeout": 900, "priority": 1},
+        "httpx": {"enabled": true, "timeout": 300, "priority": 1},
+        "nuclei": {"enabled": true, "timeout": 1200, "priority": 1},
+        "naabu": {"enabled": true, "timeout": 600, "priority": 1}
+    },
+    "api_keys": {
+        "shodan": "your_shodan_api_key",
+        "censys": "your_censys_api_key",
+        "securitytrails": "your_securitytrails_api_key",
+        "chaos": "your_chaos_api_key"
+    }
+}
