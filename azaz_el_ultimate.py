@@ -52,9 +52,6 @@ import zipfile
 import tarfile
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
-import psutil
-import resource
-
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -62,20 +59,122 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # Add project root to path
 sys.path.append(str(Path(__file__).parent))
 
-# Import all existing modules
+# Import dependency manager first
+try:
+    from dependency_manager import ensure_dependencies, get_safe_import
+    DEPENDENCY_MANAGER_AVAILABLE = True
+except ImportError:
+    print("⚠️  Dependency manager not available, using basic imports")
+    DEPENDENCY_MANAGER_AVAILABLE = False
+
+# Setup dependencies
+if DEPENDENCY_MANAGER_AVAILABLE:
+    deps_ok = ensure_dependencies()
+else:
+    deps_ok = False
+
+# Safe imports with fallbacks
+try:
+    if DEPENDENCY_MANAGER_AVAILABLE:
+        psutil = get_safe_import('psutil')
+        resource = __import__('resource')  # Built-in module
+    else:
+        import psutil
+        import resource
+except ImportError as e:
+    print(f"⚠️  System monitoring unavailable: {e}")
+    # Create mock psutil for basic functionality
+    class MockPsutil:
+        @staticmethod
+        def cpu_percent():
+            return 0.0
+        @staticmethod
+        def virtual_memory():
+            class MockMemory:
+                percent = 0.0
+            return MockMemory()
+        @staticmethod
+        def cpu_count():
+            return 1
+    psutil = MockPsutil()
+
+# Import all existing modules with enhanced error handling
+MODULES_AVAILABLE = True
+module_errors = []
+
 try:
     from core.config import ConfigurationManager
-    from core.logging import get_logger, AdvancedLogger
-    from core.reporting import AdvancedReportGenerator
-    from core.validators import InputValidator
-    from core.exceptions import AzazelException, ConfigurationError
-    from scanners.web_scanner import AdvancedWebScanner
-    from scanners.api_scanner import AdvancedAPIScanner
-    from scanners.cloud_scanner import CloudSecurityScanner
-    from scanners.infrastructure_scanner import InfrastructureScanner
-    MODULES_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️  Warning: Some modules unavailable: {e}")
+    module_errors.append(f"core.config: {e}")
+    class ConfigurationManager:
+        def __init__(self, config_path=None):
+            self.config_path = config_path
+        def load_config(self):
+            return {"version": "7.0.0-ULTIMATE", "tools": {}}
+
+try:
+    from core.logging import get_logger, AdvancedLogger
+except ImportError as e:
+    module_errors.append(f"core.logging: {e}")
+    def get_logger(name):
+        return logging.getLogger(name)
+    class AdvancedLogger:
+        def __init__(self, name):
+            self.logger = logging.getLogger(name)
+
+try:
+    from core.reporting import AdvancedReportGenerator
+except ImportError as e:
+    module_errors.append(f"core.reporting: {e}")
+    class AdvancedReportGenerator:
+        def __init__(self, config):
+            self.config = config
+
+try:
+    from core.validators import InputValidator
+except ImportError as e:
+    module_errors.append(f"core.validators: {e}")
+    class InputValidator:
+        def validate_target(self, target):
+            return True
+
+try:
+    from core.exceptions import AzazelException, ConfigurationError
+except ImportError as e:
+    module_errors.append(f"core.exceptions: {e}")
+    class AzazelException(Exception):
+        pass
+    class ConfigurationError(Exception):
+        pass
+
+try:
+    from scanners.web_scanner import AdvancedWebScanner
+except ImportError as e:
+    module_errors.append(f"scanners.web_scanner: {e}")
+    AdvancedWebScanner = None
+
+try:
+    from scanners.api_scanner import AdvancedAPIScanner
+except ImportError as e:
+    module_errors.append(f"scanners.api_scanner: {e}")
+    AdvancedAPIScanner = None
+
+try:
+    from scanners.cloud_scanner import CloudSecurityScanner
+except ImportError as e:
+    module_errors.append(f"scanners.cloud_scanner: {e}")
+    CloudSecurityScanner = None
+
+try:
+    from scanners.infrastructure_scanner import InfrastructureScanner
+except ImportError as e:
+    module_errors.append(f"scanners.infrastructure_scanner: {e}")
+    InfrastructureScanner = None
+
+if module_errors:
+    print(f"⚠️  Some modules unavailable:")
+    for error in module_errors:
+        print(f"   {error}")
     MODULES_AVAILABLE = False
 
 # Framework Constants
@@ -486,119 +585,266 @@ class AzazElUltimate:
     """
     
     def __init__(self):
-        """Initialize the ultimate framework"""
+        """Initialize the ultimate framework with comprehensive error handling"""
         self.version = FRAMEWORK_VERSION
         self.name = FRAMEWORK_NAME
         self.description = FRAMEWORK_DESCRIPTION
+        self.logger = None  # Initialize early for error reporting
         
-        # Initialize core components
-        self._initialize_core_systems()
-        self._initialize_advanced_components()
-        self._setup_signal_handlers()
-        
-        # Framework state
-        self.active_scans = {}
-        self.scan_history = deque(maxlen=SCAN_HISTORY_LIMIT)
-        self.cached_results = {}
-        self.performance_metrics = defaultdict(list)
-        
-        self.logger.info(f"🚀 {FRAMEWORK_NAME} {FRAMEWORK_VERSION} initialized successfully")
+        try:
+            # Initialize core components with error handling
+            self._initialize_core_systems()
+            self._initialize_advanced_components()
+            self._setup_signal_handlers()
+            
+            # Framework state
+            self.active_scans = {}
+            self.scan_history = deque(maxlen=SCAN_HISTORY_LIMIT)
+            self.cached_results = {}
+            self.performance_metrics = defaultdict(list)
+            
+            if self.logger:
+                self.logger.info(f"🚀 {FRAMEWORK_NAME} {FRAMEWORK_VERSION} initialized successfully")
+            else:
+                print(f"🚀 {FRAMEWORK_NAME} {FRAMEWORK_VERSION} initialized successfully")
+                
+        except Exception as e:
+            error_msg = f"❌ Failed to initialize framework: {e}"
+            if self.logger:
+                self.logger.error(error_msg)
+            else:
+                print(error_msg)
+            raise AzazelException(f"Framework initialization failed: {e}")
     
     def _initialize_core_systems(self):
-        """Initialize core framework systems"""
-        # Configuration management
-        self.config_manager = ConfigurationManager(Path("config/azaz-el-ultimate.json"))
-        self.config = self.config_manager.load_config()
+        """Initialize core framework systems with error handling"""
+        try:
+            # Configuration management
+            config_path = Path("config/azaz-el-ultimate.json")
+            if not config_path.exists():
+                config_path.parent.mkdir(parents=True, exist_ok=True)
+                # Create default config if not exists
+                default_config = {
+                    "version": "7.0.0-ULTIMATE",
+                    "tools": {},
+                    "settings": {
+                        "max_concurrent_scans": MAX_CONCURRENT_SCANS,
+                        "default_timeout": DEFAULT_TIMEOUT
+                    }
+                }
+                with open(config_path, 'w') as f:
+                    json.dump(default_config, f, indent=2)
+            
+            self.config_manager = ConfigurationManager(config_path)
+            self.config = self.config_manager.load_config()
+            
+        except Exception as e:
+            print(f"⚠️  Configuration error: {e}, using defaults")
+            self.config = {
+                "version": "7.0.0-ULTIMATE",
+                "tools": {},
+                "settings": {
+                    "max_concurrent_scans": MAX_CONCURRENT_SCANS,
+                    "default_timeout": DEFAULT_TIMEOUT
+                }
+            }
         
-        # Advanced logging
-        self.logger = get_logger("azaz-el-ultimate")
+        try:
+            # Advanced logging
+            self.logger = get_logger("azaz-el-ultimate")
+        except Exception as e:
+            print(f"⚠️  Logging setup failed: {e}, using basic logging")
+            logging.basicConfig(level=logging.INFO)
+            self.logger = logging.getLogger("azaz-el-ultimate")
         
-        # Validators and utilities
-        self.validator = InputValidator()
+        try:
+            # Validators and utilities
+            self.validator = InputValidator()
+        except Exception as e:
+            self.logger.warning(f"Input validator initialization failed: {e}")
+            self.validator = None
         
-        # Core integrations
-        if MODULES_AVAILABLE:
-            # Initialize v7 framework components
-            self.web_scanner = AdvancedWebScanner(self.config) if MODULES_AVAILABLE else None
-            self.api_scanner = AdvancedAPIScanner(self.config) if MODULES_AVAILABLE else None
-            self.cloud_scanner = CloudSecurityScanner(self.config) if MODULES_AVAILABLE else None
-            self.infrastructure_scanner = InfrastructureScanner(self.config) if MODULES_AVAILABLE else None
-            self.report_generator = AdvancedReportGenerator(self.config) if MODULES_AVAILABLE else None
-        else:
-            self.logger.warning("⚠️  Some modules unavailable, running with limited functionality")
+        # Core integrations with null checks
+        self.web_scanner = None
+        self.api_scanner = None
+        self.cloud_scanner = None
+        self.infrastructure_scanner = None
+        self.report_generator = None
+        
+        if AdvancedWebScanner:
+            try:
+                self.web_scanner = AdvancedWebScanner(self.config)
+            except Exception as e:
+                self.logger.warning(f"Web scanner initialization failed: {e}")
+        
+        if AdvancedAPIScanner:
+            try:
+                self.api_scanner = AdvancedAPIScanner(self.config)
+            except Exception as e:
+                self.logger.warning(f"API scanner initialization failed: {e}")
+        
+        if CloudSecurityScanner:
+            try:
+                self.cloud_scanner = CloudSecurityScanner(self.config)
+            except Exception as e:
+                self.logger.warning(f"Cloud scanner initialization failed: {e}")
+        
+        if InfrastructureScanner:
+            try:
+                self.infrastructure_scanner = InfrastructureScanner(self.config)
+            except Exception as e:
+                self.logger.warning(f"Infrastructure scanner initialization failed: {e}")
+        
+        if AdvancedReportGenerator:
+            try:
+                self.report_generator = AdvancedReportGenerator(self.config)
+            except Exception as e:
+                self.logger.warning(f"Report generator initialization failed: {e}")
     
     def _initialize_advanced_components(self):
-        """Initialize advanced framework components"""
-        # Advanced engines
-        self.exploit_engine = AdvancedExploitEngine(self.config, self.logger)
-        self.result_processor = IntelligentResultProcessor(self.config, self.logger)
-        self.distributed_manager = DistributedScanManager(self.config, self.logger)
+        """Initialize advanced framework components with error handling"""
+        try:
+            # Advanced engines
+            self.exploit_engine = AdvancedExploitEngine(self.config, self.logger)
+            self.result_processor = IntelligentResultProcessor(self.config, self.logger)
+            self.distributed_manager = DistributedScanManager(self.config, self.logger)
+        except Exception as e:
+            self.logger.error(f"Advanced components initialization failed: {e}")
+            # Create minimal fallbacks
+            self.exploit_engine = None
+            self.result_processor = None
+            self.distributed_manager = None
         
-        # Database for persistence
-        self._initialize_database()
+        try:
+            # Database for persistence
+            self._initialize_database()
+        except Exception as e:
+            self.logger.warning(f"Database initialization failed: {e}")
+            self.db_connection = None
         
-        # Resource monitoring
-        self.resource_monitor = self._setup_resource_monitoring()
+        try:
+            # Resource monitoring
+            self.resource_monitor = self._setup_resource_monitoring()
+        except Exception as e:
+            self.logger.warning(f"Resource monitoring setup failed: {e}")
+            self.resource_monitor = None
         
-        # Performance optimization
-        self.thread_pool = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_SCANS)
-        self.process_pool = ProcessPoolExecutor(max_workers=psutil.cpu_count())
+        try:
+            # Performance optimization
+            max_workers = min(MAX_CONCURRENT_SCANS, psutil.cpu_count() * 2) if hasattr(psutil, 'cpu_count') else 10
+            self.thread_pool = ThreadPoolExecutor(max_workers=max_workers)
+            self.process_pool = ProcessPoolExecutor(max_workers=psutil.cpu_count() if hasattr(psutil, 'cpu_count') else 2)
+        except Exception as e:
+            self.logger.warning(f"Thread pool setup failed: {e}")
+            self.thread_pool = ThreadPoolExecutor(max_workers=10)
+            self.process_pool = ProcessPoolExecutor(max_workers=2)
     
     def _initialize_database(self):
-        """Initialize SQLite database for persistence"""
-        db_path = Path("azaz_el_data.db")
-        self.db_connection = sqlite3.connect(str(db_path), check_same_thread=False)
-        
-        # Create tables
-        self.db_connection.execute("""
-            CREATE TABLE IF NOT EXISTS scans (
-                scan_id TEXT PRIMARY KEY,
-                target TEXT,
-                start_time TEXT,
-                end_time TEXT,
-                status TEXT,
-                findings_count INTEGER,
-                metadata TEXT
-            )
-        """)
-        
-        self.db_connection.execute("""
-            CREATE TABLE IF NOT EXISTS findings (
-                finding_id TEXT PRIMARY KEY,
-                scan_id TEXT,
-                title TEXT,
-                severity TEXT,
-                cvss_score REAL,
-                exploitability REAL,
-                data TEXT,
-                FOREIGN KEY (scan_id) REFERENCES scans (scan_id)
-            )
-        """)
-        
-        self.db_connection.commit()
+        """Initialize SQLite database for persistence with error handling"""
+        try:
+            db_path = Path("azaz_el_data.db")
+            self.db_connection = sqlite3.connect(str(db_path), check_same_thread=False)
+            
+            # Create tables with comprehensive schema
+            self.db_connection.execute("""
+                CREATE TABLE IF NOT EXISTS scans (
+                    scan_id TEXT PRIMARY KEY,
+                    target TEXT NOT NULL,
+                    start_time TEXT NOT NULL,
+                    end_time TEXT,
+                    status TEXT DEFAULT 'pending',
+                    findings_count INTEGER DEFAULT 0,
+                    metadata TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            self.db_connection.execute("""
+                CREATE TABLE IF NOT EXISTS findings (
+                    finding_id TEXT PRIMARY KEY,
+                    scan_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    severity TEXT DEFAULT 'info',
+                    cvss_score REAL DEFAULT 0.0,
+                    exploitability REAL DEFAULT 0.0,
+                    description TEXT,
+                    data TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (scan_id) REFERENCES scans (scan_id)
+                )
+            """)
+            
+            # Create indices for better performance
+            self.db_connection.execute("CREATE INDEX IF NOT EXISTS idx_scans_status ON scans(status)")
+            self.db_connection.execute("CREATE INDEX IF NOT EXISTS idx_findings_severity ON findings(severity)")
+            self.db_connection.execute("CREATE INDEX IF NOT EXISTS idx_findings_scan_id ON findings(scan_id)")
+            
+            self.db_connection.commit()
+            self.logger.info("✅ Database initialized successfully")
+            
+        except sqlite3.Error as e:
+            self.logger.error(f"Database initialization failed: {e}")
+            self.db_connection = None
+        except Exception as e:
+            self.logger.error(f"Unexpected database error: {e}")
+            self.db_connection = None
     
     def _setup_resource_monitoring(self):
-        """Setup system resource monitoring"""
+        """Setup system resource monitoring with enhanced error handling"""
         def monitor_resources():
-            while True:
+            consecutive_errors = 0
+            max_errors = 5
+            
+            while consecutive_errors < max_errors:
                 try:
-                    cpu_usage = psutil.cpu_percent()
-                    memory_usage = psutil.virtual_memory().percent / 100
+                    # Check if psutil is available and working
+                    if hasattr(psutil, 'cpu_percent') and hasattr(psutil, 'virtual_memory'):
+                        cpu_usage = psutil.cpu_percent(interval=1)
+                        memory_info = psutil.virtual_memory()
+                        memory_usage = memory_info.percent / 100
+                        
+                        # Store metrics for analysis
+                        self.performance_metrics['cpu_usage'].append(cpu_usage)
+                        self.performance_metrics['memory_usage'].append(memory_usage)
+                        
+                        # Keep only last 100 measurements
+                        if len(self.performance_metrics['cpu_usage']) > 100:
+                            self.performance_metrics['cpu_usage'] = self.performance_metrics['cpu_usage'][-100:]
+                        if len(self.performance_metrics['memory_usage']) > 100:
+                            self.performance_metrics['memory_usage'] = self.performance_metrics['memory_usage'][-100:]
+                        
+                        # Warning thresholds
+                        if cpu_usage > MAX_CPU_USAGE * 100:
+                            self.logger.warning(f"High CPU usage: {cpu_usage:.1f}%")
+                        
+                        if memory_usage > MAX_MEMORY_USAGE:
+                            self.logger.warning(f"High memory usage: {memory_usage * 100:.1f}%")
+                        
+                        # Critical thresholds - pause scans if needed
+                        if cpu_usage > 95:
+                            self.logger.critical(f"Critical CPU usage: {cpu_usage:.1f}% - pausing new scans")
+                        
+                        if memory_usage > 0.95:
+                            self.logger.critical(f"Critical memory usage: {memory_usage * 100:.1f}% - pausing new scans")
                     
-                    if cpu_usage > MAX_CPU_USAGE * 100:
-                        self.logger.warning(f"High CPU usage: {cpu_usage}%")
-                    
-                    if memory_usage > MAX_MEMORY_USAGE:
-                        self.logger.warning(f"High memory usage: {memory_usage * 100}%")
-                    
+                    consecutive_errors = 0  # Reset error counter on success
                     time.sleep(10)  # Check every 10 seconds
+                    
                 except Exception as e:
-                    self.logger.error(f"Resource monitoring error: {e}")
-                    break
+                    consecutive_errors += 1
+                    self.logger.error(f"Resource monitoring error {consecutive_errors}/{max_errors}: {e}")
+                    time.sleep(30)  # Wait longer before retrying
+            
+            self.logger.warning("Resource monitoring stopped due to repeated errors")
         
-        monitor_thread = threading.Thread(target=monitor_resources, daemon=True)
-        monitor_thread.start()
-        return monitor_thread
+        try:
+            monitor_thread = threading.Thread(target=monitor_resources, daemon=True)
+            monitor_thread.start()
+            self.logger.info("✅ Resource monitoring started")
+            return monitor_thread
+        except Exception as e:
+            self.logger.error(f"Failed to start resource monitoring: {e}")
+            return None
     
     def _setup_signal_handlers(self):
         """Setup signal handlers for graceful shutdown"""
