@@ -1,3 +1,0 @@
-# Demo targets
-newtest.example.com
-another.test.org
