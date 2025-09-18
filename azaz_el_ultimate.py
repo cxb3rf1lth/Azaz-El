@@ -626,10 +626,28 @@ class AzazElUltimate:
                 # Create default config if not exists
                 default_config = {
                     "version": "7.0.0-ULTIMATE",
-                    "tools": {},
+                    "tools": {
+                        "nuclei": {"enabled": True, "timeout": 600},
+                        "subfinder": {"enabled": True, "timeout": 300},
+                        "httpx": {"enabled": True, "timeout": 180}
+                    },
+                    "wordlists": {
+                        "directories": ["wordlists/", "/usr/share/wordlists/"],
+                        "common_passwords": "wordlists/common-passwords.txt",
+                        "common_usernames": "wordlists/common-usernames.txt",
+                        "subdomains": "wordlists/subdomains.txt"
+                    },
+                    "payloads": {
+                        "directories": ["payloads/", "wordlists/payloads/"],
+                        "xss": "payloads/xss-payloads.txt",
+                        "sqli": "payloads/sqli-payloads.txt",
+                        "lfi": "payloads/lfi-payloads.txt"
+                    },
                     "settings": {
                         "max_concurrent_scans": MAX_CONCURRENT_SCANS,
-                        "default_timeout": DEFAULT_TIMEOUT
+                        "default_timeout": DEFAULT_TIMEOUT,
+                        "max_memory_usage": MAX_MEMORY_USAGE,
+                        "max_cpu_usage": MAX_CPU_USAGE
                     }
                 }
                 with open(config_path, 'w') as f:
@@ -731,9 +749,16 @@ class AzazElUltimate:
         
         try:
             # Performance optimization
-            max_workers = min(MAX_CONCURRENT_SCANS, psutil.cpu_count() * 2) if hasattr(psutil, 'cpu_count') else 10
+            cpu_count = 1  # Default fallback
+            if hasattr(psutil, 'cpu_count') and callable(psutil.cpu_count):
+                try:
+                    cpu_count = psutil.cpu_count() or 1
+                except:
+                    cpu_count = 1
+            
+            max_workers = min(MAX_CONCURRENT_SCANS, cpu_count * 2)
             self.thread_pool = ThreadPoolExecutor(max_workers=max_workers)
-            self.process_pool = ProcessPoolExecutor(max_workers=psutil.cpu_count() if hasattr(psutil, 'cpu_count') else 2)
+            self.process_pool = ProcessPoolExecutor(max_workers=max(1, cpu_count))
         except Exception as e:
             self.logger.warning(f"Thread pool setup failed: {e}")
             self.thread_pool = ThreadPoolExecutor(max_workers=10)
@@ -798,34 +823,40 @@ class AzazElUltimate:
             while consecutive_errors < max_errors:
                 try:
                     # Check if psutil is available and working
-                    if hasattr(psutil, 'cpu_percent') and hasattr(psutil, 'virtual_memory'):
+                    cpu_usage = 0.0
+                    memory_usage = 0.0
+                    
+                    if hasattr(psutil, 'cpu_percent') and callable(psutil.cpu_percent):
                         cpu_usage = psutil.cpu_percent(interval=1)
+                    
+                    if hasattr(psutil, 'virtual_memory') and callable(psutil.virtual_memory):
                         memory_info = psutil.virtual_memory()
-                        memory_usage = memory_info.percent / 100
-                        
-                        # Store metrics for analysis
-                        self.performance_metrics['cpu_usage'].append(cpu_usage)
-                        self.performance_metrics['memory_usage'].append(memory_usage)
-                        
-                        # Keep only last 100 measurements
-                        if len(self.performance_metrics['cpu_usage']) > 100:
-                            self.performance_metrics['cpu_usage'] = self.performance_metrics['cpu_usage'][-100:]
-                        if len(self.performance_metrics['memory_usage']) > 100:
-                            self.performance_metrics['memory_usage'] = self.performance_metrics['memory_usage'][-100:]
-                        
-                        # Warning thresholds
-                        if cpu_usage > MAX_CPU_USAGE * 100:
-                            self.logger.warning(f"High CPU usage: {cpu_usage:.1f}%")
-                        
-                        if memory_usage > MAX_MEMORY_USAGE:
-                            self.logger.warning(f"High memory usage: {memory_usage * 100:.1f}%")
-                        
-                        # Critical thresholds - pause scans if needed
-                        if cpu_usage > 95:
-                            self.logger.critical(f"Critical CPU usage: {cpu_usage:.1f}% - pausing new scans")
-                        
-                        if memory_usage > 0.95:
-                            self.logger.critical(f"Critical memory usage: {memory_usage * 100:.1f}% - pausing new scans")
+                        if hasattr(memory_info, 'percent'):
+                            memory_usage = memory_info.percent / 100
+                    
+                    # Store metrics for analysis
+                    self.performance_metrics['cpu_usage'].append(cpu_usage)
+                    self.performance_metrics['memory_usage'].append(memory_usage)
+                    
+                    # Keep only last 100 measurements
+                    if len(self.performance_metrics['cpu_usage']) > 100:
+                        self.performance_metrics['cpu_usage'] = self.performance_metrics['cpu_usage'][-100:]
+                    if len(self.performance_metrics['memory_usage']) > 100:
+                        self.performance_metrics['memory_usage'] = self.performance_metrics['memory_usage'][-100:]
+                    
+                    # Warning thresholds
+                    if cpu_usage > MAX_CPU_USAGE * 100:
+                        self.logger.warning(f"High CPU usage: {cpu_usage:.1f}%")
+                    
+                    if memory_usage > MAX_MEMORY_USAGE:
+                        self.logger.warning(f"High memory usage: {memory_usage * 100:.1f}%")
+                    
+                    # Critical thresholds - pause scans if needed
+                    if cpu_usage > 95:
+                        self.logger.critical(f"Critical CPU usage: {cpu_usage:.1f}% - pausing new scans")
+                    
+                    if memory_usage > 0.95:
+                        self.logger.critical(f"Critical memory usage: {memory_usage * 100:.1f}% - pausing new scans")
                     
                     consecutive_errors = 0  # Reset error counter on success
                     time.sleep(10)  # Check every 10 seconds
