@@ -1687,28 +1687,44 @@ class AzazElUltimate:
                 if hasattr(self, 'results_filter') and self.results_filter:
                     from core.results_filter import FilterContext
                     
+                    # Get filtering config from scan config or defaults
+                    filtering_config = {}
+                    if scan_result.target and hasattr(scan_result.target, 'scan_config'):
+                        filtering_config = scan_result.target.scan_config.get('filtering', {})
+                    
                     # Create filter context
                     filter_context = FilterContext(
                         environment='production',
-                        target_type='web',
+                        target_type=scan_result.target.target_type if scan_result.target else 'web',
                         scan_type='general',
-                        min_confidence=0.3,
-                        auto_exclude_fps=True
+                        min_confidence=filtering_config.get('min_confidence', 0.3),
+                        exclude_severities=filtering_config.get('exclude_severities', []),
+                        auto_exclude_fps=filtering_config.get('auto_exclude_fps', True)
                     )
                     
-                    # Apply filtering
-                    original_count = len(scan_result.findings)
-                    scan_result.findings = self.results_filter.filter_findings(scan_result.findings, filter_context)
-                    filtered_count = len(scan_result.findings)
-                    
-                    if original_count != filtered_count:
-                        self.logger.info(f"🔍 Filtering applied: {original_count} → {filtered_count} findings")
+                    # Only apply filtering if enabled
+                    if filtering_config.get('enabled', True):
+                        # Apply filtering
+                        original_count = len(scan_result.findings)
+                        scan_result.findings = self.results_filter.filter_findings(scan_result.findings, filter_context)
+                        filtered_count = len(scan_result.findings)
                         
-                        # Update metadata with filtering info
-                        scan_result.metadata['filtering_applied'] = True
-                        scan_result.metadata['original_findings_count'] = original_count
-                        scan_result.metadata['filtered_findings_count'] = filtered_count
-                        scan_result.metadata['filter_stats'] = self.results_filter.get_filter_statistics()
+                        if original_count != filtered_count:
+                            self.logger.info(f"🔍 Filtering applied: {original_count} → {filtered_count} findings")
+                            
+                            # Update metadata with filtering info
+                            scan_result.metadata['filtering_applied'] = True
+                            scan_result.metadata['original_findings_count'] = original_count
+                            scan_result.metadata['filtered_findings_count'] = filtered_count
+                            scan_result.metadata['filter_stats'] = self.results_filter.get_filter_statistics()
+                    else:
+                        self.logger.info("🔍 Filtering disabled by configuration")
+                
+                # Get export formats from config
+                export_formats = ['json', 'csv', 'xml', 'html']
+                if scan_result.target and hasattr(scan_result.target, 'scan_config'):
+                    reporting_config = scan_result.target.scan_config.get('reporting', {})
+                    export_formats = reporting_config.get('export_formats', export_formats)
                 
                 # Save to enhanced database with automated export
                 success = self.db_manager.save_scan_result(scan_result, export_formats)
@@ -2454,6 +2470,20 @@ Examples:
     
     # Output options
     parser.add_argument('--output-dir', '-o', help='Output directory for results')
+    
+    # Filtering Options
+    parser.add_argument('--min-confidence', type=float, default=0.3,
+                       help='Minimum confidence threshold for findings (0.0-1.0)')
+    parser.add_argument('--exclude-severities', nargs='+',
+                       choices=['critical', 'high', 'medium', 'low', 'info'],
+                       help='Severity levels to exclude from results')
+    parser.add_argument('--exclude-fps', action='store_true', default=True,
+                       help='Automatically exclude false positives')
+    parser.add_argument('--no-filtering', action='store_true',
+                       help='Disable all automated filtering')
+    parser.add_argument('--export-formats', nargs='+', choices=['html', 'json', 'csv', 'xml'],
+                       default=['html', 'json', 'csv', 'xml'], help='Export formats for results')
+    
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Verbose output')
     parser.add_argument('--quiet', action='store_true',
@@ -2529,7 +2559,17 @@ Examples:
         'enable_exploitation': args.enable_exploitation,
         'threads': args.threads,
         'timeout': args.timeout,
-        'verbose': args.verbose
+        'verbose': args.verbose,
+        'filtering': {
+            'enabled': not args.no_filtering,
+            'min_confidence': args.min_confidence,
+            'exclude_severities': args.exclude_severities or [],
+            'auto_exclude_fps': args.exclude_fps,
+        },
+        'reporting': {
+            'export_formats': args.export_formats,
+            'output_dir': args.output_dir
+        }
     }
     
     # Execute scans

@@ -1,0 +1,7 @@
+finding_id,title,severity,cvss_score,confidence,category,affected_url,description,evidence,remediation,false_positive,verified
+finding_003,Remote Code Execution,critical,9.8,1.0,injection,https://example.com/upload,Command injection allowing remote code execution,System command executed: id,Validate and sanitize all input,False,True
+finding_001,SQL Injection Vulnerability,critical,9.1,1.0,injection,https://example.com/login,SQL injection vulnerability detected in login form,' OR '1'='1' -- payload successful,Use parameterized queries,False,True
+finding_005,Missing X-Frame-Options header,low,2.1,0.6,security_headers,https://example.com/,X-Frame-Options security header not present,Header not found in response,Add X-Frame-Options: DENY header,False,False
+finding_008,Admin panel accessible,high,8.1,0.8999999999999999,authentication,https://example.com/admin,Administrative interface found without authentication,Admin panel login page accessible,Implement proper access controls,False,True
+finding_002,Cross-Site Scripting (XSS),high,7.2,1.0,injection,https://example.com/search?q=<script>alert(1)</script>,Reflected XSS vulnerability in search parameter,Script executed successfully,Implement proper output encoding,False,True
+finding_007,Weak SSL/TLS Configuration,medium,5.3,0.6000000000000001,ssl_tls,https://example.com,Server supports weak cipher suites,TLSv1.0 supported,Update SSL/TLS configuration,False,False
