@@ -56,6 +56,237 @@ python3 azaz_el_ultimate.py --target example.com --config custom_config.json --o
 python3 azaz_el_ultimate.py --targets-file targets.txt --concurrent 10
 ```
 
+#### Alternative: Z3MUTH Framework
+For advanced users, Z3MUTH provides enhanced capabilities:
+```bash
+# Z3MUTH interactive dashboard
+python3 z3muth.py --dashboard
+
+# Z3MUTH ultimate scan with rich output
+python3 z3muth.py --target example.com --ultimate-scan --verbose
+```
+
+> 💡 **Note**: See the [Z3MUTH section](#-z3muth---advanced-security-testing-hub) below for complete documentation on this advanced framework.
+
+## 🌟 Z3MUTH - Advanced Security Testing Hub
+
+### Introduction to Z3MUTH
+
+**Z3MUTH (Zenith of Advanced Multi-threaded Universal Testing Hub)** is the ultimate remastered pentesting framework included with Azaz-El. It provides a unified command-line interface with rich features, professional dashboard, and advanced parallel processing capabilities.
+
+### ⚡ Z3MUTH Installation
+
+Z3MUTH is included with the main Azaz-El installation and requires the same dependencies:
+
+```bash
+# Install Z3MUTH with Azaz-El
+curl -fsSL https://raw.githubusercontent.com/cxb3rf1lth/Azaz-El/main/install.sh | bash
+
+# Or manual installation
+git clone https://github.com/cxb3rf1lth/Azaz-El.git
+cd Azaz-El
+chmod +x install.sh
+./install.sh
+
+# Verify Z3MUTH installation
+python3 z3muth.py --version
+```
+
+### 🚀 Z3MUTH Quick Start
+
+#### Interactive Dashboard Mode
+```bash
+# Launch interactive dashboard for real-time monitoring
+python3 z3muth.py --dashboard
+```
+
+#### Basic Scanning Commands
+```bash
+# Quick vulnerability scan
+python3 z3muth.py --target example.com --quick-scan
+
+# Ultimate comprehensive scan
+python3 z3muth.py --target example.com --ultimate-scan
+
+# Web application focused scan
+python3 z3muth.py --target example.com --web-scan
+
+# API security scan
+python3 z3muth.py --target api.example.com --api-scan
+
+# Infrastructure scan
+python3 z3muth.py --target example.com --infrastructure-scan
+```
+
+#### Multi-Target Scanning
+```bash
+# Multiple targets
+python3 z3muth.py --targets example.com,test.com,demo.com --ultimate-scan
+
+# File-based target list
+python3 z3muth.py --targets-file targets.txt --ultimate-scan
+
+# Aggressive scanning with exploitation
+python3 z3muth.py --targets-file targets.txt --ultimate-scan --aggressive --enable-exploitation
+```
+
+### 🎛️ Z3MUTH Advanced Configuration
+
+#### Scan Modes and Options
+```bash
+# Deep scanning with custom threads
+python3 z3muth.py --target example.com --ultimate-scan --deep-scan --threads 20
+
+# Rate-limited scanning
+python3 z3muth.py --target example.com --quick-scan --rate-limit 10
+
+# Custom timeout and output directory
+python3 z3muth.py --target example.com --ultimate-scan --timeout 600 --output-dir /custom/reports/
+
+# Verbose output for debugging
+python3 z3muth.py --target example.com --ultimate-scan --verbose
+```
+
+#### Scan Management
+```bash
+# List active scans
+python3 z3muth.py --list-scans
+
+# Check scan status
+python3 z3muth.py --scan-status SCAN_ID
+
+# Cancel running scan
+python3 z3muth.py --cancel-scan SCAN_ID
+
+# View scan history
+python3 z3muth.py --scan-history
+```
+
+#### Report Generation
+```bash
+# Generate HTML report (default)
+python3 z3muth.py --generate-report SCAN_ID
+
+# Generate PDF report
+python3 z3muth.py --generate-report SCAN_ID --report-format pdf
+
+# Generate JSON report for integration
+python3 z3muth.py --generate-report SCAN_ID --report-format json
+
+# Generate CSV for spreadsheet analysis
+python3 z3muth.py --generate-report SCAN_ID --report-format csv
+```
+
+### ⚙️ Z3MUTH Configuration
+
+Z3MUTH uses the configuration file `z3muth_config.json` for advanced settings:
+
+```json
+{
+  "version": "1.0.0-ZENITH",
+  "core": {
+    "max_concurrent_scans": 50,
+    "default_timeout": 300,
+    "max_memory_usage": 0.8,
+    "max_cpu_usage": 0.9
+  },
+  "tools": {
+    "nuclei": {
+      "enabled": true,
+      "flags": ["-silent", "-severity", "low,medium,high,critical"]
+    },
+    "subfinder": {
+      "enabled": true,
+      "flags": ["-all", "-recursive"]
+    }
+  },
+  "output": {
+    "output_dir": "z3muth_reports",
+    "report_formats": ["html", "json"],
+    "include_screenshots": true
+  }
+}
+```
+
+### 🎯 Z3MUTH Key Features
+
+- **🖥️ Interactive Dashboard**: Real-time scan monitoring and management
+- **⚡ High Performance**: Multi-threaded scanning with resource optimization
+- **🔧 Modular Architecture**: Extensible scanner and tool integration
+- **📊 Advanced Reporting**: Multiple output formats with rich visualizations
+- **🛡️ Safe Exploitation**: Controlled proof-of-concept testing
+- **🔄 Scan Management**: Full lifecycle management of security assessments
+- **🎨 Rich CLI Interface**: Beautiful terminal output with progress indicators
+- **⚙️ Flexible Configuration**: Comprehensive settings for all scan aspects
+
+### 📝 Z3MUTH Command Reference
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `--dashboard` | Launch interactive dashboard | `python3 z3muth.py --dashboard` |
+| `--ultimate-scan` | Comprehensive security scan | `python3 z3muth.py --target example.com --ultimate-scan` |
+| `--quick-scan` | Fast vulnerability assessment | `python3 z3muth.py --target example.com --quick-scan` |
+| `--web-scan` | Web application focused scan | `python3 z3muth.py --target webapp.com --web-scan` |
+| `--api-scan` | API security assessment | `python3 z3muth.py --target api.example.com --api-scan` |
+| `--aggressive` | Enable aggressive scanning | `python3 z3muth.py --target example.com --ultimate-scan --aggressive` |
+| `--enable-exploitation` | Enable safe exploitation | `python3 z3muth.py --target example.com --ultimate-scan --enable-exploitation` |
+| `--list-scans` | Show active scans | `python3 z3muth.py --list-scans` |
+| `--generate-report` | Create scan report | `python3 z3muth.py --generate-report SCAN_ID --report-format pdf` |
+
+### 💡 Z3MUTH Pro Tips
+
+#### 🎯 Effective Scanning Strategies
+```bash
+# Start with reconnaissance
+python3 z3muth.py --target example.com --quick-scan
+
+# Progressive scanning approach
+python3 z3muth.py --target example.com --web-scan --verbose
+python3 z3muth.py --target example.com --ultimate-scan --deep-scan
+
+# Large-scale assessment
+python3 z3muth.py --targets-file enterprise_assets.txt --ultimate-scan --threads 30 --rate-limit 20
+```
+
+#### 📊 Report Integration
+```bash
+# Generate multiple report formats for different stakeholders
+python3 z3muth.py --generate-report SCAN_ID --report-format html --output-dir /reports/executives/
+python3 z3muth.py --generate-report SCAN_ID --report-format json --output-dir /reports/technical/
+python3 z3muth.py --generate-report SCAN_ID --report-format csv --output-dir /reports/analytics/
+```
+
+#### 🔄 Continuous Monitoring Workflow
+```bash
+# Set up monitoring dashboard
+python3 z3muth.py --dashboard &
+
+# Schedule regular scans
+while true; do
+    python3 z3muth.py --targets-file production_assets.txt --quick-scan --output-dir /monitoring/$(date +%Y%m%d)/
+    sleep 86400  # Daily scans
+done
+```
+
+### 🔗 Z3MUTH Integration with Azaz-El
+
+Z3MUTH seamlessly integrates with the main Azaz-El framework, providing:
+
+- **Shared Configuration**: Uses the same `config/` directory and API keys
+- **Common Database**: Shares scan history and findings with Azaz-El Ultimate
+- **Tool Ecosystem**: Leverages all installed security tools from Azaz-El
+- **Report Compatibility**: Reports can be cross-referenced between frameworks
+- **Resource Optimization**: Intelligent resource sharing and management
+
+```bash
+# Use both frameworks together
+python3 azaz_el_ultimate.py --target domain1.com --full &
+python3 z3muth.py --target domain2.com --ultimate-scan &
+
+# Compare results
+python3 z3muth.py --scan-history
+```
+
 ## 🔧 Architecture Overview
 
 ### 7-Phase Scan Pipeline
