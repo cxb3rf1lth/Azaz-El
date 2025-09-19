@@ -2,8 +2,8 @@
   "scan_metadata": {
     "scan_id": "integration_test",
     "target": "test.example.com",
-    "start_time": "2025-09-19T12:50:14.344087",
-    "end_time": "2025-09-19T12:50:14.344089",
+    "start_time": "2025-09-19T12:53:03.297586",
+    "end_time": "2025-09-19T12:53:03.297588",
     "status": "completed",
     "total_findings": 3,
     "risk_score": 5.541666666666667
@@ -73,5 +73,5 @@
     ],
     "false_positive_rate": 0.0
   },
-  "export_timestamp": "2025-09-19T12:50:14.370304"
+  "export_timestamp": "2025-09-19T12:53:03.325381"
 }
