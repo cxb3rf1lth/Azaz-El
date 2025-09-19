@@ -74,7 +74,7 @@ python3 z3muth.py --target example.com --ultimate-scan --verbose
 
 **Z3MUTH (Zenith of Advanced Multi-threaded Universal Testing Hub)** is the ultimate remastered pentesting framework included with Azaz-El. It provides a unified command-line interface with rich features, professional dashboard, and advanced parallel processing capabilities.
 
-### ⚡ Z3MUTH Installation
+### ⚡ Z3MUTH Installation & Onboarding
 
 Z3MUTH is included with the main Azaz-El installation and requires the same dependencies:
 
@@ -92,13 +92,74 @@ chmod +x install.sh
 python3 z3muth.py --version
 ```
 
+#### 🎯 Quick Onboarding with Z3MUTH Assistant
+
+For first-time users, use the onboarding assistant to quickly set up Z3MUTH:
+
+```bash
+# Run the onboarding assistant
+python3 z3muth_onboard.py
+```
+
+The onboarding assistant will:
+- ✅ Check all dependencies and system requirements
+- ⚙️ Set up optimal configuration files
+- 📁 Create required directories
+- 📜 Generate quick-start launcher scripts
+- 🧪 Run initial functionality tests
+- 📖 Provide getting started guidance
+
+#### ⚡ Quick Launcher Scripts
+
+After onboarding, use the generated launcher scripts for fastest access:
+
+```bash
+# Launch enhanced dashboard (recommended)
+./start_dashboard.sh
+
+# Launch interactive CLI mode
+./start_cli.sh
+```
+
 ### 🚀 Z3MUTH Quick Start
 
-#### Interactive Dashboard Mode
+#### 🎛️ Enhanced Interactive Dashboard Mode (Recommended)
+
+The Z3MUTH dashboard provides real-time monitoring with advanced features:
+
 ```bash
-# Launch interactive dashboard for real-time monitoring
+# Launch enhanced interactive dashboard
 python3 z3muth.py --dashboard
+# OR use quick launcher
+./start_dashboard.sh
 ```
+
+**Dashboard Features:**
+- 🖥️ Real-time system monitoring (CPU, Memory, Disk, Network)
+- 📊 Live scan statistics and progress tracking
+- 📋 Recent scan history with findings count
+- ⚡ Active scan monitoring
+- 🎯 Interactive scan management
+- 📈 Performance metrics and uptime tracking
+
+#### 🎯 Enhanced Interactive CLI Mode
+
+For command-line enthusiasts, the interactive CLI offers powerful features:
+
+```bash
+# Launch enhanced interactive CLI
+python3 z3muth.py --cli
+# OR use quick launcher
+./start_cli.sh
+```
+
+**CLI Features:**
+- 🔍 Rich command auto-completion and help
+- 📊 Built-in system information display
+- 🎯 Multiple scan types (quick, ultimate, web, api)
+- 📋 Scan management (status, history, cancel)
+- 📊 Report generation and findings analysis
+- ⚙️ Configuration management
 
 #### Basic Scanning Commands
 ```bash

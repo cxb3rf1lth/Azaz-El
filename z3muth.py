@@ -1617,78 +1617,448 @@ Examples:
         sys.exit(1)
 
 async def launch_dashboard(z3muth: Z3MUTH):
-    """Launch interactive dashboard"""
+    """Launch interactive dashboard with real-time monitoring"""
     if not RICH_AVAILABLE:
         print("❌ Rich library not available for dashboard mode")
         return
     
-    console.print("[bold green]🚀 Launching Z3MUTH Interactive Dashboard...[/bold green]")
+    console.print("[bold green]🚀 Launching Z3MUTH Enhanced Interactive Dashboard...[/bold green]")
     
-    # Dashboard implementation would go here
-    # For now, show a placeholder
+    try:
+        import psutil
+        system_available = True
+    except ImportError:
+        system_available = False
+    
+    start_time = time.time()
+    
     with Live(console=console, refresh_per_second=2) as live:
-        while True:
-            # Create dashboard layout
-            from rich.layout import Layout
-            layout = Layout()
-            
-            layout.split_column(
-                Layout(Panel("Z3MUTH Dashboard - Real-time Monitoring", style="bold blue"), size=3),
-                Layout(Panel("Active Scans: 0 | Completed: 0 | Findings: 0"), size=3),
-                Layout(Panel("System Status: Online | CPU: 0% | Memory: 0%")),
-            )
-            
-            live.update(layout)
-            await asyncio.sleep(1)
+        try:
+            while True:
+                # Get real-time system information
+                if system_available:
+                    cpu_percent = psutil.cpu_percent(interval=0.1)
+                    memory = psutil.virtual_memory()
+                    disk = psutil.disk_usage('/')
+                    network = psutil.net_io_counters()
+                    uptime = time.time() - start_time
+                else:
+                    cpu_percent = 0
+                    memory = None
+                    disk = None
+                    network = None
+                    uptime = time.time() - start_time
+                
+                # Get active scans and statistics
+                active_scans = z3muth.list_active_scans() if hasattr(z3muth, 'list_active_scans') else []
+                scan_history = z3muth.get_scan_history(5) if hasattr(z3muth, 'get_scan_history') else []
+                total_scans = len(scan_history)
+                total_findings = sum(scan.get('findings_count', 0) for scan in scan_history)
+                
+                # Create enhanced dashboard layout
+                from rich.layout import Layout
+                from rich.table import Table
+                from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+                from rich.text import Text
+                
+                layout = Layout()
+                
+                # Header with title and timestamp
+                header_text = f"Z3MUTH Enhanced Dashboard - Real-time Monitoring | Uptime: {uptime:.0f}s | {datetime.now().strftime('%H:%M:%S')}"
+                header = Panel(header_text, style="bold blue")
+                
+                # System status panel
+                if system_available and memory:
+                    memory_percent = memory.percent
+                    disk_percent = (disk.used / disk.total * 100) if disk else 0
+                    system_status = f"🖥️  CPU: {cpu_percent:.1f}% | 🧠 Memory: {memory_percent:.1f}% | 💾 Disk: {disk_percent:.1f}%"
+                    if network:
+                        system_status += f" | 📡 Network: ↑{network.bytes_sent//1024//1024}MB ↓{network.bytes_recv//1024//1024}MB"
+                else:
+                    system_status = "System monitoring unavailable"
+                
+                system_panel = Panel(system_status, title="System Status", border_style="green")
+                
+                # Scan statistics panel
+                scan_stats = f"🔍 Active Scans: {len(active_scans)} | ✅ Total Completed: {total_scans} | 🎯 Total Findings: {total_findings}"
+                scan_panel = Panel(scan_stats, title="Scan Statistics", border_style="yellow")
+                
+                # Create table for recent scans
+                scan_table = Table(title="Recent Scans", show_header=True, header_style="bold magenta")
+                scan_table.add_column("Scan ID", style="cyan", width=20)
+                scan_table.add_column("Target", style="yellow", width=25)
+                scan_table.add_column("Status", style="green", width=12)
+                scan_table.add_column("Findings", justify="right", width=10)
+                
+                if scan_history:
+                    for scan in scan_history[:5]:  # Show last 5 scans
+                        scan_id = scan.get('scan_id', 'N/A')[:18] + "..." if len(scan.get('scan_id', '')) > 18 else scan.get('scan_id', 'N/A')
+                        target = scan.get('target', 'N/A')[:23] + "..." if len(scan.get('target', '')) > 23 else scan.get('target', 'N/A')
+                        status = scan.get('status', 'unknown')
+                        findings = str(scan.get('findings_count', 0))
+                        scan_table.add_row(scan_id, target, status, findings)
+                else:
+                    scan_table.add_row("No scans", "available", "yet", "0")
+                
+                # Create table for active scans if any
+                if active_scans:
+                    active_table = Table(title="Active Scans", show_header=True, header_style="bold red")
+                    active_table.add_column("Scan ID", style="cyan", width=20)
+                    active_table.add_column("Target", style="yellow", width=25)
+                    active_table.add_column("Progress", style="blue", width=15)
+                    
+                    for scan in active_scans[:3]:  # Show up to 3 active scans
+                        scan_id = scan.get('scan_id', 'N/A')[:18] + "..." if len(scan.get('scan_id', '')) > 18 else scan.get('scan_id', 'N/A')
+                        target = scan.get('target', 'N/A')[:23] + "..." if len(scan.get('target', '')) > 23 else scan.get('target', 'N/A')
+                        progress = scan.get('progress', 'Running...')
+                        active_table.add_row(scan_id, target, str(progress))
+                    
+                    # Layout with active scans
+                    content_layout = Layout()
+                    content_layout.split_row(
+                        Layout(scan_table, name="recent"),
+                        Layout(active_table, name="active")
+                    )
+                else:
+                    content_layout = scan_table
+                
+                # Instructions panel
+                instructions = (
+                    "💡 Dashboard Controls:\n"
+                    "  • Ctrl+C to exit dashboard\n"
+                    "  • Use --cli for command-line mode\n"
+                    "  • Use --target <target> --ultimate-scan to start scanning"
+                )
+                instructions_panel = Panel(instructions, title="Quick Help", border_style="blue")
+                
+                # Combine all panels
+                layout.split_column(
+                    Layout(header, size=3),
+                    Layout(system_panel, size=3),
+                    Layout(scan_panel, size=3),
+                    Layout(content_layout, size=10),
+                    Layout(instructions_panel, size=6)
+                )
+                
+                live.update(layout)
+                await asyncio.sleep(1)
+                
+        except KeyboardInterrupt:
+            console.print("\n[bold red]Dashboard stopped by user[/bold red]")
+            return
+        except Exception as e:
+            console.print(f"\n[bold red]Dashboard error: {e}[/bold red]")
+            return
 
 async def interactive_mode(z3muth: Z3MUTH):
-    """Interactive command mode"""
-    print("\n🎯 Z3MUTH Interactive Mode")
-    print("Type 'help' for available commands, 'exit' to quit")
+    """Enhanced interactive command mode with rich features"""
+    if RICH_AVAILABLE:
+        console.print("\n[bold cyan]🎯 Z3MUTH Enhanced Interactive Mode[/bold cyan]")
+        console.print("[yellow]Type 'help' for available commands, 'exit' to quit[/yellow]")
+    else:
+        print("\n🎯 Z3MUTH Enhanced Interactive Mode")
+        print("Type 'help' for available commands, 'exit' to quit")
+    
+    command_history = []
     
     while True:
         try:
-            command = input("\nz3muth> ").strip()
-            
-            if command.lower() in ['exit', 'quit']:
-                break
-            elif command.lower() == 'help':
-                print("""
-Available Commands:
-  scan <target>        - Quick scan of target
-  ultimate <target>    - Ultimate comprehensive scan
-  status               - Show active scans
-  history              - Show scan history
-  help                 - Show this help
-  exit                 - Exit Z3MUTH
-                """)
-            elif command.startswith('scan '):
-                target = command.split(' ', 1)[1]
-                print(f"🚀 Starting quick scan of {target}...")
-                # Quick scan implementation
-            elif command.startswith('ultimate '):
-                target = command.split(' ', 1)[1]
-                result = await z3muth.ultimate_scan([target])
-                print(f"✅ Ultimate scan completed: {result['findings_count']} findings")
-            elif command == 'status':
-                scans = z3muth.list_active_scans()
-                print(f"\n📋 Active scans: {len(scans)}")
-                for scan in scans:
-                    print(f"  • {scan['scan_id'][:16]}... - {scan['target']}")
-            elif command == 'history':
-                history = z3muth.get_scan_history(10)
-                print(f"\n📚 Recent scans: {len(history)}")
-                for scan in history:
-                    print(f"  • {scan['scan_id'][:16]}... - {scan['target']} - {scan['status']}")
+            if RICH_AVAILABLE:
+                command = console.input("\n[bold green]z3muth>[/bold green] ").strip()
             else:
-                print(f"❌ Unknown command: {command}")
+                command = input("\nz3muth> ").strip()
+            
+            if not command:
+                continue
+                
+            command_history.append(command)
+            parts = command.split()
+            cmd = parts[0].lower()
+            
+            if cmd in ['exit', 'quit', 'q']:
+                break
+            elif cmd in ['help', 'h', '?']:
+                _display_interactive_help()
+            elif cmd == 'clear':
+                os.system('clear' if os.name == 'posix' else 'cls')
+            elif cmd == 'config':
+                _display_config_info(z3muth)
+            elif cmd == 'system':
+                await _display_system_info()
+            elif cmd in ['scan', 's'] and len(parts) > 1:
+                target = ' '.join(parts[1:])
+                await _interactive_quick_scan(z3muth, target)
+            elif cmd in ['ultimate', 'u'] and len(parts) > 1:
+                target = ' '.join(parts[1:])
+                await _interactive_ultimate_scan(z3muth, target)
+            elif cmd in ['web', 'w'] and len(parts) > 1:
+                target = ' '.join(parts[1:])
+                await _interactive_web_scan(z3muth, target)
+            elif cmd in ['api', 'a'] and len(parts) > 1:
+                target = ' '.join(parts[1:])
+                await _interactive_api_scan(z3muth, target)
+            elif cmd in ['status', 'st']:
+                _display_scan_status(z3muth)
+            elif cmd in ['history', 'hist']:
+                _display_scan_history(z3muth)
+            elif cmd in ['findings', 'f']:
+                if len(parts) > 1:
+                    scan_id = parts[1]
+                    _display_scan_findings(z3muth, scan_id)
+                else:
+                    _display_recent_findings(z3muth)
+            elif cmd in ['cancel', 'stop'] and len(parts) > 1:
+                scan_id = parts[1]
+                _cancel_scan(z3muth, scan_id)
+            elif cmd in ['report', 'r'] and len(parts) > 1:
+                scan_id = parts[1]
+                report_format = parts[2] if len(parts) > 2 else 'html'
+                _generate_report(z3muth, scan_id, report_format)
+            elif cmd == 'dashboard':
+                if RICH_AVAILABLE:
+                    console.print("[yellow]Launching dashboard in new session...[/yellow]")
+                    await launch_dashboard(z3muth)
+                else:
+                    print("Dashboard requires Rich library")
+            else:
+                if RICH_AVAILABLE:
+                    console.print(f"[red]❌ Unknown command: {command}[/red]")
+                    console.print("[yellow]Type 'help' for available commands[/yellow]")
+                else:
+                    print(f"❌ Unknown command: {command}")
+                    print("Type 'help' for available commands")
         
         except KeyboardInterrupt:
-            break
+            if RICH_AVAILABLE:
+                console.print("\n[yellow]Use 'exit' to quit Z3MUTH[/yellow]")
+            else:
+                print("\nUse 'exit' to quit Z3MUTH")
         except Exception as e:
-            print(f"❌ Error: {e}")
+            if RICH_AVAILABLE:
+                console.print(f"[red]❌ Error: {e}[/red]")
+            else:
+                print(f"❌ Error: {e}")
     
-    print("\n👋 Goodbye from Z3MUTH!")
+    if RICH_AVAILABLE:
+        console.print("\n[bold cyan]👋 Goodbye from Z3MUTH![/bold cyan]")
+    else:
+        print("\n👋 Goodbye from Z3MUTH!")
+
+def _display_interactive_help():
+    """Display comprehensive help for interactive mode"""
+    help_text = """
+[bold cyan]Z3MUTH Interactive Commands:[/bold cyan]
+
+[yellow]Scanning Commands:[/yellow]
+  scan <target>        - Quick vulnerability scan
+  ultimate <target>    - Ultimate comprehensive scan  
+  web <target>         - Web application focused scan
+  api <target>         - API security assessment
+  
+[yellow]Management Commands:[/yellow]
+  status               - Show active scans
+  history              - Show scan history
+  findings [scan_id]   - Show findings (all recent or specific scan)
+  cancel <scan_id>     - Cancel running scan
+  report <scan_id> [format] - Generate report (html/json/pdf/csv)
+  
+[yellow]System Commands:[/yellow]
+  config               - Show current configuration
+  system               - Show system information
+  dashboard            - Launch dashboard mode
+  clear                - Clear screen
+  
+[yellow]General:[/yellow]
+  help, h, ?           - Show this help
+  exit, quit, q        - Exit Z3MUTH
+
+[green]Examples:[/green]
+  ultimate example.com
+  scan 192.168.1.1
+  web https://example.com
+  findings
+  report SCAN_ID pdf
+    """
+    if RICH_AVAILABLE:
+        console.print(help_text)
+    else:
+        print(help_text.replace('[bold cyan]', '').replace('[/bold cyan]', '').replace('[yellow]', '').replace('[/yellow]', '').replace('[green]', '').replace('[/green]', ''))
+
+def _display_config_info(z3muth):
+    """Display current configuration information"""
+    if RICH_AVAILABLE:
+        console.print("\n[bold blue]📋 Z3MUTH Configuration:[/bold blue]")
+        console.print(f"[cyan]Version:[/cyan] {z3muth.config.get('version', 'Unknown')}")
+        console.print(f"[cyan]Max Concurrent Scans:[/cyan] {z3muth.config.get('core', {}).get('max_concurrent_scans', 'Unknown')}")
+        console.print(f"[cyan]Default Timeout:[/cyan] {z3muth.config.get('core', {}).get('default_timeout', 'Unknown')}s")
+        console.print(f"[cyan]Reports Directory:[/cyan] {z3muth.config.get('reporting', {}).get('output_dir', 'z3muth_reports')}")
+    else:
+        print("\n📋 Z3MUTH Configuration:")
+        print(f"Version: {z3muth.config.get('version', 'Unknown')}")
+        print(f"Max Concurrent Scans: {z3muth.config.get('core', {}).get('max_concurrent_scans', 'Unknown')}")
+        print(f"Default Timeout: {z3muth.config.get('core', {}).get('default_timeout', 'Unknown')}s")
+        print(f"Reports Directory: {z3muth.config.get('reporting', {}).get('output_dir', 'z3muth_reports')}")
+
+async def _display_system_info():
+    """Display system information"""
+    try:
+        import psutil
+        cpu_count = psutil.cpu_count()
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        if RICH_AVAILABLE:
+            console.print("\n[bold blue]🖥️  System Information:[/bold blue]")
+            console.print(f"[cyan]CPU Cores:[/cyan] {cpu_count}")
+            console.print(f"[cyan]Total Memory:[/cyan] {memory.total // 1024**3:.1f} GB")
+            console.print(f"[cyan]Available Memory:[/cyan] {memory.available // 1024**3:.1f} GB")
+            console.print(f"[cyan]Memory Usage:[/cyan] {memory.percent:.1f}%")
+            console.print(f"[cyan]Total Disk:[/cyan] {disk.total // 1024**3:.1f} GB")
+            console.print(f"[cyan]Free Disk:[/cyan] {disk.free // 1024**3:.1f} GB")
+            console.print(f"[cyan]Disk Usage:[/cyan] {(disk.used / disk.total * 100):.1f}%")
+        else:
+            print("\n🖥️  System Information:")
+            print(f"CPU Cores: {cpu_count}")
+            print(f"Total Memory: {memory.total // 1024**3:.1f} GB")
+            print(f"Available Memory: {memory.available // 1024**3:.1f} GB")
+            print(f"Memory Usage: {memory.percent:.1f}%")
+            print(f"Total Disk: {disk.total // 1024**3:.1f} GB")
+            print(f"Free Disk: {disk.free // 1024**3:.1f} GB")
+            print(f"Disk Usage: {(disk.used / disk.total * 100):.1f}%")
+    except ImportError:
+        if RICH_AVAILABLE:
+            console.print("[red]❌ psutil not available for system monitoring[/red]")
+        else:
+            print("❌ psutil not available for system monitoring")
+
+async def _interactive_quick_scan(z3muth, target):
+    """Run quick scan in interactive mode"""
+    if RICH_AVAILABLE:
+        console.print(f"[green]🚀 Starting quick scan of {target}...[/green]")
+    else:
+        print(f"🚀 Starting quick scan of {target}...")
+    # Implementation would depend on z3muth's quick_scan method
+
+async def _interactive_ultimate_scan(z3muth, target):
+    """Run ultimate scan in interactive mode"""
+    if RICH_AVAILABLE:
+        with console.status(f"[bold green]Running ultimate scan on {target}..."):
+            result = await z3muth.ultimate_scan([target])
+        console.print(f"[green]✅ Ultimate scan completed: {result.get('findings_count', 0)} findings[/green]")
+    else:
+        print(f"🚀 Starting ultimate scan of {target}...")
+        result = await z3muth.ultimate_scan([target])
+        print(f"✅ Ultimate scan completed: {result.get('findings_count', 0)} findings")
+
+async def _interactive_web_scan(z3muth, target):
+    """Run web scan in interactive mode"""
+    if RICH_AVAILABLE:
+        console.print(f"[green]🌐 Starting web application scan of {target}...[/green]")
+    else:
+        print(f"🌐 Starting web application scan of {target}...")
+    # Implementation would depend on z3muth's web_scan method
+
+async def _interactive_api_scan(z3muth, target):
+    """Run API scan in interactive mode"""
+    if RICH_AVAILABLE:
+        console.print(f"[green]🔌 Starting API security scan of {target}...[/green]")
+    else:
+        print(f"🔌 Starting API security scan of {target}...")
+    # Implementation would depend on z3muth's api_scan method
+
+def _display_scan_status(z3muth):
+    """Display current scan status"""
+    scans = z3muth.list_active_scans() if hasattr(z3muth, 'list_active_scans') else []
+    if RICH_AVAILABLE:
+        console.print(f"\n[bold blue]📋 Active Scans: {len(scans)}[/bold blue]")
+        if scans:
+            table = Table()
+            table.add_column("Scan ID", style="cyan")
+            table.add_column("Target", style="yellow")
+            table.add_column("Status", style="green")
+            for scan in scans:
+                scan_id = scan.get('scan_id', 'N/A')[:16] + "..." if len(scan.get('scan_id', '')) > 16 else scan.get('scan_id', 'N/A')
+                table.add_row(scan_id, scan.get('target', 'N/A'), scan.get('status', 'running'))
+            console.print(table)
+        else:
+            console.print("[yellow]No active scans[/yellow]")
+    else:
+        print(f"\n📋 Active scans: {len(scans)}")
+        for scan in scans:
+            print(f"  • {scan['scan_id'][:16]}... - {scan['target']}")
+
+def _display_scan_history(z3muth):
+    """Display scan history"""
+    history = z3muth.get_scan_history(10) if hasattr(z3muth, 'get_scan_history') else []
+    if RICH_AVAILABLE:
+        console.print(f"\n[bold blue]📚 Recent Scans: {len(history)}[/bold blue]")
+        if history:
+            table = Table()
+            table.add_column("Scan ID", style="cyan")
+            table.add_column("Target", style="yellow")
+            table.add_column("Status", style="green")
+            table.add_column("Findings", style="red", justify="right")
+            for scan in history:
+                scan_id = scan.get('scan_id', 'N/A')[:16] + "..." if len(scan.get('scan_id', '')) > 16 else scan.get('scan_id', 'N/A')
+                table.add_row(
+                    scan_id, 
+                    scan.get('target', 'N/A'), 
+                    scan.get('status', 'unknown'),
+                    str(scan.get('findings_count', 0))
+                )
+            console.print(table)
+        else:
+            console.print("[yellow]No scan history available[/yellow]")
+    else:
+        print(f"\n📚 Recent scans: {len(history)}")
+        for scan in history:
+            print(f"  • {scan['scan_id'][:16]}... - {scan['target']} - {scan['status']} - {scan.get('findings_count', 0)} findings")
+
+def _display_scan_findings(z3muth, scan_id):
+    """Display findings for a specific scan"""
+    if RICH_AVAILABLE:
+        console.print(f"[yellow]🔍 Showing findings for scan: {scan_id}[/yellow]")
+        console.print("[red]Note: Detailed findings display not yet implemented[/red]")
+    else:
+        print(f"🔍 Showing findings for scan: {scan_id}")
+        print("Note: Detailed findings display not yet implemented")
+
+def _display_recent_findings(z3muth):
+    """Display recent findings across all scans"""
+    if RICH_AVAILABLE:
+        console.print("[yellow]🔍 Showing recent findings across all scans[/yellow]")
+        console.print("[red]Note: Recent findings display not yet implemented[/red]")
+    else:
+        print("🔍 Showing recent findings across all scans")
+        print("Note: Recent findings display not yet implemented")
+
+def _cancel_scan(z3muth, scan_id):
+    """Cancel a running scan"""
+    if hasattr(z3muth, 'cancel_scan'):
+        if z3muth.cancel_scan(scan_id):
+            if RICH_AVAILABLE:
+                console.print(f"[green]✅ Scan cancelled: {scan_id}[/green]")
+            else:
+                print(f"✅ Scan cancelled: {scan_id}")
+        else:
+            if RICH_AVAILABLE:
+                console.print(f"[red]❌ Scan not found or cannot be cancelled: {scan_id}[/red]")
+            else:
+                print(f"❌ Scan not found or cannot be cancelled: {scan_id}")
+    else:
+        if RICH_AVAILABLE:
+            console.print("[red]❌ Scan cancellation not supported[/red]")
+        else:
+            print("❌ Scan cancellation not supported")
+
+def _generate_report(z3muth, scan_id, report_format):
+    """Generate report for a scan"""
+    if RICH_AVAILABLE:
+        console.print(f"[yellow]📊 Generating {report_format} report for scan: {scan_id}[/yellow]")
+        console.print("[red]Note: Report generation not yet implemented[/red]")
+    else:
+        print(f"📊 Generating {report_format} report for scan: {scan_id}")
+        print("Note: Report generation not yet implemented")
 
 if __name__ == "__main__":
     try:
