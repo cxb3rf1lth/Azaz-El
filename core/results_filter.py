@@ -66,33 +66,80 @@ class EnhancedResultsFilter:
         }
     
     def filter_findings(self, findings: List[Any], context: FilterContext) -> List[Any]:
-        """Apply comprehensive filtering to findings"""
+        """Apply comprehensive filtering to findings with performance monitoring"""
+        start_time = datetime.now()
+        filter_context = {
+            "environment": context.environment,
+            "target_type": context.target_type,
+            "original_count": len(findings),
+            "min_confidence": context.min_confidence
+        }
+        
         try:
             self.logger.info(f"🔍 Starting intelligent filtering of {len(findings)} findings")
             
             original_count = len(findings)
             filtered_findings = findings.copy()
+            stage_stats = {}
             
-            # Apply filtering stages
-            filtered_findings = self._apply_false_positive_detection(filtered_findings, context)
-            filtered_findings = self._apply_confidence_filtering(filtered_findings, context)
-            filtered_findings = self._apply_severity_filtering(filtered_findings, context)
-            filtered_findings = self._apply_category_filtering(filtered_findings, context)
-            filtered_findings = self._apply_duplicate_removal(filtered_findings)
-            filtered_findings = self._apply_custom_rules(filtered_findings, context)
-            filtered_findings = self._enhance_positive_findings(filtered_findings, context)
+            # Apply filtering stages with performance tracking
+            stages = [
+                ("false_positive_detection", self._apply_false_positive_detection),
+                ("confidence_filtering", self._apply_confidence_filtering),
+                ("severity_filtering", self._apply_severity_filtering),
+                ("category_filtering", self._apply_category_filtering),
+                ("duplicate_removal", self._apply_duplicate_removal),
+                ("custom_rules", self._apply_custom_rules),
+                ("enhancement", self._enhance_positive_findings)
+            ]
+            
+            for stage_name, stage_func in stages:
+                stage_start = datetime.now()
+                before_count = len(filtered_findings)
+                
+                if stage_name in ["duplicate_removal"]:
+                    filtered_findings = stage_func(filtered_findings)
+                else:
+                    filtered_findings = stage_func(filtered_findings, context)
+                
+                after_count = len(filtered_findings)
+                stage_duration = (datetime.now() - stage_start).total_seconds()
+                
+                stage_stats[stage_name] = {
+                    "before": before_count,
+                    "after": after_count,
+                    "removed": before_count - after_count,
+                    "duration_ms": round(stage_duration * 1000, 2)
+                }
+                
+                if before_count != after_count:
+                    self.logger.debug(f"📊 {stage_name}: {before_count} → {after_count} findings "
+                                    f"({stage_duration*1000:.1f}ms)")
             
             # Update statistics
+            total_duration = (datetime.now() - start_time).total_seconds()
             self.filter_stats['total_processed'] += original_count
             self.filter_stats['findings_excluded'] += original_count - len(filtered_findings)
             
-            self.logger.info(f"✅ Filtering complete: {original_count} → {len(filtered_findings)} findings")
-            self._log_filter_summary()
+            # Enhanced logging with performance metrics
+            filter_context.update({
+                "final_count": len(filtered_findings),
+                "total_removed": original_count - len(filtered_findings),
+                "duration_ms": round(total_duration * 1000, 2),
+                "stages": stage_stats
+            })
+            
+            self.logger.info(f"✅ Filtering complete: {original_count} → {len(filtered_findings)} findings "
+                           f"({total_duration*1000:.1f}ms)")
+            
+            if original_count - len(filtered_findings) > 0:
+                self._log_filter_summary()
             
             return filtered_findings
             
         except Exception as e:
-            self.logger.error(f"Filtering failed: {e}")
+            duration = (datetime.now() - start_time).total_seconds()
+            self.logger.error(f"❌ Filtering failed after {duration*1000:.1f}ms: {e}")
             return findings
     
     def _apply_false_positive_detection(self, findings: List[Any], context: FilterContext) -> List[Any]:

@@ -57,61 +57,159 @@ class AdvancedReportGenerator:
     
     def generate_comprehensive_report(self, run_dir: Path, findings: Dict[str, Any], 
                                     scan_metadata: Dict[str, Any]) -> bool:
-        """Generate comprehensive security assessment report"""
+        """Generate comprehensive security assessment report with enhanced error handling"""
+        start_time = datetime.now()
+        report_context = {
+            "run_dir": str(run_dir),
+            "total_findings": sum(len(f) if isinstance(f, list) else 1 for f in findings.values()),
+            "scanner_types": list(findings.keys())
+        }
+        
         try:
-            self.logger.info("Generating comprehensive security report")
+            self.logger.info("🚀 Starting comprehensive security report generation")
             
-            # Process and analyze findings
+            # Validate inputs
+            if not self._validate_inputs(findings, scan_metadata):
+                self.logger.error("❌ Input validation failed")
+                return False
+            
+            # Create output directory if it doesn't exist
+            run_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Process and analyze findings with progress tracking
+            self.logger.info("📊 Processing findings data...")
             processed_findings = self._process_findings(findings)
+            report_context["processed_findings_count"] = len(processed_findings)
             
             # Generate risk analysis
+            self.logger.info("⚡ Generating risk analysis...")
             risk_analysis = self._generate_risk_analysis(processed_findings)
             
             # Generate compliance mapping
+            self.logger.info("📋 Generating compliance mapping...")
             compliance_mapping = self._generate_compliance_mapping(processed_findings)
             
             # Generate executive summary
+            self.logger.info("📈 Generating executive summary...")
             executive_summary = self._generate_executive_summary(processed_findings, risk_analysis)
             
-            # Prepare report data
+            # Prepare report data with enhanced metadata
             report_data = {
-                "metadata": scan_metadata,
+                "metadata": {
+                    **scan_metadata,
+                    "report_generation_time": datetime.now().isoformat(),
+                    "report_generation_duration": None,  # Will be set at the end
+                    "report_version": "2.0",
+                    "framework_version": "7.0.0-ULTIMATE"
+                },
                 "findings": processed_findings,
                 "risk_analysis": risk_analysis,
                 "compliance_mapping": compliance_mapping,
                 "executive_summary": executive_summary,
-                "generation_time": datetime.now().isoformat(),
-                "total_findings": len(processed_findings),
-                "scan_duration": scan_metadata.get("duration", 0)
+                "statistics": {
+                    "total_findings": len(processed_findings),
+                    "scan_duration": scan_metadata.get("duration", 0),
+                    "findings_by_scanner": {k: len(v) if isinstance(v, list) else 1 for k, v in findings.items()}
+                }
             }
             
-            # Generate multiple report formats
-            success = True
+            # Generate multiple report formats with individual error handling
+            results = {}
+            self.logger.info("📄 Generating report files...")
             
             # HTML Report (Interactive Dashboard)
-            html_success = self._generate_html_report(run_dir, report_data)
-            success = success and html_success
+            results["html"] = self._generate_html_report_safe(run_dir, report_data)
             
             # JSON Report (Machine Readable)
-            json_success = self._generate_json_report(run_dir, report_data)
-            success = success and json_success
+            results["json"] = self._generate_json_report_safe(run_dir, report_data)
             
             # CSV Report (Data Analysis)
-            csv_success = self._generate_csv_report(run_dir, processed_findings)
-            success = success and csv_success
+            results["csv"] = self._generate_csv_report_safe(run_dir, processed_findings)
             
             # XML Report (Integration)
-            xml_success = self._generate_xml_report(run_dir, report_data)
-            success = success and xml_success
+            results["xml"] = self._generate_xml_report_safe(run_dir, report_data)
             
-            # Executive PDF Summary (would require additional libraries)
-            # pdf_success = self._generate_pdf_report(run_dir, report_data)
+            # Calculate generation duration
+            generation_duration = (datetime.now() - start_time).total_seconds()
+            report_data["metadata"]["report_generation_duration"] = generation_duration
             
-            return success
+            # Log generation summary
+            successful_formats = [fmt for fmt, success in results.items() if success]
+            failed_formats = [fmt for fmt, success in results.items() if not success]
+            
+            self.logger.info(f"✅ Report generation completed in {generation_duration:.2f}s")
+            
+            if failed_formats:
+                self.logger.warning(f"⚠️ Some formats failed: {failed_formats}")
+            
+            return len(successful_formats) > 0  # Success if at least one format was generated
             
         except Exception as e:
-            self.logger.error(f"Report generation failed: {e}")
+            generation_duration = (datetime.now() - start_time).total_seconds()
+            self.logger.error(f"❌ Report generation failed after {generation_duration:.2f}s: {e}")
             return False
+    
+    def _validate_inputs(self, findings: Dict[str, Any], scan_metadata: Dict[str, Any]) -> bool:
+        """Validate inputs before report generation"""
+        try:
+            # Validate findings structure
+            if not isinstance(findings, dict):
+                self.logger.error("❌ Findings must be a dictionary")
+                return False
+            
+            if not findings:
+                self.logger.warning("⚠️ No findings provided, generating empty report")
+                return True
+            
+            # Validate scan metadata
+            if not isinstance(scan_metadata, dict):
+                self.logger.error("❌ Scan metadata must be a dictionary")
+                return False
+            
+            # Check for required metadata fields
+            required_fields = ["scan_id", "start_time"]
+            missing_fields = [field for field in required_fields if field not in scan_metadata]
+            if missing_fields:
+                self.logger.warning(f"⚠️ Missing metadata fields: {missing_fields}")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"❌ Input validation error: {e}")
+            return False
+    
+    def _generate_html_report_safe(self, run_dir: Path, report_data: Dict[str, Any]) -> bool:
+        """Generate HTML report with enhanced error handling"""
+        try:
+            return self._generate_html_report(run_dir, report_data)
+        except Exception as e:
+            self.logger.error(f"❌ HTML report generation failed: {e}", exc_info=True)
+            return False
+    
+    def _generate_json_report_safe(self, run_dir: Path, report_data: Dict[str, Any]) -> bool:
+        """Generate JSON report with enhanced error handling"""
+        try:
+            return self._generate_json_report(run_dir, report_data)
+        except Exception as e:
+            self.logger.error(f"❌ JSON report generation failed: {e}", exc_info=True)
+            return False
+    
+    def _generate_csv_report_safe(self, run_dir: Path, findings: List[Dict[str, Any]]) -> bool:
+        """Generate CSV report with enhanced error handling"""
+        try:
+            return self._generate_csv_report(run_dir, findings)
+        except Exception as e:
+            self.logger.error(f"❌ CSV report generation failed: {e}", exc_info=True)
+            return False
+    
+    def _generate_xml_report_safe(self, run_dir: Path, report_data: Dict[str, Any]) -> bool:
+        """Generate XML report with enhanced error handling"""
+        try:
+            return self._generate_xml_report(run_dir, report_data)
+        except Exception as e:
+            self.logger.error(f"❌ XML report generation failed: {e}", exc_info=True)
+            return False
+    
     
     def _process_findings(self, findings: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Process and standardize findings from all scanners"""
@@ -532,44 +630,93 @@ class AdvancedReportGenerator:
             return False
     
     def _generate_json_report(self, run_dir: Path, report_data: Dict[str, Any]) -> bool:
-        """Generate machine-readable JSON report"""
+        """Generate machine-readable JSON report with validation"""
         try:
             report_file = run_dir / "security_assessment_report.json"
-            with open(report_file, 'w', encoding='utf-8') as f:
-                json.dump(report_data, f, indent=2, default=str)
             
-            self.logger.info(f"JSON report generated: {report_file}")
-            return True
+            # Validate JSON serialization before writing
+            try:
+                json_test = json.dumps(report_data, default=str, indent=2)
+            except (TypeError, ValueError) as e:
+                self.logger.error(f"❌ JSON serialization validation failed: {e}")
+                return False
+            
+            # Write JSON file with proper encoding
+            with open(report_file, 'w', encoding='utf-8') as f:
+                json.dump(report_data, f, indent=2, default=str, ensure_ascii=False)
+            
+            # Verify file was written and is valid JSON
+            try:
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    json.load(f)
+                file_size = report_file.stat().st_size
+                self.logger.info(f"✅ JSON report generated: {report_file} ({file_size} bytes)")
+                return True
+            except json.JSONDecodeError as e:
+                self.logger.error(f"❌ Generated JSON file is invalid: {e}")
+                return False
             
         except Exception as e:
-            self.logger.error(f"JSON report generation failed: {e}")
+            self.logger.error(f"❌ JSON report generation failed: {e}")
             return False
     
     def _generate_csv_report(self, run_dir: Path, findings: List[Dict[str, Any]]) -> bool:
-        """Generate CSV report for data analysis"""
+        """Generate CSV report for data analysis with validation"""
         try:
             report_file = run_dir / "security_findings.csv"
             
             if not findings:
+                self.logger.info("⚠️ No findings to export to CSV")
+                # Create empty CSV with headers
+                with open(report_file, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['message'])
+                    writer.writerow(['No findings detected'])
                 return True
+            
+            # Sanitize and validate findings data
+            sanitized_findings = []
+            for i, finding in enumerate(findings):
+                try:
+                    # Ensure all values are strings or can be converted to strings
+                    sanitized_finding = {}
+                    for key, value in finding.items():
+                        if value is None:
+                            sanitized_finding[key] = ""
+                        elif isinstance(value, (list, dict)):
+                            sanitized_finding[key] = json.dumps(value, default=str)
+                        else:
+                            sanitized_finding[key] = str(value)
+                    sanitized_findings.append(sanitized_finding)
+                except Exception as e:
+                    self.logger.warning(f"⚠️ Skipping malformed finding {i}: {e}")
+                    continue
+            
+            if not sanitized_findings:
+                self.logger.error("❌ No valid findings after sanitization")
+                return False
             
             # Get all unique field names
             fieldnames = set()
-            for finding in findings:
+            for finding in sanitized_findings:
                 fieldnames.update(finding.keys())
             
+            # Sort fieldnames for consistent output
             fieldnames = sorted(list(fieldnames))
             
+            # Write CSV file
             with open(report_file, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
                 writer.writeheader()
-                writer.writerows(findings)
+                writer.writerows(sanitized_findings)
             
-            self.logger.info(f"CSV report generated: {report_file}")
+            # Verify file was written
+            file_size = report_file.stat().st_size
+            self.logger.info(f"✅ CSV report generated: {report_file} ({len(sanitized_findings)} records, {file_size} bytes)")
             return True
             
         except Exception as e:
-            self.logger.error(f"CSV report generation failed: {e}")
+            self.logger.error(f"❌ CSV report generation failed: {e}")
             return False
     
     def _generate_xml_report(self, run_dir: Path, report_data: Dict[str, Any]) -> bool:

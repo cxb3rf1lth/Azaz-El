@@ -311,37 +311,81 @@ class EnhancedDatabaseManager:
             raise
     
     def _export_scan_results(self, scan_result: Any, formats: List[str]) -> bool:
-        """Export scan results to multiple file formats"""
+        """Export scan results to multiple file formats with progress tracking"""
+        start_time = datetime.now()
+        export_context = {
+            "scan_id": scan_result.scan_id,
+            "formats": formats,
+            "findings_count": len(scan_result.findings)
+        }
+        
         try:
             output_dir = Path(f"results/{scan_result.scan_id}")
             output_dir.mkdir(parents=True, exist_ok=True)
             
+            self.logger.info(f"📦 Starting export to {len(formats)} formats")
+            
+            results = {}
             export_success = True
             
-            # JSON export
-            if "json" in formats:
-                json_success = self._export_to_json(scan_result, output_dir)
-                export_success = export_success and json_success
+            # Export with individual format error handling
+            format_exporters = {
+                "json": self._export_to_json,
+                "csv": self._export_to_csv,
+                "xml": self._export_to_xml,
+                "html": self._export_to_html
+            }
             
-            # CSV export
-            if "csv" in formats:
-                csv_success = self._export_to_csv(scan_result, output_dir)
-                export_success = export_success and csv_success
+            for format_name in formats:
+                if format_name in format_exporters:
+                    format_start = datetime.now()
+                    try:
+                        format_success = format_exporters[format_name](scan_result, output_dir)
+                        format_duration = (datetime.now() - format_start).total_seconds()
+                        
+                        results[format_name] = {
+                            "success": format_success,
+                            "duration_ms": round(format_duration * 1000, 2)
+                        }
+                        
+                        if not format_success:
+                            export_success = False
+                            self.logger.warning(f"⚠️ {format_name.upper()} export failed")
+                        else:
+                            self.logger.debug(f"✅ {format_name.upper()} export completed "
+                                            f"({format_duration*1000:.1f}ms)")
+                            
+                    except Exception as e:
+                        results[format_name] = {"success": False, "error": str(e)}
+                        export_success = False
+                        self.logger.error(f"❌ {format_name.upper()} export error: {e}")
+                else:
+                    self.logger.warning(f"⚠️ Unknown export format: {format_name}")
+                    results[format_name] = {"success": False, "error": "Unknown format"}
+                    export_success = False
             
-            # XML export
-            if "xml" in formats:
-                xml_success = self._export_to_xml(scan_result, output_dir)
-                export_success = export_success and xml_success
+            # Log export summary
+            total_duration = (datetime.now() - start_time).total_seconds()
+            successful_formats = [fmt for fmt, result in results.items() if result["success"]]
+            failed_formats = [fmt for fmt, result in results.items() if not result["success"]]
             
-            # HTML export
-            if "html" in formats:
-                html_success = self._export_to_html(scan_result, output_dir)
-                export_success = export_success and html_success
+            export_context.update({
+                "total_duration_ms": round(total_duration * 1000, 2),
+                "successful_formats": successful_formats,
+                "failed_formats": failed_formats,
+                "results": results
+            })
+            
+            if export_success:
+                self.logger.info(f"✅ All exports completed successfully ({total_duration*1000:.1f}ms)")
+            else:
+                self.logger.warning(f"⚠️ Some exports failed ({total_duration*1000:.1f}ms)")
             
             return export_success
             
         except Exception as e:
-            self.logger.error(f"Failed to export scan results: {e}")
+            duration = (datetime.now() - start_time).total_seconds()
+            self.logger.error(f"❌ Export process failed after {duration*1000:.1f}ms: {e}")
             return False
     
     def _export_to_json(self, scan_result: Any, output_dir: Path) -> bool:

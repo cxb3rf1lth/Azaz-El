@@ -1,0 +1,4 @@
+finding_id,title,severity,cvss_score,confidence,category,affected_url,description,evidence,remediation,false_positive,verified
+,Critical Vuln,Critical,0.0,0.95,general,,,,,False,False
+,High Vuln,High,0.0,0.85,general,,,,,False,False
+,Low Confidence,Medium,0.0,0.15,general,,,,,False,False
