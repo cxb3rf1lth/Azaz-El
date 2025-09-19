@@ -363,9 +363,22 @@ class Z3MUTHCore:
             },
             "reporting": {
                 "output_dir": "z3muth_reports",
-                "formats": ["html", "json", "csv", "pdf"],
-                "include_screenshots": True
-            }
+                "formats": ["html", "json", "csv", "xml"],
+                "include_screenshots": True,
+                "auto_export": True,
+                "generate_executive_summary": True
+            },
+            "filtering": {
+                "enabled": True,
+                "min_confidence": 0.3,
+                "auto_exclude_fps": True,
+                "exclude_severities": [],
+                "exclude_categories": [],
+                "include_verified_only": False,
+                "duplicate_removal": True,
+                "enhance_positive_findings": True
+            },
+            "environment": "production"
         }
         
         try:
@@ -476,7 +489,30 @@ class Z3MUTHCore:
         return payloads
     
     def _initialize_database(self):
-        """Initialize SQLite database for persistence"""
+        """Initialize enhanced database with comprehensive storage and automated export"""
+        try:
+            # Import enhanced database manager
+            from core.database_manager import EnhancedDatabaseManager
+            from core.results_filter import EnhancedResultsFilter, FilterContext
+            
+            # Initialize enhanced database manager
+            self.db_manager = EnhancedDatabaseManager("z3muth_data.db", self.logger)
+            
+            # Initialize enhanced results filter
+            self.results_filter = EnhancedResultsFilter(self.config, self.logger)
+            
+            # Legacy connection for backward compatibility
+            self.db_connection = self.db_manager.db_connection
+            
+            self.logger.info("✅ Enhanced database and filtering systems initialized")
+            
+        except Exception as e:
+            self.logger.error(f"Enhanced database initialization failed: {e}")
+            # Fallback to basic database
+            self._initialize_basic_database()
+    
+    def _initialize_basic_database(self):
+        """Fallback basic database initialization"""
         try:
             db_path = Path("z3muth_data.db")
             self.db_connection = sqlite3.connect(str(db_path), check_same_thread=False)
@@ -542,7 +578,11 @@ class Z3MUTHCore:
             self.db_connection.execute("CREATE INDEX IF NOT EXISTS idx_tools_tool_name ON tools_usage(tool_name)")
             
             self.db_connection.commit()
-            self.logger.info("✅ Database initialized successfully")
+            self.logger.info("✅ Basic database initialized successfully")
+            
+            # Initialize basic components
+            self.db_manager = None
+            self.results_filter = None
             
         except Exception as e:
             self.logger.error(f"Database initialization failed: {e}")
@@ -1235,9 +1275,65 @@ class Z3MUTH(Z3MUTHCore):
         }
     
     def _save_scan_to_database(self, scan_result: Z3MUTHScanResult):
-        """Save scan results to database"""
+        """Save scan results to enhanced database with automated export"""
+        try:
+            # Use enhanced database manager if available
+            if hasattr(self, 'db_manager') and self.db_manager:
+                # Define export formats from configuration
+                export_formats = self.config.get('reporting', {}).get('formats', ['json', 'csv', 'xml', 'html'])
+                
+                # Apply intelligent filtering before saving
+                if hasattr(self, 'results_filter') and self.results_filter:
+                    from core.results_filter import FilterContext
+                    
+                    # Create filter context
+                    filter_context = FilterContext(
+                        environment=self.config.get('environment', 'production'),
+                        target_type=scan_result.target.target_type if scan_result.target else 'unknown',
+                        scan_type='general',
+                        min_confidence=self.config.get('filtering', {}).get('min_confidence', 0.3),
+                        exclude_severities=self.config.get('filtering', {}).get('exclude_severities', []),
+                        auto_exclude_fps=self.config.get('filtering', {}).get('auto_exclude_fps', True)
+                    )
+                    
+                    # Apply filtering
+                    original_count = len(scan_result.findings)
+                    scan_result.findings = self.results_filter.filter_findings(scan_result.findings, filter_context)
+                    filtered_count = len(scan_result.findings)
+                    
+                    if original_count != filtered_count:
+                        self.logger.info(f"🔍 Filtering applied: {original_count} → {filtered_count} findings")
+                        
+                        # Update metadata with filtering info
+                        scan_result.metadata['filtering_applied'] = True
+                        scan_result.metadata['original_findings_count'] = original_count
+                        scan_result.metadata['filtered_findings_count'] = filtered_count
+                        scan_result.metadata['filter_stats'] = self.results_filter.get_filter_statistics()
+                
+                # Save to enhanced database with automated export
+                success = self.db_manager.save_scan_result(scan_result, export_formats)
+                
+                if success:
+                    self.logger.info(f"✅ Scan results saved and exported in {len(export_formats)} formats")
+                    
+                    # Update scan result with export info
+                    scan_result.artifacts['database_saved'] = True
+                    scan_result.artifacts['export_formats'] = export_formats
+                    scan_result.artifacts['results_directory'] = f"results/{scan_result.scan_id}"
+                
+                return success
+            else:
+                # Fallback to basic database save
+                return self._save_scan_to_basic_database(scan_result)
+                
+        except Exception as e:
+            self.logger.error(f"Enhanced scan save failed, using fallback: {e}")
+            return self._save_scan_to_basic_database(scan_result)
+    
+    def _save_scan_to_basic_database(self, scan_result: Z3MUTHScanResult):
+        """Fallback basic database save method"""
         if not self.db_connection:
-            return
+            return False
         
         try:
             # Save scan record
@@ -1277,9 +1373,11 @@ class Z3MUTH(Z3MUTHCore):
                 ))
             
             self.db_connection.commit()
+            return True
             
         except Exception as e:
             self.logger.error(f"Failed to save scan to database: {e}")
+            return False
     
     def cancel_scan(self, scan_id: str) -> bool:
         """Cancel an active scan"""
