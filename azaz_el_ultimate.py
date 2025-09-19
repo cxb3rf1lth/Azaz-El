@@ -413,6 +413,15 @@ class IntelligentResultProcessor:
         self.config = config
         self.logger = logger
         self.false_positive_patterns = self._load_false_positive_patterns()
+        
+        # Try to initialize enhanced filter
+        try:
+            from core.results_filter import EnhancedResultsFilter
+            self.enhanced_filter = EnhancedResultsFilter(config, logger)
+            self.logger.info("✅ Enhanced results filter initialized")
+        except Exception as e:
+            self.logger.warning(f"Enhanced filter initialization failed: {e}, using basic filtering")
+            self.enhanced_filter = None
         self.severity_weights = {
             'critical': 10.0,
             'high': 7.5,
@@ -438,7 +447,45 @@ class IntelligentResultProcessor:
     
     def filter_results(self, findings: List[VulnerabilityFinding], 
                       context: Dict[str, Any]) -> List[VulnerabilityFinding]:
-        """Intelligent filtering of scan results"""
+        """Intelligent filtering of scan results with enhanced capabilities"""
+        try:
+            # Try to use enhanced results filter if available
+            if hasattr(self, 'enhanced_filter'):
+                from core.results_filter import FilterContext
+                
+                filter_context = FilterContext(
+                    environment=context.get('environment', 'production'),
+                    target_type=context.get('target_type', 'web'),
+                    scan_type=context.get('scan_type', 'general'),
+                    min_confidence=context.get('min_confidence', 0.3),
+                    exclude_severities=context.get('exclude_severities', []),
+                    auto_exclude_fps=context.get('auto_exclude_fps', True)
+                )
+                
+                return self.enhanced_filter.filter_findings(findings, filter_context)
+            
+            # Fallback to basic filtering
+            filtered_findings = []
+            
+            for finding in findings:
+                # Apply false positive detection
+                if self._is_likely_false_positive(finding, context):
+                    finding.confidence *= 0.5
+                    self.logger.debug(f"Reduced confidence for potential FP: {finding.title}")
+                
+                # Apply contextual filtering
+                if self._passes_contextual_filters(finding, context):
+                    filtered_findings.append(finding)
+            
+            return self._deduplicate_findings(filtered_findings)
+            
+        except Exception as e:
+            self.logger.error(f"Advanced filtering failed, using basic: {e}")
+            return self._basic_filter_results(findings, context)
+    
+    def _basic_filter_results(self, findings: List[VulnerabilityFinding], 
+                            context: Dict[str, Any]) -> List[VulnerabilityFinding]:
+        """Basic filtering fallback"""
         filtered_findings = []
         
         for finding in findings:
@@ -776,7 +823,30 @@ class AzazElUltimate:
             self.process_pool = ProcessPoolExecutor(max_workers=2)
     
     def _initialize_database(self):
-        """Initialize SQLite database for persistence with error handling"""
+        """Initialize enhanced database with comprehensive storage and automated export"""
+        try:
+            # Import enhanced database manager
+            from core.database_manager import EnhancedDatabaseManager
+            from core.results_filter import EnhancedResultsFilter, FilterContext
+            
+            # Initialize enhanced database manager
+            self.db_manager = EnhancedDatabaseManager("azaz_el_data.db", self.logger)
+            
+            # Initialize enhanced results filter
+            self.results_filter = EnhancedResultsFilter({}, self.logger)
+            
+            # Legacy connection for backward compatibility
+            self.db_connection = self.db_manager.db_connection
+            
+            self.logger.info("✅ Enhanced database and filtering systems initialized")
+            
+        except Exception as e:
+            self.logger.error(f"Enhanced database initialization failed: {e}")
+            # Fallback to basic database
+            self._initialize_basic_database()
+    
+    def _initialize_basic_database(self):
+        """Fallback basic database initialization"""
         try:
             db_path = Path("azaz_el_data.db")
             self.db_connection = sqlite3.connect(str(db_path), check_same_thread=False)
@@ -816,7 +886,11 @@ class AzazElUltimate:
             self.db_connection.execute("CREATE INDEX IF NOT EXISTS idx_findings_scan_id ON findings(scan_id)")
             
             self.db_connection.commit()
-            self.logger.info("✅ Database initialized successfully")
+            self.logger.info("✅ Basic database initialized successfully")
+            
+            # Initialize basic components
+            self.db_manager = None
+            self.results_filter = None
             
         except sqlite3.Error as e:
             self.logger.error(f"Database initialization failed: {e}")
@@ -1334,48 +1408,226 @@ class AzazElUltimate:
     
     async def _execute_reporting_phase(self, targets: List[ScanTarget], 
                                      scan_result: ScanResult):
-        """Execute comprehensive reporting"""
+        """Execute comprehensive reporting with enhanced database integration"""
         scan_result.phase = "reporting"
-        self.logger.info("📋 Phase 7: Comprehensive Report Generation")
+        self.logger.info("📋 Phase 7: Enhanced Report Generation & Export")
         
-        # Generate reports in multiple formats
-        if MODULES_AVAILABLE:
-            report_data = {
-                'scan_id': scan_result.scan_id,
-                'targets': [asdict(target) for target in targets],
-                'findings': [asdict(finding) for finding in scan_result.findings],
-                'metrics': scan_result.metrics,
-                'timestamp': datetime.now().isoformat()
+        try:
+            # First, save to enhanced database (this also exports to files)
+            if hasattr(self, 'db_manager') and self.db_manager:
+                # The enhanced database manager automatically exports to multiple formats
+                export_success = self.db_manager.save_scan_result(scan_result)
+                
+                if export_success:
+                    self.logger.info("✅ Scan results saved and exported to multiple formats")
+                    scan_result.artifacts['enhanced_reports'] = True
+                    scan_result.artifacts['results_directory'] = f"results/{scan_result.scan_id}"
+                    
+                    # List generated files
+                    results_dir = Path(f"results/{scan_result.scan_id}")
+                    if results_dir.exists():
+                        generated_files = list(results_dir.glob("*"))
+                        scan_result.artifacts['generated_files'] = [str(f) for f in generated_files]
+                        self.logger.info(f"📁 Generated {len(generated_files)} result files")
+            
+            # Generate additional advanced reports if modules available
+            if MODULES_AVAILABLE and hasattr(self, 'report_generator') and self.report_generator:
+                report_data = {
+                    'scan_id': scan_result.scan_id,
+                    'targets': [asdict(target) for target in targets],
+                    'findings': [asdict(finding) for finding in scan_result.findings],
+                    'metrics': scan_result.metrics,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                # Generate HTML report in runs directory for backward compatibility
+                run_dir = Path(f"runs/{scan_result.scan_id}")
+                run_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Convert findings to format expected by report generator
+                findings_dict = {
+                    'all_findings': [asdict(finding) for finding in scan_result.findings],
+                    'findings_by_severity': self._group_findings_by_severity(scan_result.findings),
+                    'total_count': len(scan_result.findings)
+                }
+                
+                scan_metadata = {
+                    'scan_id': scan_result.scan_id,
+                    'start_time': scan_result.start_time.isoformat(),
+                    'end_time': scan_result.end_time.isoformat() if scan_result.end_time else None,
+                    'targets': [target.target for target in targets],
+                    'status': scan_result.status,
+                    'duration': (scan_result.end_time - scan_result.start_time).total_seconds() if scan_result.end_time else 0
+                }
+                
+                success = self.report_generator.generate_comprehensive_report(
+                    run_dir, findings_dict, scan_metadata
+                )
+                
+                if success:
+                    scan_result.artifacts['html_report'] = str(run_dir / "comprehensive_report.html")
+                    self.logger.info(f"✅ Advanced report generated: {scan_result.artifacts['html_report']}")
+                else:
+                    self.logger.warning("⚠️ Advanced report generation failed")
+            
+            # Generate executive summary
+            self._generate_executive_summary(scan_result)
+            
+            # Log report generation summary
+            self._log_reporting_summary(scan_result)
+                    
+        except Exception as e:
+            self.logger.error(f"Reporting phase failed: {e}")
+    
+    def _generate_executive_summary(self, scan_result: ScanResult):
+        """Generate executive summary"""
+        try:
+            findings = scan_result.findings
+            severity_counts = self._calculate_severity_counts(findings)
+            
+            summary = {
+                "scan_overview": {
+                    "scan_id": scan_result.scan_id,
+                    "target": scan_result.target.target if scan_result.target else 'Multiple',
+                    "scan_duration": (scan_result.end_time - scan_result.start_time).total_seconds() if scan_result.end_time else 0,
+                    "total_findings": len(findings),
+                    "status": scan_result.status
+                },
+                "security_posture": {
+                    "overall_risk": self._calculate_overall_risk(findings),
+                    "critical_issues": severity_counts.get('critical', 0),
+                    "high_issues": severity_counts.get('high', 0),
+                    "medium_issues": severity_counts.get('medium', 0),
+                    "low_issues": severity_counts.get('low', 0),
+                    "info_issues": severity_counts.get('info', 0)
+                },
+                "key_findings": self._get_top_findings(findings, 5),
+                "recommendations": self._generate_recommendations(findings),
+                "next_steps": self._generate_next_steps(findings)
             }
             
-            # Generate HTML report
-            run_dir = Path(f"runs/{scan_result.scan_id}")
-            run_dir.mkdir(parents=True, exist_ok=True)
+            # Save executive summary
+            summary_file = Path(f"results/{scan_result.scan_id}/executive_summary.json")
+            summary_file.parent.mkdir(parents=True, exist_ok=True)
             
-            # Convert findings to format expected by report generator
-            findings_dict = {
-                'all_findings': [asdict(finding) for finding in scan_result.findings],
-                'findings_by_severity': self._group_findings_by_severity(scan_result.findings),
-                'total_count': len(scan_result.findings)
+            with open(summary_file, 'w') as f:
+                json.dump(summary, f, indent=2)
+            
+            scan_result.artifacts['executive_summary'] = str(summary_file)
+            self.logger.info("✅ Executive summary generated")
+            
+        except Exception as e:
+            self.logger.error(f"Executive summary generation failed: {e}")
+    
+    def _calculate_severity_counts(self, findings: List[VulnerabilityFinding]) -> Dict[str, int]:
+        """Calculate counts by severity"""
+        counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
+        for finding in findings:
+            severity = finding.severity.lower()
+            if severity in counts:
+                counts[severity] += 1
+        return counts
+    
+    def _calculate_overall_risk(self, findings: List[VulnerabilityFinding]) -> str:
+        """Calculate overall risk level"""
+        severity_counts = self._calculate_severity_counts(findings)
+        
+        if severity_counts['critical'] > 0:
+            return "CRITICAL"
+        elif severity_counts['high'] > 3:
+            return "HIGH"
+        elif severity_counts['high'] > 0 or severity_counts['medium'] > 5:
+            return "MEDIUM"
+        elif severity_counts['medium'] > 0 or severity_counts['low'] > 0:
+            return "LOW"
+        else:
+            return "MINIMAL"
+    
+    def _get_top_findings(self, findings: List[VulnerabilityFinding], limit: int = 5) -> List[Dict[str, Any]]:
+        """Get top findings by severity and CVSS score"""
+        severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'info': 4}
+        
+        sorted_findings = sorted(
+            findings,
+            key=lambda f: (severity_order.get(f.severity.lower(), 4), -f.cvss_score)
+        )
+        
+        return [
+            {
+                "title": f.title,
+                "severity": f.severity,
+                "cvss_score": f.cvss_score,
+                "description": getattr(f, 'description', '')[:200]
             }
-            
-            scan_metadata = {
-                'scan_id': scan_result.scan_id,
-                'start_time': scan_result.start_time.isoformat(),
-                'end_time': scan_result.end_time.isoformat() if scan_result.end_time else None,
-                'targets': [target.target for target in targets],
-                'status': scan_result.status
-            }
-            
-            success = self.report_generator.generate_comprehensive_report(
-                run_dir, findings_dict, scan_metadata
-            )
-            
-            if success:
-                scan_result.artifacts['html_report'] = str(run_dir / "comprehensive_report.html")
-                self.logger.info(f"✅ Report generated: {scan_result.artifacts['html_report']}")
-            else:
-                self.logger.warning("⚠️ Report generation failed")
+            for f in sorted_findings[:limit]
+        ]
+    
+    def _generate_recommendations(self, findings: List[VulnerabilityFinding]) -> List[str]:
+        """Generate high-level recommendations"""
+        recommendations = []
+        severity_counts = self._calculate_severity_counts(findings)
+        
+        if severity_counts['critical'] > 0:
+            recommendations.append("Immediately address all critical vulnerabilities as they pose severe security risks")
+        
+        if severity_counts['high'] > 0:
+            recommendations.append("Prioritize resolution of high-severity vulnerabilities within 30 days")
+        
+        if severity_counts['medium'] > 5:
+            recommendations.append("Develop a systematic approach to address medium-severity vulnerabilities")
+        
+        # Add specific recommendations based on finding types
+        finding_types = [f.title.lower() for f in findings]
+        
+        if any('sql injection' in t or 'sqli' in t for t in finding_types):
+            recommendations.append("Implement parameterized queries and input validation to prevent SQL injection")
+        
+        if any('xss' in t or 'cross-site scripting' in t for t in finding_types):
+            recommendations.append("Implement proper output encoding and Content Security Policy (CSP)")
+        
+        if any('authentication' in t or 'password' in t for t in finding_types):
+            recommendations.append("Review and strengthen authentication mechanisms")
+        
+        if any('ssl' in t or 'tls' in t or 'certificate' in t for t in finding_types):
+            recommendations.append("Update SSL/TLS configuration and certificates")
+        
+        return recommendations[:10]  # Limit to top 10
+    
+    def _generate_next_steps(self, findings: List[VulnerabilityFinding]) -> List[str]:
+        """Generate actionable next steps"""
+        next_steps = [
+            "Review and validate all identified vulnerabilities",
+            "Develop remediation timeline based on severity levels",
+            "Implement security controls for high-priority issues",
+            "Schedule follow-up security assessment",
+            "Update security policies and procedures as needed"
+        ]
+        
+        severity_counts = self._calculate_severity_counts(findings)
+        
+        if severity_counts['critical'] > 0:
+            next_steps.insert(0, "URGENT: Address critical vulnerabilities immediately")
+        
+        return next_steps
+    
+    def _log_reporting_summary(self, scan_result: ScanResult):
+        """Log reporting summary"""
+        findings_count = len(scan_result.findings)
+        severity_counts = self._calculate_severity_counts(scan_result.findings)
+        
+        self.logger.info("📊 Reporting Summary:")
+        self.logger.info(f"   Total Findings: {findings_count}")
+        self.logger.info(f"   Critical: {severity_counts['critical']}")
+        self.logger.info(f"   High: {severity_counts['high']}")
+        self.logger.info(f"   Medium: {severity_counts['medium']}")
+        self.logger.info(f"   Low: {severity_counts['low']}")
+        self.logger.info(f"   Info: {severity_counts['info']}")
+        
+        if 'generated_files' in scan_result.artifacts:
+            self.logger.info(f"   Generated Files: {len(scan_result.artifacts['generated_files'])}")
+        
+        if 'results_directory' in scan_result.artifacts:
+            self.logger.info(f"   Results Directory: {scan_result.artifacts['results_directory']}")
     
     def _group_findings_by_severity(self, findings: List[VulnerabilityFinding]) -> Dict[str, List[Dict[str, Any]]]:
         """Group findings by severity level"""
@@ -1424,7 +1676,81 @@ class AzazElUltimate:
         }
     
     def _save_scan_to_database(self, scan_result: ScanResult):
-        """Save scan results to database"""
+        """Save scan results to enhanced database with automated export"""
+        try:
+            # Use enhanced database manager if available
+            if hasattr(self, 'db_manager') and self.db_manager:
+                # Define export formats
+                export_formats = ['json', 'csv', 'xml', 'html']
+                
+                # Apply intelligent filtering before saving
+                if hasattr(self, 'results_filter') and self.results_filter:
+                    from core.results_filter import FilterContext
+                    
+                    # Get filtering config from scan config or defaults
+                    filtering_config = {}
+                    if scan_result.target and hasattr(scan_result.target, 'scan_config'):
+                        filtering_config = scan_result.target.scan_config.get('filtering', {})
+                    
+                    # Create filter context
+                    filter_context = FilterContext(
+                        environment='production',
+                        target_type=scan_result.target.target_type if scan_result.target else 'web',
+                        scan_type='general',
+                        min_confidence=filtering_config.get('min_confidence', 0.3),
+                        exclude_severities=filtering_config.get('exclude_severities', []),
+                        auto_exclude_fps=filtering_config.get('auto_exclude_fps', True)
+                    )
+                    
+                    # Only apply filtering if enabled
+                    if filtering_config.get('enabled', True):
+                        # Apply filtering
+                        original_count = len(scan_result.findings)
+                        scan_result.findings = self.results_filter.filter_findings(scan_result.findings, filter_context)
+                        filtered_count = len(scan_result.findings)
+                        
+                        if original_count != filtered_count:
+                            self.logger.info(f"🔍 Filtering applied: {original_count} → {filtered_count} findings")
+                            
+                            # Update metadata with filtering info
+                            scan_result.metadata['filtering_applied'] = True
+                            scan_result.metadata['original_findings_count'] = original_count
+                            scan_result.metadata['filtered_findings_count'] = filtered_count
+                            scan_result.metadata['filter_stats'] = self.results_filter.get_filter_statistics()
+                    else:
+                        self.logger.info("🔍 Filtering disabled by configuration")
+                
+                # Get export formats from config
+                export_formats = ['json', 'csv', 'xml', 'html']
+                if scan_result.target and hasattr(scan_result.target, 'scan_config'):
+                    reporting_config = scan_result.target.scan_config.get('reporting', {})
+                    export_formats = reporting_config.get('export_formats', export_formats)
+                
+                # Save to enhanced database with automated export
+                success = self.db_manager.save_scan_result(scan_result, export_formats)
+                
+                if success:
+                    self.logger.info(f"✅ Scan results saved and exported in {len(export_formats)} formats")
+                    
+                    # Update scan result with export info
+                    scan_result.artifacts['database_saved'] = True
+                    scan_result.artifacts['export_formats'] = export_formats
+                    scan_result.artifacts['results_directory'] = f"results/{scan_result.scan_id}"
+                
+                return success
+            else:
+                # Fallback to basic database save
+                return self._save_scan_to_basic_database(scan_result)
+                
+        except Exception as e:
+            self.logger.error(f"Enhanced scan save failed, using fallback: {e}")
+            return self._save_scan_to_basic_database(scan_result)
+    
+    def _save_scan_to_basic_database(self, scan_result: ScanResult):
+        """Fallback basic database save method"""
+        if not self.db_connection:
+            return False
+        
         try:
             # Save scan record
             self.db_connection.execute("""
@@ -1458,8 +1784,11 @@ class AzazElUltimate:
                 ))
             
             self.db_connection.commit()
+            return True
+            
         except Exception as e:
             self.logger.error(f"Failed to save scan to database: {e}")
+            return False
     
     def _serialize_scan_result(self, scan_result: ScanResult) -> Dict[str, Any]:
         """Serialize scan result for JSON storage"""
@@ -2141,6 +2470,20 @@ Examples:
     
     # Output options
     parser.add_argument('--output-dir', '-o', help='Output directory for results')
+    
+    # Filtering Options
+    parser.add_argument('--min-confidence', type=float, default=0.3,
+                       help='Minimum confidence threshold for findings (0.0-1.0)')
+    parser.add_argument('--exclude-severities', nargs='+',
+                       choices=['critical', 'high', 'medium', 'low', 'info'],
+                       help='Severity levels to exclude from results')
+    parser.add_argument('--exclude-fps', action='store_true', default=True,
+                       help='Automatically exclude false positives')
+    parser.add_argument('--no-filtering', action='store_true',
+                       help='Disable all automated filtering')
+    parser.add_argument('--export-formats', nargs='+', choices=['html', 'json', 'csv', 'xml'],
+                       default=['html', 'json', 'csv', 'xml'], help='Export formats for results')
+    
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Verbose output')
     parser.add_argument('--quiet', action='store_true',
@@ -2216,7 +2559,17 @@ Examples:
         'enable_exploitation': args.enable_exploitation,
         'threads': args.threads,
         'timeout': args.timeout,
-        'verbose': args.verbose
+        'verbose': args.verbose,
+        'filtering': {
+            'enabled': not args.no_filtering,
+            'min_confidence': args.min_confidence,
+            'exclude_severities': args.exclude_severities or [],
+            'auto_exclude_fps': args.exclude_fps,
+        },
+        'reporting': {
+            'export_formats': args.export_formats,
+            'output_dir': args.output_dir
+        }
     }
     
     # Execute scans

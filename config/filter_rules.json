@@ -1,0 +1,102 @@
+[
+  {
+    "rule_id": "fp_error_pages",
+    "name": "Generic Error Pages",
+    "rule_type": "false_positive",
+    "pattern": "error.*page|404.*not.*found|403.*forbidden",
+    "action": "mark_fp",
+    "confidence_adjustment": 0.0,
+    "enabled": true,
+    "description": "Mark generic error pages as false positives"
+  },
+  {
+    "rule_id": "fp_dev_indicators",
+    "name": "Development Environment Indicators",
+    "rule_type": "false_positive",
+    "pattern": "localhost|127\\.0\\.0\\.1|test|debug|dev|staging",
+    "action": "mark_fp",
+    "confidence_adjustment": -0.3,
+    "enabled": true,
+    "description": "Reduce confidence for development environment indicators"
+  },
+  {
+    "rule_id": "enhance_sqli",
+    "name": "SQL Injection Enhancement",
+    "rule_type": "enhancement",
+    "pattern": "sql.*injection|sqli",
+    "action": "enhance",
+    "confidence_adjustment": 0.2,
+    "enabled": true,
+    "description": "Enhance SQL injection findings"
+  },
+  {
+    "rule_id": "enhance_xss",
+    "name": "XSS Enhancement",
+    "rule_type": "enhancement",
+    "pattern": "cross.*site.*scripting|xss",
+    "action": "enhance",
+    "confidence_adjustment": 0.2,
+    "enabled": true,
+    "description": "Enhance XSS findings"
+  },
+  {
+    "rule_id": "enhance_rce",
+    "name": "Remote Code Execution Enhancement",
+    "rule_type": "enhancement",
+    "pattern": "remote.*code.*execution|rce|command.*injection",
+    "action": "enhance",
+    "confidence_adjustment": 0.3,
+    "enabled": true,
+    "description": "Enhance RCE findings"
+  },
+  {
+    "rule_id": "fp_info_disclosure",
+    "name": "Low Impact Information Disclosure",
+    "rule_type": "false_positive",
+    "pattern": "information.*disclosure.*server.*version|banner.*grabbing",
+    "action": "adjust_confidence",
+    "confidence_adjustment": -0.2,
+    "enabled": true,
+    "description": "Reduce confidence for low-impact information disclosure"
+  },
+  {
+    "rule_id": "fp_security_headers",
+    "name": "Missing Security Headers",
+    "rule_type": "false_positive",
+    "pattern": "missing.*security.*header|missing.*x-frame-options|missing.*x-content-type-options",
+    "action": "adjust_confidence",
+    "confidence_adjustment": -0.1,
+    "enabled": true,
+    "description": "Slightly reduce confidence for missing security headers"
+  },
+  {
+    "rule_id": "enhance_auth_bypass",
+    "name": "Authentication Bypass Enhancement",
+    "rule_type": "enhancement",
+    "pattern": "authentication.*bypass|auth.*bypass|login.*bypass",
+    "action": "enhance",
+    "confidence_adjustment": 0.3,
+    "enabled": true,
+    "description": "Enhance authentication bypass findings"
+  },
+  {
+    "rule_id": "enhance_privilege_escalation",
+    "name": "Privilege Escalation Enhancement",
+    "rule_type": "enhancement",
+    "pattern": "privilege.*escalation|privesc|elevation.*of.*privilege",
+    "action": "enhance",
+    "confidence_adjustment": 0.3,
+    "enabled": true,
+    "description": "Enhance privilege escalation findings"
+  },
+  {
+    "rule_id": "fp_directory_listing",
+    "name": "Directory Listing on Empty Directories",
+    "rule_type": "false_positive",
+    "pattern": "directory.*listing.*enabled.*empty|index.*of.*\\/$",
+    "action": "adjust_confidence",
+    "confidence_adjustment": -0.2,
+    "enabled": true,
+    "description": "Reduce confidence for directory listing on empty directories"
+  }
+]
