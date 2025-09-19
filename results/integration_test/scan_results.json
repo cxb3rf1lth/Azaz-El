@@ -1,0 +1,77 @@
+{
+  "scan_metadata": {
+    "scan_id": "integration_test",
+    "target": "test.example.com",
+    "start_time": "2025-09-19T12:53:03.297586",
+    "end_time": "2025-09-19T12:53:03.297588",
+    "status": "completed",
+    "total_findings": 3,
+    "risk_score": 5.541666666666667
+  },
+  "findings": [
+    {
+      "id": "",
+      "title": "Critical Vuln",
+      "description": "",
+      "severity": "Critical",
+      "cvss_score": 0.0,
+      "confidence": 0.95,
+      "category": "general",
+      "affected_url": "",
+      "evidence": "",
+      "remediation": "",
+      "false_positive": false,
+      "verified": false,
+      "metadata": {}
+    },
+    {
+      "id": "",
+      "title": "High Vuln",
+      "description": "",
+      "severity": "High",
+      "cvss_score": 0.0,
+      "confidence": 0.85,
+      "category": "general",
+      "affected_url": "",
+      "evidence": "",
+      "remediation": "",
+      "false_positive": false,
+      "verified": false,
+      "metadata": {}
+    },
+    {
+      "id": "",
+      "title": "Low Confidence",
+      "description": "",
+      "severity": "Medium",
+      "cvss_score": 0.0,
+      "confidence": 0.15,
+      "category": "general",
+      "affected_url": "",
+      "evidence": "",
+      "remediation": "",
+      "false_positive": false,
+      "verified": false,
+      "metadata": {}
+    }
+  ],
+  "summary": {
+    "total_findings": 3,
+    "severity_distribution": {
+      "critical": 1,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "risk_score": 5.541666666666667,
+    "top_categories": [
+      {
+        "category": "general",
+        "count": 3
+      }
+    ],
+    "false_positive_rate": 0.0
+  },
+  "export_timestamp": "2025-09-19T12:53:03.325381"
+}

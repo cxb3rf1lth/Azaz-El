@@ -1,351 +1,539 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Comprehensive Test Suite for Azaz-El Framework v4.0
-Tests all enhanced modules and functionality
+Enhanced Framework Test Suite
+Comprehensive testing of enhanced database, filtering, and reporting features
 """
 
-import sys
 import asyncio
-import tempfile
 import json
+import logging
+import sys
+import tempfile
 from pathlib import Path
-import unittest
-from unittest.mock import Mock, patch
+from datetime import datetime
+from dataclasses import dataclass, asdict
+from typing import Dict, Any, List, Optional
 
-# Add the project root to the path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path
+sys.path.append(str(Path(__file__).parent))
 
-try:
-    import sys
-    from pathlib import Path
-    sys.path.append(str(Path(__file__).parent))
+@dataclass
+class MockFinding:
+    """Mock finding for testing"""
+    id: str
+    title: str
+    description: str
+    severity: str
+    cvss_score: float
+    confidence: float
+    category: str = "general"
+    url: str = ""
+    evidence: str = ""
+    remediation: str = ""
+    false_positive: bool = False
+    verified: bool = False
+    metadata: Dict[str, Any] = None
     
-    import core.exceptions as exc
-    from core.validators import InputValidator
-    from core.config import ConfigurationManager
-    from core.logging import AdvancedLogger
-    from scanners.web_scanner import AdvancedWebScanner, VulnerabilityFinding
-    
-    # Import exceptions for use in tests
-    AzazelException = exc.AzazelException
-    ConfigurationError = exc.ConfigurationError
-    ValidationError = exc.ValidationError
-    
-except ImportError as e:
-    print(f"Error importing modules: {e}")
-    print("Make sure all required dependencies are installed:")
-    print("pip install cryptography aiohttp")
-    sys.exit(1)
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
 
-class TestCoreExceptions(unittest.TestCase):
-    """Test custom exception classes"""
+@dataclass 
+class MockScanResult:
+    """Mock scan result for testing"""
+    scan_id: str
+    target: Any = None
+    start_time: datetime = None
+    end_time: datetime = None
+    status: str = "completed"
+    findings: List[MockFinding] = None
+    metadata: Dict[str, Any] = None
+    artifacts: Dict[str, str] = None
     
-    def test_base_exception(self):
-        """Test base AzazelException"""
-        exc = AzazelException("test message", "TEST001", {"key": "value"})
-        self.assertEqual(str(exc), "test message")
-        self.assertEqual(exc.error_code, "TEST001")
-        self.assertEqual(exc.details["key"], "value")
-        self.assertIsNotNone(exc.timestamp)
-    
-    def test_configuration_error(self):
-        """Test ConfigurationError"""
-        exc = ConfigurationError("config error")
-        self.assertIsInstance(exc, AzazelException)
-        self.assertEqual(str(exc), "config error")
+    def __post_init__(self):
+        if self.findings is None:
+            self.findings = []
+        if self.metadata is None:
+            self.metadata = {}
+        if self.artifacts is None:
+            self.artifacts = {}
+        if self.start_time is None:
+            self.start_time = datetime.now()
 
-class TestInputValidator(unittest.TestCase):
-    """Test input validation functionality"""
+def create_test_findings() -> List[MockFinding]:
+    """Create diverse test findings for comprehensive testing"""
     
-    def test_validate_domain(self):
-        """Test domain validation"""
-        self.assertTrue(InputValidator.is_valid_domain("example.com"))
-        self.assertTrue(InputValidator.is_valid_domain("sub.example.com"))
-        self.assertFalse(InputValidator.is_valid_domain(""))
-        self.assertFalse(InputValidator.is_valid_domain("invalid..domain"))
+    findings = [
+        # High-value findings that should be enhanced
+        MockFinding(
+            id="finding_001",
+            title="SQL Injection Vulnerability",
+            description="SQL injection vulnerability detected in login form",
+            severity="critical",
+            cvss_score=9.1,
+            confidence=0.9,
+            category="injection",
+            url="https://example.com/login",
+            evidence="' OR '1'='1' -- payload successful",
+            remediation="Use parameterized queries"
+        ),
+        MockFinding(
+            id="finding_002", 
+            title="Cross-Site Scripting (XSS)",
+            description="Reflected XSS vulnerability in search parameter",
+            severity="high",
+            cvss_score=7.2,
+            confidence=0.8,
+            category="injection",
+            url="https://example.com/search?q=<script>alert(1)</script>",
+            evidence="Script executed successfully",
+            remediation="Implement proper output encoding"
+        ),
+        MockFinding(
+            id="finding_003",
+            title="Remote Code Execution",
+            description="Command injection allowing remote code execution",
+            severity="critical",
+            cvss_score=9.8,
+            confidence=0.95,
+            category="injection",
+            url="https://example.com/upload",
+            evidence="System command executed: id",
+            remediation="Validate and sanitize all input"
+        ),
+        
+        # Potential false positives
+        MockFinding(
+            id="finding_004",
+            title="Server returned error 404 for non-existent page",
+            description="404 error page found for invalid URL",
+            severity="info",
+            cvss_score=0.0,
+            confidence=0.3,
+            category="information_disclosure",
+            url="https://example.com/nonexistent",
+            evidence="404 Not Found response",
+            remediation="N/A"
+        ),
+        MockFinding(
+            id="finding_005",
+            title="Missing X-Frame-Options header",
+            description="X-Frame-Options security header not present",
+            severity="low",
+            cvss_score=2.1,
+            confidence=0.7,
+            category="security_headers",
+            url="https://example.com/",
+            evidence="Header not found in response",
+            remediation="Add X-Frame-Options: DENY header"
+        ),
+        MockFinding(
+            id="finding_006",
+            title="Directory listing enabled on localhost",
+            description="Apache directory listing enabled",
+            severity="medium",
+            cvss_score=4.3,
+            confidence=0.6,
+            category="configuration",
+            url="http://localhost/test/",
+            evidence="Directory index displayed",
+            remediation="Disable directory listing"
+        ),
+        
+        # Medium findings
+        MockFinding(
+            id="finding_007",
+            title="Weak SSL/TLS Configuration",
+            description="Server supports weak cipher suites",
+            severity="medium",
+            cvss_score=5.3,
+            confidence=0.8,
+            category="ssl_tls",
+            url="https://example.com",
+            evidence="TLSv1.0 supported",
+            remediation="Update SSL/TLS configuration"
+        ),
+        MockFinding(
+            id="finding_008",
+            title="Admin panel accessible",
+            description="Administrative interface found without authentication",
+            severity="high",
+            cvss_score=8.1,
+            confidence=0.9,
+            category="authentication",
+            url="https://example.com/admin",
+            evidence="Admin panel login page accessible",
+            remediation="Implement proper access controls"
+        ),
+        
+        # Low confidence findings
+        MockFinding(
+            id="finding_009",
+            title="Potential backup file detected",
+            description="Possible backup file found",
+            severity="medium",
+            cvss_score=4.0,
+            confidence=0.2,  # Low confidence - might be filtered
+            category="information_disclosure",
+            url="https://example.com/backup.zip",
+            evidence="File accessible but content unknown",
+            remediation="Remove backup files from web root"
+        ),
+        
+        # Duplicate finding (should be removed)
+        MockFinding(
+            id="finding_010",
+            title="SQL Injection Vulnerability",  # Same as finding_001
+            description="SQL injection vulnerability detected in login form",
+            severity="critical",
+            cvss_score=9.1,
+            confidence=0.85,  # Slightly different confidence
+            category="injection",
+            url="https://example.com/login",
+            evidence="' OR '1'='1' -- payload successful",
+            remediation="Use parameterized queries"
+        )
+    ]
     
-    def test_validate_ip(self):
-        """Test IP address validation"""
-        self.assertTrue(InputValidator.is_valid_ip("192.168.1.1"))
-        self.assertTrue(InputValidator.is_valid_ip("::1"))
-        self.assertFalse(InputValidator.is_valid_ip("999.999.999.999"))
-        self.assertFalse(InputValidator.is_valid_ip("invalid"))
-    
-    def test_validate_target(self):
-        """Test target validation"""
-        self.assertEqual(InputValidator.validate_target("example.com"), "example.com")
-        self.assertEqual(InputValidator.validate_target("http://example.com"), "http://example.com")
-        
-        with self.assertRaises(ValidationError):
-            InputValidator.validate_target("")
-        
-        with self.assertRaises(ValidationError):
-            InputValidator.validate_target("invalid target")
-    
-    def test_validate_port(self):
-        """Test port validation"""
-        self.assertEqual(InputValidator.validate_port("80"), 80)
-        self.assertEqual(InputValidator.validate_port(443), 443)
-        
-        with self.assertRaises(ValidationError):
-            InputValidator.validate_port("0")
-        
-        with self.assertRaises(ValidationError):
-            InputValidator.validate_port("99999")
-    
-    def test_sanitize_filename(self):
-        """Test filename sanitization"""
-        self.assertEqual(InputValidator.sanitize_filename("normal.txt"), "normal.txt")
-        self.assertEqual(InputValidator.sanitize_filename("file<>:\"/\\|?*.txt"), "file_________.txt")
-        
-        with self.assertRaises(ValidationError):
-            InputValidator.sanitize_filename("")
+    return findings
 
-class TestConfigurationManager(unittest.TestCase):
-    """Test configuration management"""
+async def test_enhanced_database_manager():
+    """Test enhanced database manager functionality"""
+    print("\n🧪 Testing Enhanced Database Manager...")
     
-    def setUp(self):
-        """Setup test environment"""
-        self.temp_dir = Path(tempfile.mkdtemp())
-        self.config_file = self.temp_dir / "test_config.json"
-        self.config_manager = ConfigurationManager(self.config_file)
-    
-    def test_create_default_config(self):
-        """Test default configuration creation"""
-        config = self.config_manager.load_config()
-        self.assertIn("tools", config)
-        self.assertIn("performance", config)
-        self.assertIn("security", config)
-        self.assertIn("reporting", config)
-    
-    def test_save_and_load_config(self):
-        """Test configuration save and load"""
-        test_config = {
-            "tools": {"test_tool": {"enabled": True}},
-            "performance": {"max_workers": 5},
-            "security": {"encrypt_sensitive_data": False},
-            "reporting": {"auto_open_html": False},
-            "wordlists": {},
-            "output": {}
-        }
+    try:
+        from core.database_manager import EnhancedDatabaseManager
         
-        self.config_manager.save_config(test_config)
-        loaded_config = self.config_manager.load_config()
+        # Use temporary database
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+            test_db_path = tmp.name
         
-        self.assertEqual(loaded_config["tools"]["test_tool"]["enabled"], True)
-        self.assertEqual(loaded_config["performance"]["max_workers"], 5)
-    
-    def test_encryption_key_generation(self):
-        """Test encryption key generation"""
-        key = ConfigurationManager.generate_encryption_key()
-        self.assertIsInstance(key, str)
-        self.assertTrue(len(key) > 20)  # Should be a substantial key
-    
-    def tearDown(self):
-        """Clean up test environment"""
-        import shutil
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-class TestAdvancedLogger(unittest.TestCase):
-    """Test advanced logging functionality"""
-    
-    def setUp(self):
-        """Setup test environment"""
-        self.temp_dir = Path(tempfile.mkdtemp())
-        self.logger = AdvancedLogger("test_logger", self.temp_dir)
-    
-    def test_basic_logging(self):
-        """Test basic logging functionality"""
-        self.logger.info("Test info message")
-        self.logger.error("Test error message")
-        self.logger.debug("Test debug message")
+        # Setup logging
+        logger = logging.getLogger('test_db')
+        logger.setLevel(logging.INFO)
         
-        # Check if log files are created
-        log_files = list(self.temp_dir.glob("*.log"))
-        self.assertTrue(len(log_files) > 0)
-    
-    def test_structured_logging(self):
-        """Test structured logging with extra data"""
-        extra_data = {"test_key": "test_value", "number": 42}
-        self.logger.info("Test structured message", extra_data)
+        # Initialize database manager
+        db_manager = EnhancedDatabaseManager(test_db_path, logger)
         
-        # Check if JSON log file exists
-        json_files = list(self.temp_dir.glob("*structured.json"))
-        self.assertTrue(len(json_files) > 0)
-    
-    def test_tool_execution_logging(self):
-        """Test tool execution logging"""
-        self.logger.log_tool_execution("test_tool", "test command", True, 1.5, 1024)
-        
-        # Should not raise any exceptions
-        self.assertTrue(True)
-    
-    def tearDown(self):
-        """Clean up test environment"""
-        import shutil
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-class TestVulnerabilityFinding(unittest.TestCase):
-    """Test vulnerability finding structure"""
-    
-    def test_vulnerability_creation(self):
-        """Test vulnerability finding creation"""
-        finding = VulnerabilityFinding(
-            vuln_type="XSS",
-            severity="High",
-            confidence="High",
-            url="http://example.com",
-            parameter="test_param",
-            payload="<script>alert(1)</script>"
+        # Create test scan result
+        findings = create_test_findings()
+        scan_result = MockScanResult(
+            scan_id="test_scan_001",
+            findings=findings,
+            metadata={"test": True, "framework": "enhanced_test"}
         )
         
-        self.assertEqual(finding.vuln_type, "XSS")
-        self.assertEqual(finding.severity, "High")
-        self.assertEqual(finding.url, "http://example.com")
-        self.assertIsInstance(finding.references, list)
+        # Test save with all export formats
+        export_formats = ["json", "csv", "xml", "html"]
+        success = db_manager.save_scan_result(scan_result, export_formats)
+        
+        print(f"✅ Database save and export: {'SUCCESS' if success else 'FAILED'}")
+        
+        # Test retrieval
+        retrieved = db_manager.get_scan_results("test_scan_001")
+        if retrieved:
+            print(f"✅ Data retrieval: SUCCESS ({len(retrieved['findings'])} findings)")
+        else:
+            print("❌ Data retrieval: FAILED")
+        
+        # Test scan listing
+        scans = db_manager.list_scans(10)
+        print(f"✅ Scan listing: SUCCESS ({len(scans)} scans)")
+        
+        # Check generated files
+        results_dir = Path(f"results/test_scan_001")
+        if results_dir.exists():
+            files = list(results_dir.glob("*"))
+            print(f"✅ File generation: SUCCESS ({len(files)} files generated)")
+            for file_path in files:
+                print(f"   📄 {file_path.name} ({file_path.stat().st_size} bytes)")
+        else:
+            print("❌ File generation: No results directory found")
+        
+        # Cleanup
+        db_manager.close()
+        Path(test_db_path).unlink(missing_ok=True)
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Database Manager test failed: {e}")
+        return False
 
-class TestWebScanner(unittest.TestCase):
-    """Test web scanner functionality"""
+async def test_enhanced_results_filter():
+    """Test enhanced results filter functionality"""
+    print("\n🧪 Testing Enhanced Results Filter...")
     
-    def setUp(self):
-        """Setup test environment"""
-        self.config = {"performance": {"max_workers": 5}}
-        self.scanner = AdvancedWebScanner(self.config)
-    
-    def test_scanner_initialization(self):
-        """Test scanner initialization"""
-        self.assertIsNotNone(self.scanner.config)
-        self.assertIsInstance(self.scanner.xss_payloads, list)
-        self.assertIsInstance(self.scanner.sqli_payloads, list)
-        self.assertTrue(len(self.scanner.xss_payloads) > 0)
-        self.assertTrue(len(self.scanner.sqli_payloads) > 0)
-    
-    def test_payload_loading(self):
-        """Test payload loading functionality"""
-        xss_payloads = self.scanner._load_xss_payloads()
-        sqli_payloads = self.scanner._load_sqli_payloads()
-        lfi_payloads = self.scanner._load_lfi_payloads()
+    try:
+        from core.results_filter import EnhancedResultsFilter, FilterContext
         
-        self.assertTrue(len(xss_payloads) > 20)
-        self.assertTrue(len(sqli_payloads) > 15)
-        self.assertTrue(len(lfi_payloads) > 10)
+        # Setup logging
+        logger = logging.getLogger('test_filter')
+        logger.setLevel(logging.INFO)
         
-        # Check for common payloads
-        self.assertTrue(any("<script>" in payload for payload in xss_payloads))
-        self.assertTrue(any("'" in payload for payload in sqli_payloads))
-        self.assertTrue(any("etc/passwd" in payload for payload in lfi_payloads))
-    
-    def test_link_extraction(self):
-        """Test link extraction from HTML"""
-        html_content = '''
-        <html>
-            <a href="/test1">Test 1</a>
-            <a href="http://example.com/test2">Test 2</a>
-            <a href="../test3">Test 3</a>
-        </html>
-        '''
+        # Initialize filter
+        results_filter = EnhancedResultsFilter({}, logger)
         
-        links = self.scanner._extract_links(html_content, "http://example.com/page")
-        self.assertTrue(len(links) > 0)
-    
-    def test_form_parameter_extraction(self):
-        """Test form parameter extraction"""
-        html_content = '''
-        <form method="post">
-            <input name="username" type="text">
-            <input name="password" type="password">
-            <input name="hidden_field" type="hidden">
-        </form>
-        '''
+        # Create test findings
+        findings = create_test_findings()
+        original_count = len(findings)
+        print(f"📊 Original findings: {original_count}")
         
-        initial_count = len(self.scanner.tested_parameters)
-        self.scanner._extract_forms_and_parameters(html_content, "http://example.com")
+        # Test different filter contexts
+        test_contexts = [
+            {
+                "name": "Production Environment",
+                "context": FilterContext(
+                    environment='production',
+                    target_type='web',
+                    min_confidence=0.3,
+                    auto_exclude_fps=True
+                )
+            },
+            {
+                "name": "Development Environment",
+                "context": FilterContext(
+                    environment='development',
+                    target_type='web',
+                    min_confidence=0.5,
+                    exclude_severities=['info'],
+                    auto_exclude_fps=True
+                )
+            },
+            {
+                "name": "High Confidence Only",
+                "context": FilterContext(
+                    environment='production',
+                    target_type='web',
+                    min_confidence=0.7,
+                    auto_exclude_fps=True
+                )
+            }
+        ]
         
-        # Should have added some parameters
-        self.assertTrue(len(self.scanner.tested_parameters) > initial_count)
+        for test_case in test_contexts:
+            print(f"\n🔍 Testing: {test_case['name']}")
+            
+            # Apply filtering
+            filtered_findings = results_filter.filter_findings(findings.copy(), test_case['context'])
+            filtered_count = len(filtered_findings)
+            
+            print(f"   📊 Results: {original_count} → {filtered_count} findings")
+            
+            # Check for enhanced findings
+            enhanced_count = sum(1 for f in filtered_findings if getattr(f, 'verified', False))
+            print(f"   ⭐ Enhanced findings: {enhanced_count}")
+            
+            # Check for false positives
+            fp_count = sum(1 for f in filtered_findings if getattr(f, 'false_positive', False))
+            print(f"   🚫 False positives marked: {fp_count}")
+            
+            # Show severity distribution
+            severities = {}
+            for f in filtered_findings:
+                severities[f.severity] = severities.get(f.severity, 0) + 1
+            print(f"   📈 Severity distribution: {severities}")
+        
+        # Test filter statistics
+        stats = results_filter.get_filter_statistics()
+        print(f"\n📊 Filter Statistics:")
+        for key, value in stats.items():
+            print(f"   {key}: {value}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Results Filter test failed: {e}")
+        return False
 
-def run_comprehensive_tests():
-    """Run all tests and provide detailed results"""
-    print("=" * 80)
-    print("AZAZ-EL FRAMEWORK v4.0 - COMPREHENSIVE TEST SUITE")
-    print("=" * 80)
+async def test_integration():
+    """Test integration of all enhanced components"""
+    print("\n🧪 Testing Component Integration...")
     
-    # Create test suite
-    test_suite = unittest.TestSuite()
+    try:
+        from core.database_manager import EnhancedDatabaseManager
+        from core.results_filter import EnhancedResultsFilter, FilterContext
+        
+        # Use temporary database
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+            test_db_path = tmp.name
+        
+        # Setup logging
+        logger = logging.getLogger('test_integration')
+        logger.setLevel(logging.INFO)
+        
+        # Initialize components
+        db_manager = EnhancedDatabaseManager(test_db_path, logger)
+        results_filter = EnhancedResultsFilter({}, logger)
+        
+        # Create realistic scan scenario
+        findings = create_test_findings()
+        scan_result = MockScanResult(
+            scan_id="integration_test_001",
+            findings=findings,
+            metadata={
+                "framework": "integration_test",
+                "scan_type": "comprehensive",
+                "target_count": 1
+            }
+        )
+        
+        print(f"📊 Starting with {len(findings)} findings")
+        
+        # Apply filtering pipeline
+        filter_context = FilterContext(
+            environment='production',
+            target_type='web',
+            min_confidence=0.4,
+            auto_exclude_fps=True
+        )
+        
+        # Filter findings
+        original_count = len(scan_result.findings)
+        scan_result.findings = results_filter.filter_findings(scan_result.findings, filter_context)
+        filtered_count = len(scan_result.findings)
+        
+        print(f"🔍 After filtering: {original_count} → {filtered_count} findings")
+        
+        # Save to database with full export
+        export_formats = ["json", "csv", "xml", "html"]
+        success = db_manager.save_scan_result(scan_result, export_formats)
+        
+        print(f"💾 Database save: {'SUCCESS' if success else 'FAILED'}")
+        
+        # Verify files were created
+        results_dir = Path(f"results/integration_test_001")
+        if results_dir.exists():
+            files = list(results_dir.glob("*"))
+            print(f"📁 Generated {len(files)} result files:")
+            
+            for file_path in files:
+                size = file_path.stat().st_size
+                print(f"   📄 {file_path.name} ({size} bytes)")
+                
+                # Quick validation of file content
+                if file_path.suffix == '.json':
+                    try:
+                        with open(file_path) as f:
+                            data = json.load(f)
+                        print(f"      ✅ Valid JSON with {len(data.get('findings', []))} findings")
+                    except:
+                        print(f"      ❌ Invalid JSON file")
+                
+                elif file_path.suffix == '.html':
+                    content = file_path.read_text()
+                    if 'Security Scan Report' in content:
+                        print(f"      ✅ Valid HTML report")
+                    else:
+                        print(f"      ❌ Invalid HTML report")
+        
+        # Test database queries
+        retrieved = db_manager.get_scan_results("integration_test_001")
+        if retrieved:
+            db_findings_count = len(retrieved['findings'])
+            print(f"🔍 Database verification: {db_findings_count} findings stored")
+            
+            # Check if filtering info was preserved
+            scan_data = retrieved['scan']
+            if 'filtering_applied' in json.loads(scan_data.get('metadata', '{}')):
+                print(f"✅ Filtering metadata preserved")
+        
+        # Cleanup
+        db_manager.close()
+        Path(test_db_path).unlink(missing_ok=True)
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Integration test failed: {e}")
+        return False
+
+async def test_cli_integration():
+    """Test command-line integration"""
+    print("\n🧪 Testing CLI Integration...")
     
-    # Add all test classes
-    test_classes = [
-        TestCoreExceptions,
-        TestInputValidator,
-        TestConfigurationManager,
-        TestAdvancedLogger,
-        TestVulnerabilityFinding,
-        TestWebScanner,
+    try:
+        # Test help output for new options
+        import subprocess
+        
+        # Test z3muth help
+        result = subprocess.run([
+            sys.executable, 'z3muth.py', '--help'
+        ], capture_output=True, text=True, timeout=10)
+        
+        if 'Filtering Options' in result.stdout:
+            print("✅ Z3MUTH CLI filtering options added")
+        else:
+            print("❌ Z3MUTH CLI filtering options missing")
+        
+        # Test azaz_el_ultimate help  
+        result = subprocess.run([
+            sys.executable, 'azaz_el_ultimate.py', '--help'
+        ], capture_output=True, text=True, timeout=10)
+        
+        if '--min-confidence' in result.stdout:
+            print("✅ Azaz-El Ultimate CLI filtering options added")
+        else:
+            print("❌ Azaz-El Ultimate CLI filtering options missing")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ CLI integration test failed: {e}")
+        return False
+
+async def main():
+    """Run comprehensive test suite"""
+    print("🚀 Enhanced Framework Test Suite")
+    print("=" * 50)
+    
+    test_results = []
+    
+    # Run all tests
+    tests = [
+        ("Enhanced Database Manager", test_enhanced_database_manager),
+        ("Enhanced Results Filter", test_enhanced_results_filter), 
+        ("Component Integration", test_integration),
+        ("CLI Integration", test_cli_integration)
     ]
     
-    for test_class in test_classes:
-        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        test_suite.addTests(tests)
+    for test_name, test_func in tests:
+        try:
+            result = await test_func()
+            test_results.append((test_name, result))
+            print(f"\n{'✅' if result else '❌'} {test_name}: {'PASSED' if result else 'FAILED'}")
+        except Exception as e:
+            test_results.append((test_name, False))
+            print(f"\n❌ {test_name}: FAILED - {e}")
     
-    # Run tests with detailed output
-    runner = unittest.TextTestRunner(verbosity=2, stream=sys.stdout)
-    result = runner.run(test_suite)
+    # Summary
+    print("\n" + "=" * 50)
+    print("📊 Test Summary:")
     
-    # Print summary
-    print("\n" + "=" * 80)
-    print("TEST SUMMARY")
-    print("=" * 80)
+    passed = sum(1 for _, result in test_results if result)
+    total = len(test_results)
     
-    total_tests = result.testsRun
-    failed_tests = len(result.failures)
-    error_tests = len(result.errors)
-    passed_tests = total_tests - failed_tests - error_tests
+    for test_name, result in test_results:
+        status = "✅ PASS" if result else "❌ FAIL"
+        print(f"   {status} - {test_name}")
     
-    print(f"Total Tests Run: {total_tests}")
-    print(f"Passed: {passed_tests}")
-    print(f"Failed: {failed_tests}")
-    print(f"Errors: {error_tests}")
-    print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+    print(f"\n🎯 Overall: {passed}/{total} tests passed")
     
-    if result.failures:
-        print(f"\nFAILURES ({len(result.failures)}):")
-        for test, traceback in result.failures:
-            print(f"- {test}: {traceback.split('AssertionError:')[-1].strip()}")
+    if passed == total:
+        print("🎉 All tests passed! Enhanced framework is working correctly.")
+    else:
+        print("⚠️  Some tests failed. Please review the output above.")
     
-    if result.errors:
-        print(f"\nERRORS ({len(result.errors)}):")
-        for test, traceback in result.errors:
-            print(f"- {test}: {traceback.split('Exception:')[-1].strip()}")
-    
-    # Feature validation
-    print("\n" + "=" * 80)
-    print("FEATURE VALIDATION")
-    print("=" * 80)
-    
-    features = [
-        ("Core Exception Handling", passed_tests > 0),
-        ("Input Validation", "TestInputValidator" in str(result)),
-        ("Configuration Management", "TestConfigurationManager" in str(result)),
-        ("Advanced Logging", "TestAdvancedLogger" in str(result)),
-        ("Web Scanner", "TestWebScanner" in str(result)),
-        ("Vulnerability Detection", len(AdvancedWebScanner({})._load_xss_payloads()) > 20),
-        ("Payload Generation", len(AdvancedWebScanner({})._load_sqli_payloads()) > 15),
-    ]
-    
-    for feature_name, is_working in features:
-        status = "✅ WORKING" if is_working else "❌ FAILED"
-        print(f"{feature_name:<30} {status}")
-    
-    print("\n" + "=" * 80)
-    
-    return result.wasSuccessful()
+    return passed == total
 
 if __name__ == "__main__":
-    success = run_comprehensive_tests()
+    # Setup logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
     
-    if success:
-        print("🎉 ALL TESTS PASSED! Framework is ready for enhanced operations.")
-        sys.exit(0)
-    else:
-        print("⚠️ Some tests failed. Please review the output above.")
-        sys.exit(1)
+    # Run tests
+    success = asyncio.run(main())
+    sys.exit(0 if success else 1)

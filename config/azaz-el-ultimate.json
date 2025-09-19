@@ -1,0 +1,79 @@
+{
+    "version": "7.0.0-ULTIMATE",
+    "framework": {
+        "name": "Azaz-El Ultimate",
+        "concurrent_scans": 50,
+        "max_memory_usage": 0.8,
+        "max_cpu_usage": 0.9,
+        "default_timeout": 300
+    },
+    "scanning": {
+        "enable_exploitation": false,
+        "enable_bruteforce": false,
+        "enable_fuzzing": true,
+        "aggressive_mode": false
+    },
+    "tools": {
+        "subfinder": {"enabled": true, "timeout": 600, "priority": 1},
+        "amass": {"enabled": true, "timeout": 900, "priority": 1},
+        "httpx": {"enabled": true, "timeout": 300, "priority": 1},
+        "nuclei": {"enabled": true, "timeout": 1200, "priority": 1},
+        "naabu": {"enabled": true, "timeout": 600, "priority": 1}
+    },
+    "wordlists": {
+        "directories": [
+            "wordlists/",
+            "/usr/share/wordlists/"
+        ],
+        "common_passwords": "wordlists/common-passwords.txt",
+        "common_usernames": "wordlists/common-usernames.txt",
+        "subdomains": "wordlists/subdomains.txt",
+        "directories_web": "wordlists/directories.txt",
+        "common_files": "wordlists/common-files.txt"
+    },
+    "payloads": {
+        "directories": [
+            "payloads/",
+            "wordlists/payloads/"
+        ],
+        "xss": "payloads/xss-payloads.txt",
+        "sqli": "payloads/sql-injection.txt",
+        "lfi": "payloads/lfi-payloads.txt",
+        "rce": "payloads/rce-payloads.txt"
+    },
+    "api_keys": {
+        "shodan": "your_shodan_api_key",
+        "censys": "your_censys_api_key",
+        "securitytrails": "your_securitytrails_api_key",
+        "chaos": "your_chaos_api_key"
+    },
+    "reporting": {
+        "output_dir": "azaz_el_reports",
+        "formats": [
+            "html",
+            "json",
+            "csv",
+            "pdf"
+        ],
+        "include_screenshots": true
+    },
+    "output": {
+        "base_dir": "runs",
+        "keep_raw_output": true,
+        "compress_old_runs": true
+    },
+    "performance": {
+        "max_workers": 10,
+        "tool_timeout": 600,
+        "rate_limit": 1000,
+        "memory_limit_mb": 2048,
+        "disk_space_check": true
+    },
+    "security": {
+        "encrypt_sensitive_data": true,
+        "log_sensitive_commands": false,
+        "validate_all_inputs": true,
+        "sandbox_mode": false,
+        "allowed_networks": []
+    }
+}

@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 import sys
+import time
 
 class JSONFormatter(logging.Formatter):
     """Custom JSON formatter for structured logging"""
@@ -35,7 +36,15 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, 'extra_data'):
             log_entry["extra"] = record.extra_data
         
-        return json.dumps(log_entry, ensure_ascii=False)
+        # Add context information if present
+        if hasattr(record, 'context'):
+            log_entry["context"] = record.context
+        
+        # Add performance metrics if present
+        if hasattr(record, 'performance'):
+            log_entry["performance"] = record.performance
+        
+        return json.dumps(log_entry, ensure_ascii=False, default=str)
 
 class AdvancedLogger:
     """Advanced logging system with multiple handlers and structured output"""
@@ -44,6 +53,15 @@ class AdvancedLogger:
         self.name = name
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Performance metrics tracking
+        self.performance_metrics = {
+            "scan_start_time": None,
+            "phase_timings": {},
+            "tool_execution_times": {},
+            "error_count": 0,
+            "finding_counts": {}
+        }
         
         # Create main logger
         self.logger = logging.getLogger(name)
@@ -131,17 +149,35 @@ class AdvancedLogger:
         """Log debug message with optional extra data"""
         self._log_with_extra(logging.DEBUG, message, extra_data)
     
-    def info(self, message: str, extra_data: Dict[str, Any] = None):
-        """Log info message with optional extra data"""
-        self._log_with_extra(logging.INFO, message, extra_data)
+    def info(self, message: str, extra_data: Dict[str, Any] = None, **kwargs):
+        """Log info message with optional extra data - compatible with both custom and standard loggers"""
+        if extra_data is None and not kwargs:
+            # Simple case - just log the message
+            self._log_with_extra(logging.INFO, message, None)
+        elif extra_data:
+            # Use our enhanced logging with extra data
+            self._log_with_extra(logging.INFO, message, extra_data)
+        else:
+            # Standard logging call - just log the message and ignore kwargs
+            self._log_with_extra(logging.INFO, message, None)
     
-    def warning(self, message: str, extra_data: Dict[str, Any] = None):
-        """Log warning message with optional extra data"""
-        self._log_with_extra(logging.WARNING, message, extra_data)
+    def warning(self, message: str, extra_data: Dict[str, Any] = None, **kwargs):
+        """Log warning message with optional extra data - compatible with both custom and standard loggers"""
+        if extra_data is None and not kwargs:
+            self._log_with_extra(logging.WARNING, message, None)
+        elif extra_data:
+            self._log_with_extra(logging.WARNING, message, extra_data)
+        else:
+            self._log_with_extra(logging.WARNING, message, None)
     
-    def error(self, message: str, extra_data: Dict[str, Any] = None):
-        """Log error message with optional extra data"""
-        self._log_with_extra(logging.ERROR, message, extra_data)
+    def error(self, message: str, extra_data: Dict[str, Any] = None, **kwargs):
+        """Log error message with optional extra data - compatible with both custom and standard loggers"""
+        if extra_data is None and not kwargs:
+            self._log_with_extra(logging.ERROR, message, None)
+        elif extra_data:
+            self._log_with_extra(logging.ERROR, message, extra_data)
+        else:
+            self._log_with_extra(logging.ERROR, message, None)
     
     def critical(self, message: str, extra_data: Dict[str, Any] = None):
         """Log critical message with optional extra data"""
@@ -183,8 +219,15 @@ class AdvancedLogger:
             "phase": phase,
             "progress": progress,
             "findings_count": findings_count,
-            "category": "scan_progress"
+            "category": "scan_progress",
+            "elapsed_time": self._get_elapsed_time(),
+            "estimated_remaining": self._estimate_remaining_time(progress)
         }
+        
+        # Update performance metrics
+        if phase not in self.performance_metrics["finding_counts"]:
+            self.performance_metrics["finding_counts"][phase] = 0
+        self.performance_metrics["finding_counts"][phase] = findings_count
         
         message = f"Scan progress for {target}: {phase} - {progress:.1f}% ({findings_count} findings)"
         self._log_with_extra(logging.INFO, message, extra_data)
@@ -202,6 +245,55 @@ class AdvancedLogger:
         
         message = f"Vulnerability found on {target}: {vuln_type} ({severity})"
         self._log_with_extra(logging.WARNING, message, extra_data)
+    
+    def _get_elapsed_time(self):
+        """Get elapsed time since scan start"""
+        if self.performance_metrics["scan_start_time"]:
+            return time.time() - self.performance_metrics["scan_start_time"]
+        return 0
+    
+    def _estimate_remaining_time(self, progress: float):
+        """Estimate remaining scan time based on current progress"""
+        if progress <= 0:
+            return None
+        elapsed = self._get_elapsed_time()
+        if elapsed <= 0:
+            return None
+        total_estimated = elapsed / (progress / 100.0)
+        return max(0, total_estimated - elapsed)
+    
+    def start_scan_timer(self):
+        """Start the scan performance timer"""
+        self.performance_metrics["scan_start_time"] = time.time()
+    
+    def log_phase_completion(self, phase: str, duration: float, findings: int = 0):
+        """Log phase completion with timing"""
+        self.performance_metrics["phase_timings"][phase] = duration
+        extra_data = {
+            "phase": phase,
+            "duration": duration,
+            "findings": findings,
+            "category": "phase_completion"
+        }
+        message = f"Phase '{phase}' completed in {duration:.2f}s with {findings} findings"
+        self._log_with_extra(logging.INFO, message, extra_data)
+    
+    def log_performance_summary(self):
+        """Log overall performance summary"""
+        total_time = self._get_elapsed_time()
+        total_findings = sum(self.performance_metrics["finding_counts"].values())
+        
+        summary = {
+            "total_scan_time": total_time,
+            "total_findings": total_findings,
+            "phase_timings": self.performance_metrics["phase_timings"],
+            "tool_execution_times": self.performance_metrics["tool_execution_times"],
+            "error_count": self.performance_metrics["error_count"],
+            "category": "performance_summary"
+        }
+        
+        message = f"Scan completed: {total_time:.2f}s, {total_findings} findings, {self.performance_metrics['error_count']} errors"
+        self._log_with_extra(logging.INFO, message, summary)
 
 # Global logger instance
 _global_logger: Optional[AdvancedLogger] = None
@@ -220,3 +312,181 @@ def get_logger(name: str = "azaz-el", log_dir: Path = None, log_level: str = "IN
 def setup_logging(log_dir: Path, log_level: str = "INFO") -> AdvancedLogger:
     """Setup and return configured logger"""
     return get_logger("azaz-el", log_dir, log_level)
+
+def log_security_event(event_type: str, details: Dict[str, Any], severity: str = "INFO"):
+    """Log security-related events with special handling"""
+    logger = get_logger()
+    
+    security_data = {
+        "event_type": event_type,
+        "details": details,
+        "severity": severity,
+        "category": "security_event",
+        "timestamp": time.time()
+    }
+    
+    level = getattr(logging, severity.upper(), logging.INFO)
+    message = f"Security Event: {event_type}"
+    logger._log_with_extra(level, message, security_data)
+
+def log_system_resource_usage():
+    """Log current system resource usage with enhanced metrics"""
+    try:
+        import psutil
+        logger = get_logger()
+        
+        # CPU metrics
+        cpu_percent = psutil.cpu_percent(interval=0.1)  # Reduced interval for faster response
+        cpu_count = psutil.cpu_count(logical=False)
+        cpu_count_logical = psutil.cpu_count(logical=True)
+        
+        # Memory metrics
+        memory = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        
+        # Disk metrics
+        disk = psutil.disk_usage('/')
+        
+        # Network metrics (if available)
+        try:
+            net_io = psutil.net_io_counters()
+            network_metrics = {
+                "bytes_sent": net_io.bytes_sent,
+                "bytes_recv": net_io.bytes_recv,
+                "packets_sent": net_io.packets_sent,
+                "packets_recv": net_io.packets_recv
+            }
+        except:
+            network_metrics = {}
+        
+        resource_data = {
+            "cpu": {
+                "percent": cpu_percent,
+                "cores_physical": cpu_count,
+                "cores_logical": cpu_count_logical
+            },
+            "memory": {
+                "percent": memory.percent,
+                "total_mb": memory.total // (1024 * 1024),
+                "available_mb": memory.available // (1024 * 1024),
+                "used_mb": memory.used // (1024 * 1024)
+            },
+            "swap": {
+                "percent": swap.percent,
+                "total_mb": swap.total // (1024 * 1024),
+                "used_mb": swap.used // (1024 * 1024)
+            },
+            "disk": {
+                "percent": disk.percent,
+                "total_gb": disk.total // (1024 * 1024 * 1024),
+                "free_gb": disk.free // (1024 * 1024 * 1024),
+                "used_gb": disk.used // (1024 * 1024 * 1024)
+            },
+            "network": network_metrics,
+            "category": "system_resources",
+            "timestamp": time.time()
+        }
+        
+        # Determine log level based on resource usage
+        if cpu_percent > 90 or memory.percent > 90 or disk.percent > 90:
+            level = logging.WARNING
+            message = f"⚠️ High Resource Usage: CPU {cpu_percent:.1f}%, Memory {memory.percent:.1f}%, Disk {disk.percent:.1f}%"
+        elif cpu_percent > 70 or memory.percent > 70 or disk.percent > 70:
+            level = logging.INFO
+            message = f"📊 Resource Usage: CPU {cpu_percent:.1f}%, Memory {memory.percent:.1f}%, Disk {disk.percent:.1f}%"
+        else:
+            level = logging.DEBUG
+            message = f"📊 Resource Usage: CPU {cpu_percent:.1f}%, Memory {memory.percent:.1f}%, Disk {disk.percent:.1f}%"
+        
+        logger._log_with_extra(level, message, resource_data)
+        
+    except ImportError:
+        pass  # psutil not available
+    except Exception as e:
+        logger = get_logger()
+        logger.error(f"Failed to log system resources: {e}")
+
+def log_performance_metrics(operation: str, duration_ms: float, **kwargs):
+    """Log performance metrics for operations"""
+    logger = get_logger()
+    
+    performance_data = {
+        "operation": operation,
+        "duration_ms": round(duration_ms, 2),
+        "category": "performance",
+        "timestamp": time.time(),
+        **kwargs
+    }
+    
+    # Determine log level based on duration
+    if duration_ms > 10000:  # > 10 seconds
+        level = logging.WARNING
+        message = f"🐌 Slow Operation: {operation} took {duration_ms:.1f}ms"
+    elif duration_ms > 1000:  # > 1 second
+        level = logging.INFO
+        message = f"⏱️ Operation Performance: {operation} took {duration_ms:.1f}ms"
+    else:
+        level = logging.DEBUG
+        message = f"⚡ Operation Complete: {operation} took {duration_ms:.1f}ms"
+    
+    extra = {"performance": performance_data}
+    logger._log_with_extra(level, message, extra)
+    
+import contextlib
+
+@contextlib.contextmanager
+def performance_timer(operation: str, logger=None, **kwargs):
+    """Context manager for timing operations and logging performance"""
+    if logger is None:
+        logger = get_logger()
+    
+    start_time = time.time()
+    start_resources = None
+    
+    # Capture initial resource state if psutil is available
+    try:
+        import psutil
+        start_resources = {
+            "cpu_percent": psutil.cpu_percent(),
+            "memory_percent": psutil.virtual_memory().percent
+        }
+    except:
+        pass
+    
+    try:
+        yield
+    finally:
+        duration_ms = (time.time() - start_time) * 1000
+        
+        # Add resource usage delta if available
+        resource_delta = {}
+        if start_resources:
+            try:
+                import psutil
+                end_resources = {
+                    "cpu_percent": psutil.cpu_percent(),
+                    "memory_percent": psutil.virtual_memory().percent
+                }
+                resource_delta = {
+                    "cpu_delta": end_resources["cpu_percent"] - start_resources["cpu_percent"],
+                    "memory_delta": end_resources["memory_percent"] - start_resources["memory_percent"]
+                }
+            except:
+                pass
+        
+        log_performance_metrics(operation, duration_ms, resource_delta=resource_delta, **kwargs)
+
+def log_configuration_change(config_section: str, old_value: Any, new_value: Any, user: str = "system"):
+    """Log configuration changes for audit trail"""
+    logger = get_logger()
+    
+    change_data = {
+        "config_section": config_section,
+        "old_value": str(old_value) if not isinstance(old_value, str) else old_value,
+        "new_value": str(new_value) if not isinstance(new_value, str) else new_value,
+        "user": user,
+        "category": "configuration_change"
+    }
+    
+    message = f"Configuration changed: {config_section} by {user}"
+    logger._log_with_extra(logging.INFO, message, change_data)

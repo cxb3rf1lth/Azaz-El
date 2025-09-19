@@ -185,3 +185,84 @@ class InputValidator:
                     raise ValidationError(f"Potentially dangerous argument detected: {arg}")
         
         return args
+    
+    @staticmethod
+    def validate_url(url: str) -> str:
+        """Validate URL format and security"""
+        if not url or not isinstance(url, str):
+            raise ValidationError("URL must be a non-empty string")
+        
+        url = url.strip()
+        
+        # Add protocol if missing
+        if not url.startswith(('http://', 'https://')):
+            url = f'http://{url}'
+        
+        try:
+            parsed = urlparse(url)
+            if not parsed.netloc:
+                raise ValidationError(f"Invalid URL format: {url}")
+            
+            # Check for potentially dangerous URLs
+            if parsed.scheme not in ['http', 'https']:
+                raise ValidationError(f"Only HTTP/HTTPS URLs are allowed: {url}")
+            
+            # Check for localhost/private IPs in production
+            if parsed.netloc.lower() in ['localhost', '127.0.0.1', '0.0.0.0']:
+                raise ValidationError(f"Localhost URLs not allowed in production: {url}")
+            
+            return url
+        except Exception as e:
+            raise ValidationError(f"URL validation failed: {e}")
+    
+    @staticmethod
+    def validate_scan_type(scan_type: str) -> str:
+        """Validate scan type parameter"""
+        valid_types = [
+            'reconnaissance', 'recon', 'subdomain', 'port', 'web', 'vulnerability', 
+            'vuln', 'directory', 'fuzzing', 'xss', 'sqli', 'api', 'full'
+        ]
+        
+        if not scan_type or not isinstance(scan_type, str):
+            raise ValidationError("Scan type must be a non-empty string")
+        
+        scan_type = scan_type.lower().strip()
+        if scan_type not in valid_types:
+            raise ValidationError(f"Invalid scan type: {scan_type}. Valid types: {', '.join(valid_types)}")
+        
+        return scan_type
+    
+    @staticmethod
+    def validate_output_format(output_format: str) -> str:
+        """Validate output format parameter"""
+        valid_formats = ['json', 'html', 'txt', 'csv', 'xml', 'pdf']
+        
+        if not output_format or not isinstance(output_format, str):
+            raise ValidationError("Output format must be a non-empty string")
+        
+        output_format = output_format.lower().strip()
+        if output_format not in valid_formats:
+            raise ValidationError(f"Invalid output format: {output_format}. Valid formats: {', '.join(valid_formats)}")
+        
+        return output_format
+    
+    @staticmethod
+    def validate_api_key(api_key: str, key_type: str = "generic") -> str:
+        """Validate API key format"""
+        if not api_key or not isinstance(api_key, str):
+            raise ValidationError(f"{key_type} API key must be a non-empty string")
+        
+        api_key = api_key.strip()
+        
+        # Basic length validation
+        if len(api_key) < 8:
+            raise ValidationError(f"{key_type} API key too short (minimum 8 characters)")
+        
+        if len(api_key) > 256:
+            raise ValidationError(f"{key_type} API key too long (maximum 256 characters)")
+        
+        # Check for suspicious patterns
+        if api_key.lower() in ['test', 'demo', 'example', 'placeholder', 'your_key_here']:
+            raise ValidationError(f"{key_type} API key appears to be a placeholder")
+        
+        return api_key
