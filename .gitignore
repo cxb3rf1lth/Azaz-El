@@ -76,6 +76,10 @@ logs/
 temp/
 tmp/
 
+# Test results and scan output
+results/
+test_results/
+
 # Run directories (contain scan results)
 runs/
 
