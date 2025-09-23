@@ -2,7 +2,7 @@
   "scan_metadata": {
     "scan_id": "integration_test_001",
     "target": "",
-    "start_time": "2025-09-19T12:52:22.694381",
+    "start_time": "2025-09-23T01:58:40.153008",
     "end_time": "",
     "status": "completed",
     "total_findings": 6,
@@ -156,5 +156,5 @@
     ],
     "false_positive_rate": 0.0
   },
-  "export_timestamp": "2025-09-19T12:52:22.697484"
+  "export_timestamp": "2025-09-23T01:58:40.155784"
 }
